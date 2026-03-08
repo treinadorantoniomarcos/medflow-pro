@@ -8,6 +8,8 @@ import {
   TrendingUp,
   Users,
   PieChart as PieChartIcon,
+  Download,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +17,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useReportData } from "@/hooks/use-reports";
+import { exportCSV, exportPDF } from "@/lib/export-reports";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   BarChart,
   Bar,
@@ -75,33 +84,75 @@ const Relatorios = () => {
             </div>
           </div>
 
-          {/* Month navigation */}
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setMonthsBack((m) => m + 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs font-semibold"
-              onClick={() => setMonthsBack(0)}
-            >
-              Mês atual
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setMonthsBack((m) => Math.max(0, m - 1))}
-              disabled={monthsBack === 0}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-2">
+            {/* Export */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" disabled={isLoading}>
+                  <Download className="h-3.5 w-3.5" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() =>
+                    exportCSV({
+                      monthLabel,
+                      total,
+                      dailyCounts: dailyCounts.data ?? [],
+                      statusCounts: statusCounts.data ?? [],
+                      professionalCounts: professionalCounts.data ?? [],
+                    })
+                  }
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Exportar CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    exportPDF({
+                      monthLabel,
+                      total,
+                      dailyCounts: dailyCounts.data ?? [],
+                      statusCounts: statusCounts.data ?? [],
+                      professionalCounts: professionalCounts.data ?? [],
+                    })
+                  }
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Month navigation */}
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setMonthsBack((m) => m + 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs font-semibold"
+                onClick={() => setMonthsBack(0)}
+              >
+                Mês atual
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setMonthsBack((m) => Math.max(0, m - 1))}
+                disabled={monthsBack === 0}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </motion.div>
 
