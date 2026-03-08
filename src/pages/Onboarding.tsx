@@ -29,13 +29,16 @@ const Onboarding = () => {
     try {
       const clinicId = crypto.randomUUID();
 
-      const { error } = await supabase.rpc("complete_onboarding", {
+      console.log("Calling complete_onboarding with:", { clinicId, clinicName: clinicName.trim(), fullName: fullName.trim(), phone: phone.trim() || null });
+      
+      const { data, error } = await supabase.rpc("complete_onboarding", {
         _clinic_id: clinicId,
         _clinic_name: clinicName.trim(),
         _full_name: fullName.trim(),
         _phone: phone.trim() || null,
       });
 
+      console.log("complete_onboarding result:", { data, error });
       if (error) throw error;
 
       await refreshProfile();
