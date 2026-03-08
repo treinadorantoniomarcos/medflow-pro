@@ -183,7 +183,86 @@ const Configuracoes = () => {
           </Card>
         </motion.div>
 
-        {/* WhatsApp settings card */}
+        {/* Profile photo card */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.04 }}
+        >
+          <Card className="shadow-soft">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                  <UserCircle className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-base">Foto de Perfil</CardTitle>
+                  <CardDescription>
+                    Esta foto será exibida na página de agendamento online para os pacientes
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-5">
+                <div className="relative group">
+                  {profile?.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt="Foto de perfil"
+                      className="h-20 w-20 rounded-full object-cover border-2 border-primary/20"
+                    />
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary text-xl font-bold">
+                      {profile?.full_name?.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase() ?? "?"}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    {uploadingAvatar ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-background" />
+                    ) : (
+                      <Camera className="h-5 w-5 text-background" />
+                    )}
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-foreground">{profile?.full_name ?? "—"}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                  >
+                    {uploadingAvatar ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="h-3.5 w-3.5 mr-1.5" />
+                        {profile?.avatar_url ? "Trocar foto" : "Enviar foto"}
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground">JPG ou PNG, máx. 2MB</p>
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
