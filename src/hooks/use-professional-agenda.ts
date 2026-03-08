@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { startOfDay, endOfDay, addDays, format } from "date-fns";
@@ -17,6 +18,34 @@ export interface ProfessionalAppointment {
 
 export const useProfessionalAgenda = (date: Date) => {
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!profile?.tenant_id) return;
+
+    const channel = supabase
+      .channel(`professional-agenda-${profile.tenant_id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "appointments",
+          filter: `tenant_id=eq.${profile.tenant_id}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["professional-agenda"] });
+          queryClient.invalidateQueries({ queryKey: ["professional-stats"] });
+          queryClient.invalidateQueries({ queryKey: ["appointments"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.tenant_id, queryClient]);
 
   return useQuery({
     queryKey: ["professional-agenda", profile?.tenant_id, profile?.full_name, date.toISOString()],

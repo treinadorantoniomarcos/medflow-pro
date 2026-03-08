@@ -1,41 +1,61 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Calendar,
-  Clock,
-  Users,
-  AlertTriangle,
-  ChevronRight,
-} from "lucide-react";
+import { AlertTriangle, Calendar, ChevronRight, Clock, Users } from "lucide-react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import MetricCard from "@/components/dashboard/MetricCard";
 import AppointmentRow from "@/components/dashboard/AppointmentRow";
 import NewAppointmentDialog from "@/components/dashboard/NewAppointmentDialog";
 import { Button } from "@/components/ui/button";
 import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
-import { useTodayAppointments, useDashboardMetrics } from "@/hooks/use-appointments";
+import {
+  useAppointmentsByPeriod,
+  useDashboardMetrics,
+  type DashboardPeriod,
+} from "@/hooks/use-appointments";
 
 const statusFilters: { value: AppointmentStatus | "all"; label: string }[] = [
   { value: "all", label: "Todas" },
   { value: "confirmed", label: "Confirmadas" },
   { value: "scheduled", label: "Pendentes" },
   { value: "in_progress", label: "Atendendo" },
-  { value: "available", label: "Disponíveis" },
-  { value: "completed", label: "Concluídas" },
+  { value: "available", label: "Disponiveis" },
+  { value: "completed", label: "Concluidas" },
 ];
+
+const periodFilters: { value: DashboardPeriod; label: string }[] = [
+  { value: "today", label: "Hoje" },
+  { value: "week", label: "Semana" },
+  { value: "15days", label: "15 dias" },
+  { value: "month", label: "Mensal" },
+  { value: "bimester", label: "Bimestral" },
+  { value: "semester", label: "Semestral" },
+  { value: "year", label: "Anual" },
+];
+
+const periodTitleMap: Record<DashboardPeriod, string> = {
+  today: "hoje",
+  week: "semana",
+  "15days": "15 dias",
+  month: "mes",
+  bimester: "bimestre",
+  semester: "semestre",
+  year: "ano",
+};
 
 const Dashboard = () => {
   const [activeFilter, setActiveFilter] = useState<AppointmentStatus | "all">("all");
-  const { data: appointments = [], isLoading: loadingApts } = useTodayAppointments();
-  const { data: metrics } = useDashboardMetrics();
+  const [period, setPeriod] = useState<DashboardPeriod>("today");
+
+  const { data: appointments = [], isLoading: loadingApts } = useAppointmentsByPeriod(period);
+  const { data: metrics } = useDashboardMetrics(period);
 
   const filteredAppointments =
     activeFilter === "all"
       ? appointments
-      : appointments.filter((a) => a.status === activeFilter);
+      : appointments.filter((appointment) => appointment.status === activeFilter);
 
-  const today = new Date();
-  const formattedDate = today.toLocaleDateString("pt-BR", {
+  const now = new Date();
+  const formattedDate = now.toLocaleDateString("pt-BR", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -44,7 +64,6 @@ const Dashboard = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -57,21 +76,19 @@ const Dashboard = () => {
           <NewAppointmentDialog />
         </motion.div>
 
-        {/* Metrics */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
           className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
         >
-          <MetricCard value={metrics?.todayCount ?? 0} label="Atendimentos Hoje" icon={Calendar} />
-          <MetricCard value={metrics?.availableCount ?? 0} label="Vagas Disponíveis" icon={Clock} variant="accent" />
+          <MetricCard value={metrics?.todayCount ?? 0} label="Atendimentos no Periodo" icon={Calendar} />
+          <MetricCard value={metrics?.availableCount ?? 0} label="Vagas Disponiveis" icon={Clock} variant="accent" />
           <MetricCard value={appointments.length} label="Na Agenda" icon={Users} variant="success" />
-          <MetricCard value={metrics?.pendingCount ?? 0} label="Pendências" icon={AlertTriangle} variant="warning" />
+          <MetricCard value={metrics?.pendingCount ?? 0} label="Pendencias" icon={AlertTriangle} variant="warning" />
         </motion.div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          {/* Agenda do dia */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -79,67 +96,77 @@ const Dashboard = () => {
             className="space-y-3"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-foreground">Agenda de Hoje</h2>
+              <h2 className="text-lg font-bold text-foreground">Agenda do Periodo</h2>
               <Button variant="ghost" size="sm" className="text-primary gap-1">
                 Ver completa <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
 
-            {/* Filters */}
             <div className="flex flex-wrap gap-2">
-              {statusFilters.map((f) => (
+              {periodFilters.map((filter) => (
                 <Button
-                  key={f.value}
-                  variant={activeFilter === f.value ? "default" : "outline"}
+                  key={filter.value}
+                  variant={period === filter.value ? "default" : "outline"}
                   size="sm"
                   className="h-7 rounded-full text-xs"
-                  onClick={() => setActiveFilter(f.value)}
+                  onClick={() => setPeriod(filter.value)}
                 >
-                  {f.label}
+                  {filter.label}
                 </Button>
               ))}
             </div>
 
-            {/* Appointments */}
+            <div className="flex flex-wrap gap-2">
+              {statusFilters.map((filter) => (
+                <Button
+                  key={filter.value}
+                  variant={activeFilter === filter.value ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 rounded-full text-xs"
+                  onClick={() => setActiveFilter(filter.value)}
+                >
+                  {filter.label}
+                </Button>
+              ))}
+            </div>
+
             <div className="space-y-2">
               {loadingApts ? (
                 <div className="space-y-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-16 animate-pulse rounded-lg bg-muted" />
+                  {[1, 2, 3].map((item) => (
+                    <div key={item} className="h-16 animate-pulse rounded-lg bg-muted" />
                   ))}
                 </div>
               ) : filteredAppointments.length > 0 ? (
-                filteredAppointments.map((apt, i) => (
+                filteredAppointments.map((appointment, index) => (
                   <motion.div
-                    key={apt.id}
+                    key={appointment.id}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.12 + i * 0.04 }}
+                    transition={{ delay: 0.12 + index * 0.04 }}
                   >
-                    <AppointmentRow appointment={apt} />
+                    <AppointmentRow appointment={appointment} />
                   </motion.div>
                 ))
               ) : (
                 <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
                   {activeFilter === "all"
-                    ? "Nenhuma consulta agendada para hoje."
+                    ? `Nenhuma consulta agendada para ${periodTitleMap[period]}.`
                     : "Nenhuma consulta com esse filtro."}
                 </div>
               )}
             </div>
           </motion.div>
 
-          {/* Sidebar panels */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
             className="space-y-4"
           >
-            {/* Visão Geral */}
             <div className="rounded-lg border border-border bg-card p-4 shadow-soft">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-foreground">Resumo do Dia</h3>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-foreground">Resumo do Periodo</h3>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
@@ -147,11 +174,11 @@ const Dashboard = () => {
                   <span className="font-semibold text-foreground">{metrics?.todayCount ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Disponíveis</span>
+                  <span className="text-muted-foreground">Disponiveis</span>
                   <span className="font-semibold text-accent">{metrics?.availableCount ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Aguardando confirmação</span>
+                  <span className="text-muted-foreground">Aguardando confirmacao</span>
                   <span className="font-semibold text-warning">{metrics?.pendingCount ?? 0}</span>
                 </div>
                 {(metrics?.todayCount ?? 0) > 0 && (
@@ -160,12 +187,18 @@ const Dashboard = () => {
                       <div
                         className="h-full rounded-full bg-primary transition-all"
                         style={{
-                          width: `${Math.min(100, ((metrics?.todayCount ?? 0) - (metrics?.availableCount ?? 0)) / Math.max(1, metrics?.todayCount ?? 1) * 100)}%`,
+                          width: `${Math.min(
+                            100,
+                            (((metrics?.todayCount ?? 0) - (metrics?.availableCount ?? 0)) /
+                              Math.max(1, metrics?.todayCount ?? 1)) *
+                              100
+                          )}%`,
                         }}
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {((metrics?.todayCount ?? 0) - (metrics?.availableCount ?? 0))} de {metrics?.todayCount} horários preenchidos
+                      {(metrics?.todayCount ?? 0) - (metrics?.availableCount ?? 0)} de{" "}
+                      {metrics?.todayCount} horarios preenchidos
                     </p>
                   </>
                 )}

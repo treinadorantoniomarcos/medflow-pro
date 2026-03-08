@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -118,10 +118,12 @@ const NewAppointmentDialog = ({
       toast.error("Erro ao agendar", { description: error.message });
     } else {
       toast.success("Consulta agendada com sucesso!", {
-        description: "O paciente receberá uma confirmação.",
+        description: "O paciente receberÃ¡ uma confirmaÃ§Ã£o.",
       });
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["professional-agenda"] });
+      queryClient.invalidateQueries({ queryKey: ["professional-stats"] });
       setOpen(false);
     }
     setLoading(false);
@@ -194,7 +196,7 @@ const NewAppointmentDialog = ({
             <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="time">Horário</Label>
+            <Label htmlFor="time">HorÃ¡rio</Label>
             <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
           </div>
         </div>
@@ -205,14 +207,14 @@ const NewAppointmentDialog = ({
             <SelectContent>
               <SelectItem value="Primeira consulta">Primeira consulta</SelectItem>
               <SelectItem value="Retorno">Retorno</SelectItem>
-              <SelectItem value="Revisão">Revisão</SelectItem>
-              <SelectItem value="Emergência">Emergência</SelectItem>
+              <SelectItem value="RevisÃ£o">RevisÃ£o</SelectItem>
+              <SelectItem value="EmergÃªncia">EmergÃªncia</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="notes">Observações</Label>
-          <Textarea id="notes" placeholder="Observações opcionais..." rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} />
+          <Label htmlFor="notes">ObservaÃ§Ãµes</Label>
+          <Textarea id="notes" placeholder="ObservaÃ§Ãµes opcionais..." rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} />
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
@@ -238,3 +240,4 @@ const NewAppointmentDialog = ({
 };
 
 export default NewAppointmentDialog;
+
