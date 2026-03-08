@@ -41,6 +41,32 @@ const Configuracoes = () => {
   const [copied, setCopied] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
 
+  const { data: clinicData } = useQuery({
+    queryKey: ["clinic-slug", profile?.tenant_id],
+    enabled: !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clinics")
+        .select("slug, name")
+        .eq("id", profile!.tenant_id)
+        .single();
+      return data;
+    },
+  });
+
+  const clinicSlug = clinicData?.slug ?? null;
+  const clinicName = clinicData?.name ?? "";
+
+  const bookingUrl = clinicSlug
+    ? `${window.location.origin}/agendar/${clinicSlug}`
+    : null;
+
+  const whatsappEnabled = settings?.whatsapp_reminders_enabled ?? false;
+
+  const handleToggleWhatsApp = () => {
+    updateSettings.mutate({ whatsapp_reminders_enabled: !whatsappEnabled });
+  };
+
   const handleDownloadQR = useCallback(() => {
     if (!qrRef.current) return;
     const svg = qrRef.current.querySelector("svg");
