@@ -24,7 +24,7 @@ export const useProfessionalAgenda = (date: Date) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("appointments")
-        .select("id, patient_name, starts_at, ends_at, status, type, notes")
+        .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes")
         .eq("tenant_id", profile!.tenant_id)
         .eq("professional_name", profile!.full_name!)
         .gte("starts_at", startOfDay(date).toISOString())
