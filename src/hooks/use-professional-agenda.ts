@@ -7,6 +7,7 @@ import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
 export interface ProfessionalAppointment {
   id: string;
   patient_name: string;
+  professional_name: string;
   starts_at: string;
   ends_at: string | null;
   status: AppointmentStatus;
