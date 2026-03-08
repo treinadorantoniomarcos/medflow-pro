@@ -33,6 +33,8 @@ const Configuracoes = () => {
   const updateSettings = useUpdateClinicSettings();
   const { data: queue = [], isLoading: loadingQueue } = useNotificationsQueue();
   const [copied, setCopied] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: clinicSlug } = useQuery({
     queryKey: ["clinic-slug", profile?.tenant_id],
