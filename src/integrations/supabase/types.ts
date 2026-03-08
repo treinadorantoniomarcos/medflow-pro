@@ -396,7 +396,7 @@ export type Database = {
           _clinic_id: string
           _clinic_name: string
           _full_name: string
-          _phone?: string | null
+          _phone?: string
         }
         Returns: Json
       }
