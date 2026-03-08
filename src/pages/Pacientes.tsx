@@ -1,65 +1,125 @@
+import { useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
-import { Search, Plus, ChevronRight } from "lucide-react";
+import { Search, ChevronRight, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-
-const patients = [
-  { name: "Marcos Pereira", phone: "(11) 98765-4321", lastVisit: "23/05/2026", status: "Ativo" },
-  { name: "Sophia Amaral", phone: "(11) 97654-3210", lastVisit: "20/05/2026", status: "Ativo" },
-  { name: "João Almeida", phone: "(11) 96543-2109", lastVisit: "18/05/2026", status: "Ativo" },
-  { name: "Ana Soares", phone: "(11) 95432-1098", lastVisit: "15/05/2026", status: "Inativo" },
-  { name: "Carolina Martins", phone: "(11) 94321-0987", lastVisit: "10/05/2026", status: "Ativo" },
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import { usePatients, type Patient } from "@/hooks/use-patients";
+import NewPatientDialog from "@/components/patients/NewPatientDialog";
+import PatientDetailSheet from "@/components/patients/PatientDetailSheet";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const Pacientes = () => {
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+  const { data: patients = [], isLoading } = usePatients(debouncedSearch);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const handleOpenPatient = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setSheetOpen(true);
+  };
+
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
         >
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Pacientes</h1>
-          <Button className="gap-2 bg-success hover:bg-success/90 text-success-foreground font-semibold">
-            <Plus className="h-4 w-4" /> Novo paciente
-          </Button>
+          <div className="flex items-center gap-3">
+            <Users className="h-6 w-6 text-primary" />
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Pacientes</h1>
+              <p className="text-sm text-muted-foreground">
+                {patients.length} paciente{patients.length !== 1 ? "s" : ""} cadastrado{patients.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+          </div>
+          <NewPatientDialog />
         </motion.div>
 
-        <div className="relative max-w-md">
+        {/* Search */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="relative max-w-md"
+        >
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Buscar paciente..." className="pl-9 bg-secondary border-0" />
-        </div>
+          <Input
+            placeholder="Buscar por nome..."
+            className="pl-9 bg-secondary border-0"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </motion.div>
 
+        {/* Patient list */}
         <div className="space-y-2">
-          {patients.map((p, i) => (
-            <motion.button
-              key={p.name}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className="flex w-full items-center gap-3 rounded-lg bg-card p-4 shadow-soft text-left hover:shadow-medium transition-all"
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-[68px] w-full rounded-lg" />
+            ))
+          ) : patients.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="py-12 text-center"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                {p.name.split(" ").map(n => n[0]).join("")}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground">{p.name}</p>
-                <p className="text-xs text-muted-foreground">{p.phone}</p>
-              </div>
-              <div className="text-right hidden sm:block">
-                <p className="text-xs text-muted-foreground">Última visita</p>
-                <p className="text-xs font-medium text-foreground">{p.lastVisit}</p>
-              </div>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.status === "Ativo" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
-                {p.status}
-              </span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </motion.button>
-          ))}
+              <Users className="mx-auto h-10 w-10 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground mt-2">
+                {search ? "Nenhum paciente encontrado." : "Nenhum paciente cadastrado ainda."}
+              </p>
+            </motion.div>
+          ) : (
+            patients.map((p, i) => (
+              <motion.button
+                key={p.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="flex w-full items-center gap-3 rounded-lg bg-card p-4 shadow-soft text-left hover:shadow-medium transition-all"
+                onClick={() => handleOpenPatient(p)}
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shrink-0">
+                  {p.full_name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{p.full_name}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {p.phone || p.email || "Sem contato"}
+                  </p>
+                </div>
+                <span
+                  className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                    p.status === "active"
+                      ? "bg-success/15 text-success"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {p.status === "active" ? "Ativo" : "Inativo"}
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </motion.button>
+            ))
+          )}
         </div>
       </div>
+
+      <PatientDetailSheet
+        patient={selectedPatient}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+      />
     </AdminLayout>
   );
 };

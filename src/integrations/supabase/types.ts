@@ -150,6 +150,65 @@ export type Database = {
         }
         Relationships: []
       }
+      patients: {
+        Row: {
+          address: string | null
+          cpf: string | null
+          created_at: string
+          created_by: string | null
+          date_of_birth: string | null
+          email: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          notes: string | null
+          phone: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patients_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
