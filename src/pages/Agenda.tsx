@@ -248,9 +248,10 @@ const Agenda = () => {
                       <div
                         key={day.toISOString()}
                         className={cn(
-                          "border-l border-border p-1 space-y-1",
+                          "border-l border-border p-1 space-y-1 cursor-pointer hover:bg-muted/40 transition-colors",
                           isToday(day) && "bg-primary/[0.02]"
                         )}
+                        onClick={() => handleSlotClick(day, hour)}
                       >
                         {slotAppts.map((apt) => (
                           <WeeklySlotCard key={apt.id} appointment={apt} />
@@ -263,6 +264,15 @@ const Agenda = () => {
             )}
           </div>
         </motion.div>
+
+        {/* Controlled dialog for slot clicks */}
+        <NewAppointmentDialog
+          open={slotDialogOpen}
+          onOpenChange={setSlotDialogOpen}
+          defaultDate={slotDate}
+          defaultTime={slotTime}
+          hideTrigger
+        />
       </div>
     </AdminLayout>
   );
