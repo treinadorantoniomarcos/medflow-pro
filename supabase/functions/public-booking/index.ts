@@ -42,15 +42,15 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Fetch professionals with avatar
+      // Fetch professionals with avatar and accepting_bookings
       const { data: profRows } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url")
+        .select("full_name, avatar_url, accepting_bookings")
         .eq("tenant_id", clinic.id);
 
       const professionals = (profRows ?? [])
         .filter((p) => p.full_name)
-        .map((p) => ({ name: p.full_name!, avatar_url: p.avatar_url }))
+        .map((p) => ({ name: p.full_name!, avatar_url: p.avatar_url, accepting_bookings: p.accepting_bookings }))
         .sort((a, b) => a.name.localeCompare(b.name));
 
       let bookedSlots: { starts_at: string; professional_name: string }[] = [];
@@ -111,6 +111,21 @@ Deno.serve(async (req) => {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      // Check if professional is accepting bookings
+      const { data: profProfile } = await supabase
+        .from("profiles")
+        .select("accepting_bookings")
+        .eq("tenant_id", clinic.id)
+        .eq("full_name", professional_name.trim())
+        .single();
+
+      if (profProfile && !profProfile.accepting_bookings) {
+        return new Response(
+          JSON.stringify({ error: "professional_not_accepting" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       // Check if slot is already taken
