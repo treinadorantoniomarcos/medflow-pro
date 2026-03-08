@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,16 +29,13 @@ const Onboarding = () => {
     try {
       const clinicId = crypto.randomUUID();
 
-      console.log("Calling complete_onboarding with:", { clinicId, clinicName: clinicName.trim(), fullName: fullName.trim(), phone: phone.trim() || null });
-      
-      const { data, error } = await supabase.rpc("complete_onboarding", {
+      const { error } = await supabase.rpc("complete_onboarding", {
         _clinic_id: clinicId,
         _clinic_name: clinicName.trim(),
         _full_name: fullName.trim(),
         _phone: phone.trim() || null,
       });
 
-      console.log("complete_onboarding result:", { data, error });
       if (error) throw error;
 
       await refreshProfile();
@@ -65,12 +62,9 @@ const Onboarding = () => {
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            {step === 1
-              ? "Vamos configurar sua clínica"
-              : "Agora, seus dados pessoais"}
+            {step === 1 ? "Vamos configurar sua clínica" : "Agora, seus dados pessoais"}
           </p>
 
-          {/* Step indicator */}
           <div className="flex items-center justify-center gap-2 mt-4">
             <div className={`h-2 w-16 rounded-full ${step >= 1 ? "bg-primary" : "bg-muted"}`} />
             <div className={`h-2 w-16 rounded-full ${step >= 2 ? "bg-primary" : "bg-muted"}`} />
@@ -78,7 +72,10 @@ const Onboarding = () => {
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={step === 1 ? (e) => { e.preventDefault(); setStep(2); } : handleSubmit} className="space-y-5">
+          <form
+            onSubmit={step === 1 ? (e) => { e.preventDefault(); setStep(2); } : handleSubmit}
+            className="space-y-5"
+          >
             {step === 1 && (
               <div className="space-y-4 animate-fade-in">
                 <div className="flex items-center gap-2 text-primary mb-2">

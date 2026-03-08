@@ -18,7 +18,7 @@ export interface ProfessionalAppointment {
 }
 
 export const useProfessionalAgenda = (date: Date) => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -50,41 +50,73 @@ export const useProfessionalAgenda = (date: Date) => {
 
   return useQuery({
     queryKey: ["professional-agenda", profile?.tenant_id, profile?.full_name, date.toISOString()],
-    enabled: !!profile?.tenant_id && !!profile?.full_name,
+    enabled: !!profile?.tenant_id && (!!profile?.full_name || !!user?.id),
     queryFn: async () => {
+      const start = startOfDay(date).toISOString();
+      const end = endOfDay(date).toISOString();
+
       const { data, error } = await supabase
         .from("appointments")
         .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes")
         .eq("tenant_id", profile!.tenant_id)
-        .eq("professional_name", profile!.full_name!)
-        .gte("starts_at", startOfDay(date).toISOString())
-        .lte("starts_at", endOfDay(date).toISOString())
+        .eq("professional_user_id", user!.id)
+        .gte("starts_at", start)
+        .lte("starts_at", end)
         .order("starts_at", { ascending: true });
 
       if (error) throw error;
-      return (data ?? []) as ProfessionalAppointment[];
+      if ((data ?? []).length > 0 || !profile?.full_name) {
+        return (data ?? []) as ProfessionalAppointment[];
+      }
+
+      const { data: legacyData, error: legacyError } = await supabase
+        .from("appointments")
+        .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes")
+        .eq("tenant_id", profile.tenant_id)
+        .eq("professional_name", profile.full_name)
+        .gte("starts_at", start)
+        .lte("starts_at", end)
+        .order("starts_at", { ascending: true });
+
+      if (legacyError) throw legacyError;
+      return (legacyData ?? []) as ProfessionalAppointment[];
     },
   });
 };
 
 export const useProfessionalStats = (date: Date) => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
   return useQuery({
     queryKey: ["professional-stats", profile?.tenant_id, profile?.full_name, date.toISOString()],
-    enabled: !!profile?.tenant_id && !!profile?.full_name,
+    enabled: !!profile?.tenant_id && (!!profile?.full_name || !!user?.id),
     queryFn: async () => {
+      const start = startOfDay(date).toISOString();
+      const end = endOfDay(date).toISOString();
+
       const { data, error } = await supabase
         .from("appointments")
         .select("status")
         .eq("tenant_id", profile!.tenant_id)
-        .eq("professional_name", profile!.full_name!)
-        .gte("starts_at", startOfDay(date).toISOString())
-        .lte("starts_at", endOfDay(date).toISOString());
+        .eq("professional_user_id", user!.id)
+        .gte("starts_at", start)
+        .lte("starts_at", end);
 
       if (error) throw error;
+      let rows = data ?? [];
+      if (rows.length === 0 && profile?.full_name) {
+        const { data: legacyData, error: legacyError } = await supabase
+          .from("appointments")
+          .select("status")
+          .eq("tenant_id", profile.tenant_id)
+          .eq("professional_name", profile.full_name)
+          .gte("starts_at", start)
+          .lte("starts_at", end);
 
-      const rows = data ?? [];
+        if (legacyError) throw legacyError;
+        rows = legacyData ?? [];
+      }
+
       return {
         total: rows.length,
         confirmed: rows.filter((r) => r.status === "confirmed").length,

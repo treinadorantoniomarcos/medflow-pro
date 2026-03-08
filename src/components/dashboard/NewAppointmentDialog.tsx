@@ -34,7 +34,7 @@ import { Plus, CalendarPlus, ChevronsUpDown, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePatients } from "@/hooks/use-patients";
 import { cn } from "@/lib/utils";
 
@@ -67,12 +67,28 @@ const NewAppointmentDialog = ({
   const [patientPopoverOpen, setPatientPopoverOpen] = useState(false);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [professionalUserId, setProfessionalUserId] = useState("");
   const [professionalName, setProfessionalName] = useState("");
   const [type, setType] = useState("");
   const [notes, setNotes] = useState("");
 
   // Fetch all patients for the combobox
   const { data: patients = [] } = usePatients("");
+  const { data: professionals = [] } = useQuery({
+    queryKey: ["team-professionals", profile?.tenant_id],
+    enabled: !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .eq("tenant_id", profile!.tenant_id)
+        .not("full_name", "is", null)
+        .order("full_name", { ascending: true });
+
+      if (error) throw error;
+      return (data ?? []) as { user_id: string; full_name: string }[];
+    },
+  });
 
   useEffect(() => {
     if (open) {
@@ -80,6 +96,7 @@ const NewAppointmentDialog = ({
       setTime(defaultTime ?? "");
       setPatientId("");
       setPatientName("");
+      setProfessionalUserId("");
       setProfessionalName("");
       setType("");
       setNotes("");
@@ -97,7 +114,7 @@ const NewAppointmentDialog = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.tenant_id || !user || !patientName.trim()) return;
+    if (!profile?.tenant_id || !user || !patientName.trim() || !professionalName.trim()) return;
 
     setLoading(true);
 
@@ -106,6 +123,7 @@ const NewAppointmentDialog = ({
     const { error } = await supabase.from("appointments").insert({
       tenant_id: profile.tenant_id,
       patient_name: patientName.trim(),
+      professional_user_id: professionalUserId || null,
       professional_name: professionalName.trim(),
       starts_at: startsAt,
       type: type || null,
@@ -118,7 +136,7 @@ const NewAppointmentDialog = ({
       toast.error("Erro ao agendar", { description: error.message });
     } else {
       toast.success("Consulta agendada com sucesso!", {
-        description: "O paciente receberÃ¡ uma confirmaÃ§Ã£o.",
+        description: "O paciente receberá uma confirmação.",
       });
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
@@ -187,8 +205,26 @@ const NewAppointmentDialog = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="professional">Nome do Profissional</Label>
-          <Input id="professional" placeholder="Nome do profissional" value={professionalName} onChange={(e) => setProfessionalName(e.target.value)} required maxLength={100} />
+          <Label>Profissional</Label>
+          <Select
+            value={professionalUserId}
+            onValueChange={(value) => {
+              setProfessionalUserId(value);
+              const prof = professionals.find((item) => item.user_id === value);
+              setProfessionalName(prof?.full_name ?? "");
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o profissional" />
+            </SelectTrigger>
+            <SelectContent>
+              {professionals.map((prof) => (
+                <SelectItem key={prof.user_id} value={prof.user_id}>
+                  {prof.full_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
@@ -196,7 +232,7 @@ const NewAppointmentDialog = ({
             <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="time">HorÃ¡rio</Label>
+            <Label htmlFor="time">Horário</Label>
             <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
           </div>
         </div>
@@ -207,18 +243,18 @@ const NewAppointmentDialog = ({
             <SelectContent>
               <SelectItem value="Primeira consulta">Primeira consulta</SelectItem>
               <SelectItem value="Retorno">Retorno</SelectItem>
-              <SelectItem value="RevisÃ£o">RevisÃ£o</SelectItem>
-              <SelectItem value="EmergÃªncia">EmergÃªncia</SelectItem>
+              <SelectItem value="Revisão">Revisão</SelectItem>
+              <SelectItem value="Emergência">Emergência</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="notes">ObservaÃ§Ãµes</Label>
-          <Textarea id="notes" placeholder="ObservaÃ§Ãµes opcionais..." rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} />
+          <Label htmlFor="notes">Observações</Label>
+          <Textarea id="notes" placeholder="Observações opcionais..." rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} />
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={loading || !patientName.trim()}>{loading ? "Agendando..." : "Agendar"}</Button>
+          <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={loading || !patientName.trim() || !professionalName.trim()}>{loading ? "Agendando..." : "Agendar"}</Button>
         </div>
       </form>
     </DialogContent>
