@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { format, addDays, isBefore, startOfDay, parse } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   CalendarDays,
@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   Stethoscope,
   Phone,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,11 @@ interface ClinicInfo {
   slug: string;
 }
 
+interface Professional {
+  name: string;
+  avatar_url: string | null;
+}
+
 interface WorkHours {
   start: number;
   end: number;
@@ -37,23 +43,38 @@ interface WorkHours {
 
 type Step = "professional" | "datetime" | "info" | "confirmed";
 
+const formatCpf = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+};
+
+const formatPhone = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
 const PublicBooking = () => {
   const { slug } = useParams<{ slug: string }>();
   const [clinic, setClinic] = useState<ClinicInfo | null>(null);
-  const [professionals, setProfessionals] = useState<string[]>([]);
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [workHours, setWorkHours] = useState<WorkHours>({ start: 8, end: 18, slotDuration: 60 });
   const [bookedSlots, setBookedSlots] = useState<{ starts_at: string; professional_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
   const [step, setStep] = useState<Step>("professional");
-  const [selectedProfessional, setSelectedProfessional] = useState("");
+  const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState("");
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
+  const [patientCpf, setPatientCpf] = useState("");
 
   const fetchClinic = async () => {
     try {
@@ -61,11 +82,7 @@ const PublicBooking = () => {
         `${SUPABASE_URL}/functions/v1/public-booking?slug=${slug}`,
         { headers: { apikey: SUPABASE_ANON_KEY } }
       );
-      if (!res.ok) {
-        setError("Clínica não encontrada");
-        setLoading(false);
-        return;
-      }
+      if (!res.ok) { setError("Clínica não encontrada"); setLoading(false); return; }
       const data = await res.json();
       setClinic(data.clinic);
       setProfessionals(data.professionals);
@@ -89,18 +106,11 @@ const PublicBooking = () => {
         const data = await res.json();
         setBookedSlots(data.bookedSlots);
       }
-    } catch {
-      // silent
-    }
+    } catch { /* silent */ }
   };
 
-  useEffect(() => {
-    if (slug) fetchClinic();
-  }, [slug]);
-
-  useEffect(() => {
-    if (selectedDate) fetchSlots(selectedDate);
-  }, [selectedDate]);
+  useEffect(() => { if (slug) fetchClinic(); }, [slug]);
+  useEffect(() => { if (selectedDate) fetchSlots(selectedDate); }, [selectedDate]);
 
   const timeSlots = useMemo(() => {
     const slots: string[] = [];
@@ -121,14 +131,16 @@ const PublicBooking = () => {
       const slotIso = `${dateStr}T${time}:00`;
       return !bookedSlots.some(
         (b) =>
-          b.professional_name === selectedProfessional &&
+          b.professional_name === selectedProfessional.name &&
           b.starts_at.startsWith(slotIso.slice(0, 16))
       );
     });
   }, [timeSlots, bookedSlots, selectedDate, selectedProfessional]);
 
+  const isFormValid = patientName.trim().length >= 3 && patientPhone.replace(/\D/g, "").length >= 10 && patientCpf.replace(/\D/g, "").length === 11;
+
   const handleSubmit = async () => {
-    if (!selectedDate || !selectedTime || !patientName.trim()) return;
+    if (!selectedDate || !selectedTime || !selectedProfessional || !isFormValid) return;
     setSubmitting(true);
 
     const startsAt = `${format(selectedDate, "yyyy-MM-dd")}T${selectedTime}:00`;
@@ -136,15 +148,13 @@ const PublicBooking = () => {
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/public-booking`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: SUPABASE_ANON_KEY,
-        },
+        headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
         body: JSON.stringify({
           slug,
           patient_name: patientName.trim(),
-          patient_phone: patientPhone.trim() || null,
-          professional_name: selectedProfessional,
+          patient_phone: patientPhone.replace(/\D/g, ""),
+          patient_cpf: patientCpf.replace(/\D/g, ""),
+          professional_name: selectedProfessional.name,
           starts_at: startsAt,
         }),
       });
@@ -162,7 +172,6 @@ const PublicBooking = () => {
         setSubmitting(false);
         return;
       }
-
       setStep("confirmed");
     } catch {
       toast.error("Erro de conexão. Tente novamente.");
@@ -184,9 +193,7 @@ const PublicBooking = () => {
         <div className="text-center space-y-3">
           <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/40" />
           <h1 className="text-xl font-bold text-foreground">Clínica não encontrada</h1>
-          <p className="text-sm text-muted-foreground">
-            Verifique o link de agendamento com sua clínica.
-          </p>
+          <p className="text-sm text-muted-foreground">Verifique o link de agendamento com sua clínica.</p>
         </div>
       </div>
     );
@@ -197,11 +204,7 @@ const PublicBooking = () => {
       {/* Header */}
       <header className="border-b border-border bg-card px-4 py-4">
         <div className="max-w-xl mx-auto flex items-center gap-3">
-          <img
-            src={clinic.logo_url || medfluxLogo}
-            alt={clinic.name}
-            className="h-10 w-10 rounded-lg object-cover"
-          />
+          <img src={clinic.logo_url || medfluxLogo} alt={clinic.name} className="h-10 w-10 rounded-lg object-cover" />
           <div>
             <h1 className="text-lg font-bold text-foreground">{clinic.name}</h1>
             <p className="text-xs text-muted-foreground">Agendamento online</p>
@@ -219,9 +222,7 @@ const PublicBooking = () => {
                   key={s}
                   className={cn(
                     "h-2 w-12 rounded-full transition-colors",
-                    step === s || (["professional", "datetime", "info"].indexOf(step) > i)
-                      ? "bg-primary"
-                      : "bg-muted"
+                    step === s || (["professional", "datetime", "info"].indexOf(step) > i) ? "bg-primary" : "bg-muted"
                   )}
                 />
               ))}
@@ -234,23 +235,19 @@ const PublicBooking = () => {
               <div className="text-center space-y-1">
                 <Stethoscope className="h-8 w-8 mx-auto text-primary" />
                 <h2 className="text-xl font-bold text-foreground">Escolha o profissional</h2>
-                <p className="text-sm text-muted-foreground">
-                  Selecione com quem deseja agendar
-                </p>
+                <p className="text-sm text-muted-foreground">Selecione com quem deseja agendar</p>
               </div>
 
               <div className="space-y-2">
                 {professionals.length === 0 ? (
-                  <p className="text-center text-sm text-muted-foreground py-8">
-                    Nenhum profissional disponível no momento.
-                  </p>
+                  <p className="text-center text-sm text-muted-foreground py-8">Nenhum profissional disponível no momento.</p>
                 ) : (
                   professionals.map((p) => (
                     <button
-                      key={p}
+                      key={p.name}
                       className={cn(
                         "w-full flex items-center gap-3 rounded-xl border p-4 text-left transition-all",
-                        selectedProfessional === p
+                        selectedProfessional?.name === p.name
                           ? "border-primary bg-primary/5 shadow-sm"
                           : "border-border bg-card hover:border-primary/40"
                       )}
@@ -259,10 +256,18 @@ const PublicBooking = () => {
                         setStep("datetime");
                       }}
                     >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shrink-0">
-                        {p.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
-                      </div>
-                      <span className="text-sm font-semibold text-foreground">{p}</span>
+                      {p.avatar_url ? (
+                        <img
+                          src={p.avatar_url}
+                          alt={p.name}
+                          className="h-12 w-12 rounded-full object-cover border-2 border-primary/20 shrink-0"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shrink-0">
+                          {p.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
+                        </div>
+                      )}
+                      <span className="text-sm font-semibold text-foreground">{p.name}</span>
                     </button>
                   ))
                 )}
@@ -285,12 +290,11 @@ const PublicBooking = () => {
                 <CalendarDays className="h-8 w-8 mx-auto text-primary" />
                 <h2 className="text-xl font-bold text-foreground">Escolha a data e horário</h2>
                 <p className="text-sm text-muted-foreground">
-                  Profissional: <span className="font-medium text-foreground">{selectedProfessional}</span>
+                  Profissional: <span className="font-medium text-foreground">{selectedProfessional?.name}</span>
                 </p>
               </div>
 
               <div className="flex flex-col md:flex-row gap-4">
-                {/* Calendar */}
                 <div className="bg-card rounded-xl border border-border p-3 flex justify-center">
                   <Calendar
                     mode="single"
@@ -302,16 +306,13 @@ const PublicBooking = () => {
                   />
                 </div>
 
-                {/* Time slots */}
                 {selectedDate && (
                   <div className="flex-1 bg-card rounded-xl border border-border p-4 space-y-3">
                     <p className="text-sm font-semibold text-foreground">
                       {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
                     </p>
                     {availableSlots.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-4 text-center">
-                        Nenhum horário disponível nesta data.
-                      </p>
+                      <p className="text-sm text-muted-foreground py-4 text-center">Nenhum horário disponível nesta data.</p>
                     ) : (
                       <div className="grid grid-cols-3 gap-2 max-h-[260px] overflow-y-auto">
                         {availableSlots.map((time) => (
@@ -323,10 +324,7 @@ const PublicBooking = () => {
                                 ? "border-primary bg-primary text-primary-foreground"
                                 : "border-border bg-card text-foreground hover:border-primary/40"
                             )}
-                            onClick={() => {
-                              setSelectedTime(time);
-                              setStep("info");
-                            }}
+                            onClick={() => { setSelectedTime(time); setStep("info"); }}
                           >
                             {time}
                           </button>
@@ -354,7 +352,7 @@ const PublicBooking = () => {
                 <User className="h-8 w-8 mx-auto text-primary" />
                 <h2 className="text-xl font-bold text-foreground">Seus dados</h2>
                 <p className="text-sm text-muted-foreground">
-                  {selectedProfessional} — {selectedDate && format(selectedDate, "dd/MM")} às {selectedTime}
+                  {selectedProfessional?.name} — {selectedDate && format(selectedDate, "dd/MM")} às {selectedTime}
                 </p>
               </div>
 
@@ -368,9 +366,13 @@ const PublicBooking = () => {
                     onChange={(e) => setPatientName(e.target.value)}
                     maxLength={100}
                   />
+                  {patientName.length > 0 && patientName.trim().length < 3 && (
+                    <p className="text-xs text-destructive">Nome deve ter pelo menos 3 caracteres</p>
+                  )}
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="patientPhone">Telefone (opcional)</Label>
+                  <Label htmlFor="patientPhone">WhatsApp *</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -379,20 +381,39 @@ const PublicBooking = () => {
                       placeholder="(11) 99999-9999"
                       className="pl-9"
                       value={patientPhone}
-                      onChange={(e) => setPatientPhone(e.target.value)}
-                      maxLength={20}
+                      onChange={(e) => setPatientPhone(formatPhone(e.target.value))}
+                      maxLength={16}
                     />
                   </div>
+                  {patientPhone.length > 0 && patientPhone.replace(/\D/g, "").length < 10 && (
+                    <p className="text-xs text-destructive">Informe um número de WhatsApp válido</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="patientCpf">CPF *</Label>
+                  <div className="relative">
+                    <CreditCard className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="patientCpf"
+                      placeholder="000.000.000-00"
+                      className="pl-9"
+                      value={patientCpf}
+                      onChange={(e) => setPatientCpf(formatCpf(e.target.value))}
+                      maxLength={14}
+                    />
+                  </div>
+                  {patientCpf.length > 0 && patientCpf.replace(/\D/g, "").length < 11 && (
+                    <p className="text-xs text-destructive">Informe um CPF válido com 11 dígitos</p>
+                  )}
                 </div>
 
                 {/* Summary */}
                 <div className="rounded-lg bg-secondary/50 p-3 space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Resumo
-                  </p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Resumo</p>
                   <div className="flex items-center gap-2 text-sm text-foreground">
                     <Stethoscope className="h-3.5 w-3.5 text-primary" />
-                    {selectedProfessional}
+                    {selectedProfessional?.name}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-foreground">
                     <CalendarDays className="h-3.5 w-3.5 text-primary" />
@@ -404,11 +425,7 @@ const PublicBooking = () => {
                   </div>
                 </div>
 
-                <Button
-                  className="w-full"
-                  disabled={!patientName.trim() || submitting}
-                  onClick={handleSubmit}
-                >
+                <Button className="w-full" disabled={!isFormValid || submitting} onClick={handleSubmit}>
                   {submitting ? "Agendando..." : "Confirmar agendamento"}
                 </Button>
               </div>
@@ -418,11 +435,11 @@ const PublicBooking = () => {
           {/* Step 4: Confirmation */}
           {step === "confirmed" && (
             <div className="text-center space-y-4 py-12 animate-fade-in">
-              <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
+              <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
               <h2 className="text-2xl font-bold text-foreground">Agendamento confirmado!</h2>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">{selectedProfessional}</span>
+                  <span className="font-medium text-foreground">{selectedProfessional?.name}</span>
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {selectedDate && format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })} às {selectedTime}
@@ -432,11 +449,12 @@ const PublicBooking = () => {
                 variant="outline"
                 onClick={() => {
                   setStep("professional");
-                  setSelectedProfessional("");
+                  setSelectedProfessional(null);
                   setSelectedDate(undefined);
                   setSelectedTime("");
                   setPatientName("");
                   setPatientPhone("");
+                  setPatientCpf("");
                 }}
               >
                 Fazer novo agendamento
@@ -446,7 +464,6 @@ const PublicBooking = () => {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border bg-card px-4 py-3 text-center">
         <p className="text-xs text-muted-foreground">
           Powered by <span className="font-semibold text-primary">MedFlux Pro</span>
