@@ -1,6 +1,10 @@
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
-import { Settings, MessageCircle, Bell, Clock, CheckCircle2, XCircle, AlertTriangle, Loader2, Link2, Copy, Check, Camera, UserCircle } from "lucide-react";
+import {
+  Settings, MessageCircle, Bell, Clock, CheckCircle2, XCircle,
+  AlertTriangle, Loader2, Link2, Copy, Check, Camera, UserCircle,
+  Mail, Share2, Download,
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -14,10 +18,11 @@ import { useClinicSettings, useUpdateClinicSettings, useNotificationsQueue } fro
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { QRCodeSVG } from "qrcode.react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
@@ -35,19 +40,23 @@ const Configuracoes = () => {
   const [copied, setCopied] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const qrRef = useRef<HTMLDivElement>(null);
 
-  const { data: clinicSlug } = useQuery({
+  const { data: clinicData } = useQuery({
     queryKey: ["clinic-slug", profile?.tenant_id],
     enabled: !!profile?.tenant_id,
     queryFn: async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("slug")
+        .select("slug, name")
         .eq("id", profile!.tenant_id)
         .single();
-      return data?.slug ?? null;
+      return data;
     },
   });
+
+  const clinicSlug = clinicData?.slug ?? null;
+  const clinicName = clinicData?.name ?? "";
 
   const bookingUrl = clinicSlug
     ? `${window.location.origin}/agendar/${clinicSlug}`
@@ -62,43 +71,23 @@ const Configuracoes = () => {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Selecione um arquivo de imagem.");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 2MB.");
-      return;
-    }
+    if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem."); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error("A imagem deve ter no máximo 2MB."); return; }
 
     setUploadingAvatar(true);
     try {
       const ext = file.name.split(".").pop() ?? "jpg";
       const path = `${user.id}/avatar.${ext}`;
-
-      // Remove old avatar files
       const { data: existing } = await supabase.storage.from("avatars").list(user.id);
       if (existing && existing.length > 0) {
         await supabase.storage.from("avatars").remove(existing.map(f => `${user.id}/${f.name}`));
       }
-
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(path, file, { upsert: true });
-
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
-
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: avatarUrl })
-        .eq("user_id", user.id);
-
+      const { error: updateError } = await supabase.from("profiles").update({ avatar_url: avatarUrl }).eq("user_id", user.id);
       if (updateError) throw updateError;
-
       await refreshProfile();
       toast.success("Foto de perfil atualizada!");
     } catch (err: any) {
@@ -107,6 +96,52 @@ const Configuracoes = () => {
       setUploadingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const handleDownloadQR = useCallback(() => {
+    if (!qrRef.current) return;
+    const svg = qrRef.current.querySelector("svg");
+    if (!svg) return;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d")!;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = 512;
+      canvas.height = 512;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, 512, 512);
+      ctx.drawImage(img, 0, 0, 512, 512);
+      const link = document.createElement("a");
+      link.download = `qrcode-${clinicSlug ?? "agenda"}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    };
+    img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+  }, [clinicSlug]);
+
+  const handleShareWhatsApp = () => {
+    if (!bookingUrl) return;
+    const text = `Agende sua consulta na ${clinicName}: ${bookingUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  const handleShareEmail = () => {
+    if (!bookingUrl) return;
+    const subject = `Agende sua consulta - ${clinicName}`;
+    const body = `Olá!\n\nAgende sua consulta online:\n${bookingUrl}\n\nAtenciosamente,\n${clinicName}`;
+    window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+  };
+
+  const handleShareNative = async () => {
+    if (!bookingUrl || !navigator.share) return;
+    try {
+      await navigator.share({
+        title: `Agende sua consulta - ${clinicName}`,
+        text: `Agende sua consulta online na ${clinicName}`,
+        url: bookingUrl,
+      });
+    } catch { /* cancelled */ }
   };
 
   const pendingCount = queue.filter((n) => n.status === "pending").length;
@@ -131,7 +166,7 @@ const Configuracoes = () => {
           </div>
         </motion.div>
 
-        {/* Booking link card */}
+        {/* Booking link + QR code card */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -146,34 +181,100 @@ const Configuracoes = () => {
                 <div className="flex-1">
                   <CardTitle className="text-base">Link de Agendamento Online</CardTitle>
                   <CardDescription>
-                    Compartilhe este link no WhatsApp, Instagram ou site para seus pacientes agendarem
+                    Compartilhe por WhatsApp, e-mail, Instagram ou redes sociais
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-5">
               {bookingUrl ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    readOnly
-                    value={bookingUrl}
-                    className="bg-secondary border-0 text-sm font-mono"
-                    onFocus={(e) => e.target.select()}
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => {
-                      navigator.clipboard.writeText(bookingUrl);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }}
-                    title="Copiar link"
-                  >
-                    {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
+                <>
+                  {/* Link + copy */}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      readOnly
+                      value={bookingUrl}
+                      className="bg-secondary border-0 text-sm font-mono"
+                      onFocus={(e) => e.target.select()}
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(bookingUrl);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      title="Copiar link"
+                    >
+                      {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+
+                  <Separator />
+
+                  {/* QR Code + share buttons */}
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
+                    {/* QR Code */}
+                    <div className="flex flex-col items-center gap-3">
+                      <div
+                        ref={qrRef}
+                        className="rounded-xl border border-border bg-card p-4"
+                      >
+                        <QRCodeSVG
+                          value={bookingUrl}
+                          size={160}
+                          level="M"
+                          includeMargin={false}
+                          bgColor="transparent"
+                          fgColor="currentColor"
+                          className="text-foreground"
+                        />
+                      </div>
+                      <Button variant="outline" size="sm" onClick={handleDownloadQR}>
+                        <Download className="h-3.5 w-3.5 mr-1.5" />
+                        Baixar QR Code
+                      </Button>
+                    </div>
+
+                    {/* Share buttons */}
+                    <div className="flex-1 space-y-3 w-full sm:w-auto">
+                      <p className="text-sm font-semibold text-foreground">Compartilhar via</p>
+                      <div className="grid gap-2">
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start"
+                          onClick={handleShareWhatsApp}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2 text-primary" />
+                          WhatsApp
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start"
+                          onClick={handleShareEmail}
+                        >
+                          <Mail className="h-4 w-4 mr-2 text-primary" />
+                          E-mail
+                        </Button>
+                        {typeof navigator !== "undefined" && !!navigator.share && (
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={handleShareNative}
+                          >
+                            <Share2 className="h-4 w-4 mr-2 text-primary" />
+                            Mais opções (Instagram, etc.)
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Use o QR Code em materiais impressos, stories do Instagram ou cartão de visita digital.
+                      </p>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Nenhum slug configurado para a clínica. Entre em contato para configurar.
@@ -263,6 +364,7 @@ const Configuracoes = () => {
           </Card>
         </motion.div>
 
+        {/* WhatsApp settings card */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
