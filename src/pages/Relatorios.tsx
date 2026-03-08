@@ -17,6 +17,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useReportData } from "@/hooks/use-reports";
+import { exportCSV, exportPDF } from "@/lib/export-reports";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   BarChart,
   Bar,
