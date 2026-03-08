@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { format, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -11,6 +11,8 @@ import {
   Stethoscope,
   Phone,
   CreditCard,
+  Download,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +77,23 @@ const PublicBooking = () => {
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [patientCpf, setPatientCpf] = useState("");
+
+  const confirmationRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleShare = async () => {
+    if (!navigator.share || !selectedProfessional || !selectedDate) return;
+    const dateStr = format(selectedDate, "dd/MM/yyyy");
+    try {
+      await navigator.share({
+        title: `Agendamento - ${clinic?.name}`,
+        text: `Consulta com ${selectedProfessional.name} em ${dateStr} às ${selectedTime} - ${clinic?.name}`,
+      });
+    } catch { /* user cancelled */ }
+  };
 
   const fetchClinic = async () => {
     try {
@@ -434,31 +453,100 @@ const PublicBooking = () => {
 
           {/* Step 4: Confirmation */}
           {step === "confirmed" && (
-            <div className="text-center space-y-4 py-12 animate-fade-in">
-              <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
-              <h2 className="text-2xl font-bold text-foreground">Agendamento confirmado!</h2>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">{selectedProfessional?.name}</span>
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {selectedDate && format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })} às {selectedTime}
-                </p>
+            <div className="space-y-6 py-8 animate-fade-in">
+              <div className="text-center space-y-2">
+                <CheckCircle2 className="h-16 w-16 mx-auto text-primary" />
+                <h2 className="text-2xl font-bold text-foreground">Agendamento confirmado!</h2>
+                <p className="text-sm text-muted-foreground">Guarde este comprovante para sua referência.</p>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setStep("professional");
-                  setSelectedProfessional(null);
-                  setSelectedDate(undefined);
-                  setSelectedTime("");
-                  setPatientName("");
-                  setPatientPhone("");
-                  setPatientCpf("");
-                }}
-              >
-                Fazer novo agendamento
-              </Button>
+
+              {/* Confirmation card */}
+              <div ref={confirmationRef} data-print-area className="bg-card rounded-xl border border-border p-6 space-y-5">
+                <div className="flex items-center gap-3 pb-4 border-b border-border">
+                  <img src={clinic.logo_url || medfluxLogo} alt={clinic.name} className="h-10 w-10 rounded-lg object-cover" />
+                  <div>
+                    <p className="font-bold text-foreground">{clinic.name}</p>
+                    <p className="text-xs text-muted-foreground">Comprovante de Agendamento</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <User className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Paciente</p>
+                      <p className="text-sm font-semibold text-foreground">{patientName}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    {selectedProfessional?.avatar_url ? (
+                      <img src={selectedProfessional.avatar_url} alt="" className="h-4 w-4 mt-0.5 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <Stethoscope className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                    )}
+                    <div>
+                      <p className="text-xs text-muted-foreground">Profissional</p>
+                      <p className="text-sm font-semibold text-foreground">{selectedProfessional?.name}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <CalendarDays className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Data</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {selectedDate && format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Clock className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Horário</p>
+                      <p className="text-sm font-semibold text-foreground">{selectedTime}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-border text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Em caso de impossibilidade, entre em contato para reagendar.
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button className="flex-1" onClick={handlePrint}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Salvar comprovante
+                </Button>
+                {!!navigator.share && (
+                  <Button variant="outline" className="flex-1" onClick={handleShare}>
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Compartilhar
+                  </Button>
+                )}
+              </div>
+
+              <div className="text-center">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setStep("professional");
+                    setSelectedProfessional(null);
+                    setSelectedDate(undefined);
+                    setSelectedTime("");
+                    setPatientName("");
+                    setPatientPhone("");
+                    setPatientCpf("");
+                  }}
+                >
+                  Fazer novo agendamento
+                </Button>
+              </div>
             </div>
           )}
         </div>
