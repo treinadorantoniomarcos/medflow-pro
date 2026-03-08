@@ -220,6 +220,19 @@ const TeamManagement = () => {
                     )}
                   </div>
 
+                  {/* Booking status indicator */}
+                  <span
+                    className={cn(
+                      "flex items-center gap-1 shrink-0 text-[10px] font-medium rounded-full px-2 py-0.5 border",
+                      member.accepting_bookings
+                        ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
+                        : "bg-muted text-muted-foreground border-border"
+                    )}
+                  >
+                    <CircleDot className="h-2.5 w-2.5" />
+                    {member.accepting_bookings ? "Aberto" : "Fechado"}
+                  </span>
+
                   {/* Role badge */}
                   <Badge variant="secondary" className={cn("shrink-0 text-[10px]", rl.className)}>
                     {rl.label}
