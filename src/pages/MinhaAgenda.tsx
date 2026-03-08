@@ -73,6 +73,37 @@ const MinhaAgenda = () => {
     }
   };
 
+  const handleWhatsAppReminder = async (apt: typeof appointments[number]) => {
+    // Look up patient phone from patients table
+    const { data: patient } = await supabase
+      .from("patients")
+      .select("phone")
+      .eq("tenant_id", profile!.tenant_id)
+      .eq("full_name", apt.patient_name)
+      .maybeSingle();
+
+    if (!patient?.phone) {
+      toast.error("Telefone não encontrado", {
+        description: "O paciente não possui telefone cadastrado.",
+      });
+      return;
+    }
+
+    const dateStr = format(new Date(apt.starts_at), "dd/MM/yyyy", { locale: ptBR });
+    const timeStr = format(new Date(apt.starts_at), "HH:mm");
+
+    const message = buildAppointmentReminder({
+      patientName: apt.patient_name,
+      date: dateStr,
+      time: timeStr,
+      professionalName: apt.professional_name,
+      type: apt.type,
+    });
+
+    const url = buildWhatsAppUrl(patient.phone, message);
+    if (url) window.open(url, "_blank");
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-4">
