@@ -60,7 +60,7 @@ const TeamManagement = () => {
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, avatar_url, phone")
+        .select("id, user_id, full_name, avatar_url, phone, accepting_bookings")
         .eq("tenant_id", profile!.tenant_id);
 
       if (error) throw error;
