@@ -35,6 +35,7 @@ interface TeamMember {
   full_name: string | null;
   avatar_url: string | null;
   phone: string | null;
+  accepting_bookings: boolean;
   role?: string;
 }
 
