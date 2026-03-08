@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN accepting_bookings boolean NOT NULL DEFAULT true;

@@ -31,6 +31,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { buildWhatsAppUrl, buildAppointmentReminder } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
 
 const statusActions: { from: AppointmentStatus; to: AppointmentStatus; label: string; icon: React.ReactNode }[] = [
@@ -47,6 +48,26 @@ const MinhaAgenda = () => {
 
   const { data: appointments = [], isLoading } = useProfessionalAgenda(selectedDate);
   const { data: stats } = useProfessionalStats(selectedDate);
+
+  const acceptingBookings = profile?.accepting_bookings ?? true;
+  const [toggling, setToggling] = useState(false);
+
+  const handleToggleBookings = async () => {
+    if (!profile?.user_id) return;
+    setToggling(true);
+    const newValue = !acceptingBookings;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ accepting_bookings: newValue })
+      .eq("user_id", profile.user_id);
+    if (error) {
+      toast.error("Erro ao atualizar disponibilidade");
+    } else {
+      toast.success(newValue ? "Agendamento aberto!" : "Agendamento fechado!");
+      queryClient.invalidateQueries({ queryKey: ["auth-profile"] });
+    }
+    setToggling(false);
+  };
 
   const goPrev = () => setSelectedDate((d) => subDays(d, 1));
   const goNext = () => setSelectedDate((d) => addDays(d, 1));
@@ -137,12 +158,29 @@ const MinhaAgenda = () => {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-            Agenda
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {profile?.full_name ?? "Profissional"}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+                Agenda
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {profile?.full_name ?? "Profissional"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "text-xs font-medium",
+                acceptingBookings ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+              )}>
+                {acceptingBookings ? "Aberto" : "Fechado"}
+              </span>
+              <Switch
+                checked={acceptingBookings}
+                onCheckedChange={handleToggleBookings}
+                disabled={toggling}
+              />
+            </div>
+          </div>
         </motion.div>
 
         {/* Metric cards row */}
