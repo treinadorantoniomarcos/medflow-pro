@@ -59,6 +59,56 @@ const Configuracoes = () => {
     updateSettings.mutate({ whatsapp_reminders_enabled: !whatsappEnabled });
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 2MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+
+      // Remove old avatar files
+      const { data: existing } = await supabase.storage.from("avatars").list(user.id);
+      if (existing && existing.length > 0) {
+        await supabase.storage.from("avatars").remove(existing.map(f => `${user.id}/${f.name}`));
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: avatarUrl })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+
+      await refreshProfile();
+      toast.success("Foto de perfil atualizada!");
+    } catch (err: any) {
+      toast.error("Erro ao enviar foto", { description: err.message });
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const pendingCount = queue.filter((n) => n.status === "pending").length;
   const sentCount = queue.filter((n) => n.status === "sent" || n.status === "ready").length;
   const failedCount = queue.filter((n) => n.status === "failed").length;
