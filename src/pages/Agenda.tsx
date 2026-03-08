@@ -50,6 +50,15 @@ const Agenda = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedProfessional, setSelectedProfessional] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<AppointmentStatus | "all">("all");
+  const [slotDialogOpen, setSlotDialogOpen] = useState(false);
+  const [slotDate, setSlotDate] = useState("");
+  const [slotTime, setSlotTime] = useState("");
+
+  const handleSlotClick = useCallback((day: Date, hour: number) => {
+    setSlotDate(format(day, "yyyy-MM-dd"));
+    setSlotTime(`${String(hour).padStart(2, "0")}:00`);
+    setSlotDialogOpen(true);
+  }, []);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
