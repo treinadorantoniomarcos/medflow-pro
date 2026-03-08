@@ -1,6 +1,6 @@
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
-import { Settings, MessageCircle, Bell, Clock, CheckCircle2, XCircle, AlertTriangle, Loader2, Link2, Copy, Check } from "lucide-react";
+import { Settings, MessageCircle, Bell, Clock, CheckCircle2, XCircle, AlertTriangle, Loader2, Link2, Copy, Check, Camera, UserCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,8 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
   pending: { label: "Pendente", icon: <Clock className="h-3 w-3" />, className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
@@ -27,11 +28,13 @@ const statusConfig: Record<string, { label: string; icon: React.ReactNode; class
 };
 
 const Configuracoes = () => {
-  const { profile } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const { data: settings, isLoading: loadingSettings } = useClinicSettings();
   const updateSettings = useUpdateClinicSettings();
   const { data: queue = [], isLoading: loadingQueue } = useNotificationsQueue();
   const [copied, setCopied] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: clinicSlug } = useQuery({
     queryKey: ["clinic-slug", profile?.tenant_id],
@@ -54,6 +57,56 @@ const Configuracoes = () => {
 
   const handleToggleWhatsApp = () => {
     updateSettings.mutate({ whatsapp_reminders_enabled: !whatsappEnabled });
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 2MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+
+      // Remove old avatar files
+      const { data: existing } = await supabase.storage.from("avatars").list(user.id);
+      if (existing && existing.length > 0) {
+        await supabase.storage.from("avatars").remove(existing.map(f => `${user.id}/${f.name}`));
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: avatarUrl })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+
+      await refreshProfile();
+      toast.success("Foto de perfil atualizada!");
+    } catch (err: any) {
+      toast.error("Erro ao enviar foto", { description: err.message });
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const pendingCount = queue.filter((n) => n.status === "pending").length;
@@ -130,7 +183,86 @@ const Configuracoes = () => {
           </Card>
         </motion.div>
 
-        {/* WhatsApp settings card */}
+        {/* Profile photo card */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.04 }}
+        >
+          <Card className="shadow-soft">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                  <UserCircle className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-base">Foto de Perfil</CardTitle>
+                  <CardDescription>
+                    Esta foto será exibida na página de agendamento online para os pacientes
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-5">
+                <div className="relative group">
+                  {profile?.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt="Foto de perfil"
+                      className="h-20 w-20 rounded-full object-cover border-2 border-primary/20"
+                    />
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary text-xl font-bold">
+                      {profile?.full_name?.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase() ?? "?"}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    {uploadingAvatar ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-background" />
+                    ) : (
+                      <Camera className="h-5 w-5 text-background" />
+                    )}
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-foreground">{profile?.full_name ?? "—"}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                  >
+                    {uploadingAvatar ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="h-3.5 w-3.5 mr-1.5" />
+                        {profile?.avatar_url ? "Trocar foto" : "Enviar foto"}
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground">JPG ou PNG, máx. 2MB</p>
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}

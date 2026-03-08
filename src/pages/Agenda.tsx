@@ -1,19 +1,15 @@
 import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  addMonths,
   addDays,
   addWeeks,
-  addYears,
   endOfWeek,
   format,
   isSameDay,
   isToday,
   startOfWeek,
-  subMonths,
   subDays,
   subWeeks,
-  subYears,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -131,61 +127,18 @@ const Agenda = () => {
 
   const goToToday = () => setCurrentDate(new Date());
   const goPrev = () => {
-    switch (selectedPeriod) {
-      case "today":
-        setCurrentDate((d) => subDays(d, 1));
-        return;
-      case "week":
-        setCurrentDate((d) => subWeeks(d, 1));
-        return;
-      case "15days":
-        setCurrentDate((d) => subDays(d, 15));
-        return;
-      case "month":
-        setCurrentDate((d) => subMonths(d, 1));
-        return;
-      case "bimester":
-        setCurrentDate((d) => subMonths(d, 2));
-        return;
-      case "semester":
-        setCurrentDate((d) => subMonths(d, 6));
-        return;
-      case "year":
-        setCurrentDate((d) => subYears(d, 1));
-        return;
-      default:
-        setCurrentDate((d) => subWeeks(d, 1));
-        return;
+    if (selectedPeriod === "today") {
+      setCurrentDate((d) => subDays(d, 1));
+      return;
     }
+    setCurrentDate((d) => subWeeks(d, 1));
   };
-
   const goNext = () => {
-    switch (selectedPeriod) {
-      case "today":
-        setCurrentDate((d) => addDays(d, 1));
-        return;
-      case "week":
-        setCurrentDate((d) => addWeeks(d, 1));
-        return;
-      case "15days":
-        setCurrentDate((d) => addDays(d, 15));
-        return;
-      case "month":
-        setCurrentDate((d) => addMonths(d, 1));
-        return;
-      case "bimester":
-        setCurrentDate((d) => addMonths(d, 2));
-        return;
-      case "semester":
-        setCurrentDate((d) => addMonths(d, 6));
-        return;
-      case "year":
-        setCurrentDate((d) => addYears(d, 1));
-        return;
-      default:
-        setCurrentDate((d) => addWeeks(d, 1));
-        return;
+    if (selectedPeriod === "today") {
+      setCurrentDate((d) => addDays(d, 1));
+      return;
     }
+    setCurrentDate((d) => addWeeks(d, 1));
   };
 
   const hasFilters = selectedProfessional !== "all" || selectedStatus !== "all";
