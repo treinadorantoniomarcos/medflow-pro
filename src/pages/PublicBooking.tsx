@@ -78,6 +78,23 @@ const PublicBooking = () => {
   const [patientPhone, setPatientPhone] = useState("");
   const [patientCpf, setPatientCpf] = useState("");
 
+  const confirmationRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleShare = async () => {
+    if (!navigator.share || !selectedProfessional || !selectedDate) return;
+    const dateStr = format(selectedDate, "dd/MM/yyyy");
+    try {
+      await navigator.share({
+        title: `Agendamento - ${clinic?.name}`,
+        text: `Consulta com ${selectedProfessional.name} em ${dateStr} às ${selectedTime} - ${clinic?.name}`,
+      });
+    } catch { /* user cancelled */ }
+  };
+
   const fetchClinic = async () => {
     try {
       const res = await fetch(
