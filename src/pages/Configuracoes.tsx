@@ -2,7 +2,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
 import {
   Settings, MessageCircle, Bell, Clock, CheckCircle2, XCircle,
-  AlertTriangle, Loader2, Link2, Copy, Check, Camera, UserCircle,
+  AlertTriangle, Link2, Copy, Check,
   Mail, Share2, Download,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
