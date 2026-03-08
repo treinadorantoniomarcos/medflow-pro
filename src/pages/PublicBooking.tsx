@@ -35,6 +35,7 @@ interface ClinicInfo {
 interface Professional {
   name: string;
   avatar_url: string | null;
+  accepting_bookings: boolean;
 }
 
 interface WorkHours {
