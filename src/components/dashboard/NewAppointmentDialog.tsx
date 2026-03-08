@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,21 +17,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, CalendarPlus } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Plus, CalendarPlus, ChevronsUpDown, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePatients } from "@/hooks/use-patients";
+import { cn } from "@/lib/utils";
 
 interface NewAppointmentDialogProps {
-  /** Control open state externally */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** Pre-fill date (YYYY-MM-DD) */
   defaultDate?: string;
-  /** Pre-fill time (HH:mm) */
   defaultTime?: string;
-  /** Hide the trigger button when controlled externally */
   hideTrigger?: boolean;
 }
 
@@ -51,18 +62,23 @@ const NewAppointmentDialog = ({
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (controlledOnOpenChange ?? (() => {})) : setInternalOpen;
 
+  const [patientId, setPatientId] = useState("");
   const [patientName, setPatientName] = useState("");
+  const [patientPopoverOpen, setPatientPopoverOpen] = useState(false);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [professionalName, setProfessionalName] = useState("");
   const [type, setType] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Sync defaults when dialog opens
+  // Fetch all patients for the combobox
+  const { data: patients = [] } = usePatients("");
+
   useEffect(() => {
     if (open) {
       setDate(defaultDate ?? "");
       setTime(defaultTime ?? "");
+      setPatientId("");
       setPatientName("");
       setProfessionalName("");
       setType("");
@@ -70,9 +86,18 @@ const NewAppointmentDialog = ({
     }
   }, [open, defaultDate, defaultTime]);
 
+  const handleSelectPatient = (id: string) => {
+    const patient = patients.find((p) => p.id === id);
+    if (patient) {
+      setPatientId(patient.id);
+      setPatientName(patient.full_name);
+    }
+    setPatientPopoverOpen(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.tenant_id || !user) return;
+    if (!profile?.tenant_id || !user || !patientName.trim()) return;
 
     setLoading(true);
 
@@ -111,10 +136,54 @@ const NewAppointmentDialog = ({
         </DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        {/* Patient combobox */}
         <div className="space-y-2">
-          <Label htmlFor="patient">Nome do Paciente</Label>
-          <Input id="patient" placeholder="Nome completo" value={patientName} onChange={(e) => setPatientName(e.target.value)} required maxLength={100} />
+          <Label>Paciente</Label>
+          <Popover open={patientPopoverOpen} onOpenChange={setPatientPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={patientPopoverOpen}
+                className="w-full justify-between font-normal"
+              >
+                {patientName || "Selecione um paciente..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Buscar paciente..." />
+                <CommandList>
+                  <CommandEmpty>Nenhum paciente encontrado.</CommandEmpty>
+                  <CommandGroup>
+                    {patients.map((p) => (
+                      <CommandItem
+                        key={p.id}
+                        value={p.full_name}
+                        onSelect={() => handleSelectPatient(p.id)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            patientId === p.id ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <div>
+                          <span className="text-sm font-medium">{p.full_name}</span>
+                          {p.phone && (
+                            <span className="ml-2 text-xs text-muted-foreground">{p.phone}</span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="professional">Nome do Profissional</Label>
           <Input id="professional" placeholder="Nome do profissional" value={professionalName} onChange={(e) => setProfessionalName(e.target.value)} required maxLength={100} />
@@ -147,7 +216,7 @@ const NewAppointmentDialog = ({
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={loading}>{loading ? "Agendando..." : "Agendar"}</Button>
+          <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={loading || !patientName.trim()}>{loading ? "Agendando..." : "Agendar"}</Button>
         </div>
       </form>
     </DialogContent>
