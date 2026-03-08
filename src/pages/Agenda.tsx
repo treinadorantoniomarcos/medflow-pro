@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   addDays,
@@ -50,6 +50,15 @@ const Agenda = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedProfessional, setSelectedProfessional] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<AppointmentStatus | "all">("all");
+  const [slotDialogOpen, setSlotDialogOpen] = useState(false);
+  const [slotDate, setSlotDate] = useState("");
+  const [slotTime, setSlotTime] = useState("");
+
+  const handleSlotClick = useCallback((day: Date, hour: number) => {
+    setSlotDate(format(day, "yyyy-MM-dd"));
+    setSlotTime(`${String(hour).padStart(2, "0")}:00`);
+    setSlotDialogOpen(true);
+  }, []);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -239,9 +248,10 @@ const Agenda = () => {
                       <div
                         key={day.toISOString()}
                         className={cn(
-                          "border-l border-border p-1 space-y-1",
+                          "border-l border-border p-1 space-y-1 cursor-pointer hover:bg-muted/40 transition-colors",
                           isToday(day) && "bg-primary/[0.02]"
                         )}
+                        onClick={() => handleSlotClick(day, hour)}
                       >
                         {slotAppts.map((apt) => (
                           <WeeklySlotCard key={apt.id} appointment={apt} />
@@ -254,6 +264,15 @@ const Agenda = () => {
             )}
           </div>
         </motion.div>
+
+        {/* Controlled dialog for slot clicks */}
+        <NewAppointmentDialog
+          open={slotDialogOpen}
+          onOpenChange={setSlotDialogOpen}
+          defaultDate={slotDate}
+          defaultTime={slotTime}
+          hideTrigger
+        />
       </div>
     </AdminLayout>
   );
