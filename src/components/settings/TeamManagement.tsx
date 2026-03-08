@@ -240,6 +240,18 @@ const TeamManagement = () => {
                     {rl.label}
                   </Badge>
 
+                  {/* Agenda link */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/minha-agenda")}
+                    className="shrink-0"
+                    title="Ver agenda"
+                  >
+                    <CalendarDays className="h-3.5 w-3.5 mr-1" />
+                    <span className="hidden sm:inline text-xs">Agenda</span>
+                  </Button>
+
                   {/* Upload button */}
                   <Button
                     variant="ghost"
