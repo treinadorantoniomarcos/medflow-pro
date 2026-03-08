@@ -17,6 +17,7 @@ import {
   Moon,
 } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
+import { LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import medfluxLogo from "@/assets/medflux-logo.png";
