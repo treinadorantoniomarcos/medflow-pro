@@ -28,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { buildWhatsAppUrl, buildAppointmentReminder } from "@/lib/whatsapp";
 import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
 
 const statusActions: { from: AppointmentStatus; to: AppointmentStatus; label: string; icon: React.ReactNode }[] = [
