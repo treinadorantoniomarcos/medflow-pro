@@ -61,7 +61,7 @@ const NewAppointmentDialog = () => {
       type: type || null,
       notes: notes.trim() || null,
       created_by: user.id,
-      status: "agendada",
+      status: "scheduled",
     });
 
     if (error) {
