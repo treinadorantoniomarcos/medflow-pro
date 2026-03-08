@@ -302,35 +302,101 @@ const Configuracoes = () => {
                       </Button>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const text = `Acesse sua agenda profissional: ${agendaUrl}`;
-                          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-                        }}
-                      >
-                        <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
-                        WhatsApp
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const subject = `Acesse sua agenda - ${clinicName}`;
-                          const body = `Olá!\n\nAcesse sua agenda profissional pelo link:\n${agendaUrl}\n\nAtenciosamente,\n${clinicName}`;
-                          window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-                        }}
-                      >
-                        <Mail className="h-3.5 w-3.5 mr-1.5" />
-                        E-mail
-                      </Button>
-                    </div>
+                    <Separator />
 
-                    <p className="text-[10px] text-muted-foreground">
-                      Compartilhe este link com os profissionais da equipe para que acessem suas agendas individuais.
-                    </p>
+                    {/* QR Code + share buttons */}
+                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                      <div className="flex flex-col items-center gap-3">
+                        <div
+                          ref={qrAgendaRef}
+                          className="rounded-xl border border-border bg-card p-4"
+                        >
+                          <QRCodeSVG
+                            value={agendaUrl}
+                            size={160}
+                            level="M"
+                            includeMargin={false}
+                            bgColor="transparent"
+                            fgColor="currentColor"
+                            className="text-foreground"
+                          />
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          if (!qrAgendaRef.current) return;
+                          const svg = qrAgendaRef.current.querySelector("svg");
+                          if (!svg) return;
+                          const canvas = document.createElement("canvas");
+                          const ctx = canvas.getContext("2d")!;
+                          const svgData = new XMLSerializer().serializeToString(svg);
+                          const img = new Image();
+                          img.onload = () => {
+                            canvas.width = 512;
+                            canvas.height = 512;
+                            ctx.fillStyle = "#ffffff";
+                            ctx.fillRect(0, 0, 512, 512);
+                            ctx.drawImage(img, 0, 0, 512, 512);
+                            const link = document.createElement("a");
+                            link.download = "qrcode-agenda-profissional.png";
+                            link.href = canvas.toDataURL("image/png");
+                            link.click();
+                          };
+                          img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+                        }}>
+                          <Download className="h-3.5 w-3.5 mr-1.5" />
+                          Baixar QR Code
+                        </Button>
+                      </div>
+
+                      <div className="flex-1 space-y-3 w-full sm:w-auto">
+                        <p className="text-sm font-semibold text-foreground">Compartilhar via</p>
+                        <div className="grid gap-2">
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() => {
+                              const text = `Acesse sua agenda profissional: ${agendaUrl}`;
+                              window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+                            }}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2 text-primary" />
+                            WhatsApp
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() => {
+                              const subject = `Acesse sua agenda - ${clinicName}`;
+                              const body = `Olá!\n\nAcesse sua agenda profissional pelo link:\n${agendaUrl}\n\nAtenciosamente,\n${clinicName}`;
+                              window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                            }}
+                          >
+                            <Mail className="h-4 w-4 mr-2 text-primary" />
+                            E-mail
+                          </Button>
+                          {typeof navigator !== "undefined" && !!navigator.share && (
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start"
+                              onClick={async () => {
+                                try {
+                                  await navigator.share({
+                                    title: `Agenda Profissional - ${clinicName}`,
+                                    text: `Acesse sua agenda profissional`,
+                                    url: agendaUrl,
+                                  });
+                                } catch { /* cancelled */ }
+                              }}
+                            >
+                              <Share2 className="h-4 w-4 mr-2 text-primary" />
+                              Mais opções
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          Compartilhe este link com os profissionais da equipe para que acessem suas agendas individuais.
+                        </p>
+                      </div>
+                    </div>
                   </>
                 );
               })()}
