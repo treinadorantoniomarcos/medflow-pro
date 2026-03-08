@@ -78,6 +78,58 @@ const Configuracoes = () => {
           </div>
         </motion.div>
 
+        {/* Booking link card */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.03 }}
+        >
+          <Card className="shadow-soft">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                  <Link2 className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-base">Link de Agendamento Online</CardTitle>
+                  <CardDescription>
+                    Compartilhe este link no WhatsApp, Instagram ou site para seus pacientes agendarem
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {bookingUrl ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={bookingUrl}
+                    className="bg-secondary border-0 text-sm font-mono"
+                    onFocus={(e) => e.target.select()}
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(bookingUrl);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    title="Copiar link"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum slug configurado para a clínica. Entre em contato para configurar.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* WhatsApp settings card */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
