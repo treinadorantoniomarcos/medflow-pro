@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Camera, Loader2, Users, Plus, Trash2, CircleDot } from "lucide-react";
+import { Camera, Loader2, Users, Plus, Trash2, CircleDot, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
@@ -49,6 +50,7 @@ const roleLabels: Record<string, { label: string; className: string }> = {
 const TeamManagement = () => {
   const { profile, user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetMemberRef = useRef<TeamMember | null>(null);
@@ -237,6 +239,18 @@ const TeamManagement = () => {
                   <Badge variant="secondary" className={cn("shrink-0 text-[10px]", rl.className)}>
                     {rl.label}
                   </Badge>
+
+                  {/* Agenda link */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/minha-agenda")}
+                    className="shrink-0"
+                    title="Ver agenda"
+                  >
+                    <CalendarDays className="h-3.5 w-3.5 mr-1" />
+                    <span className="hidden sm:inline text-xs">Agenda</span>
+                  </Button>
 
                   {/* Upload button */}
                   <Button
