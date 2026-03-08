@@ -12,7 +12,10 @@ import {
   Bell,
   Menu,
   X,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import medfluxLogo from "@/assets/medflux-logo.png";
