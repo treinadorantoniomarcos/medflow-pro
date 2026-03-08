@@ -68,6 +68,11 @@ export const useWeekAppointments = (weekStart: Date, weekEnd: Date) => {
   });
 };
 
+export interface ProfessionalInfo {
+  name: string;
+  accepting_bookings: boolean;
+}
+
 export const useProfessionals = () => {
   const { profile } = useAuth();
 
@@ -75,15 +80,33 @@ export const useProfessionals = () => {
     queryKey: ["professionals", profile?.tenant_id],
     enabled: !!profile?.tenant_id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get professionals from profiles
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("full_name, accepting_bookings")
+        .eq("tenant_id", profile!.tenant_id);
+
+      // Also get unique names from appointments as fallback
+      const { data: appts } = await supabase
         .from("appointments")
         .select("professional_name")
         .eq("tenant_id", profile!.tenant_id);
 
-      if (error) throw error;
+      const profileMap = new Map<string, boolean>();
+      (profiles ?? []).forEach((p) => {
+        if (p.full_name) profileMap.set(p.full_name, p.accepting_bookings);
+      });
 
-      const unique = [...new Set((data ?? []).map((d) => d.professional_name))].sort();
-      return unique;
+      const apptNames = [...new Set((appts ?? []).map((d) => d.professional_name))];
+      apptNames.forEach((name) => {
+        if (!profileMap.has(name)) profileMap.set(name, true);
+      });
+
+      const result: ProfessionalInfo[] = Array.from(profileMap.entries())
+        .map(([name, accepting_bookings]) => ({ name, accepting_bookings }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      return result;
     },
   });
 };

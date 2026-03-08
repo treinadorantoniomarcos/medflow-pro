@@ -258,9 +258,17 @@ const Agenda = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos profissionais</SelectItem>
-              {professionals.map((professional) => (
-                <SelectItem key={professional} value={professional}>
-                  {professional}
+              {professionals.map((prof) => (
+                <SelectItem key={prof.name} value={prof.name}>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "h-2 w-2 rounded-full shrink-0",
+                        prof.accepting_bookings ? "bg-emerald-500" : "bg-muted-foreground/40"
+                      )}
+                    />
+                    {prof.name}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
