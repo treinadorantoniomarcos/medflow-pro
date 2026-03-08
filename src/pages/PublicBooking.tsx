@@ -461,7 +461,7 @@ const PublicBooking = () => {
               </div>
 
               {/* Confirmation card */}
-              <div ref={confirmationRef} className="bg-card rounded-xl border border-border p-6 space-y-5">
+              <div ref={confirmationRef} data-print-area className="bg-card rounded-xl border border-border p-6 space-y-5">
                 <div className="flex items-center gap-3 pb-4 border-b border-border">
                   <img src={clinic.logo_url || medfluxLogo} alt={clinic.name} className="h-10 w-10 rounded-lg object-cover" />
                   <div>
