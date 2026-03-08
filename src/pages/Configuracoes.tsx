@@ -39,6 +39,7 @@ const Configuracoes = () => {
   const updateSettings = useUpdateClinicSettings();
   const { data: queue = [], isLoading: loadingQueue } = useNotificationsQueue();
   const [copied, setCopied] = useState(false);
+  const [copiedAgenda, setCopiedAgenda] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
 
   const { data: clinicData } = useQuery({
