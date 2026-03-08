@@ -39,65 +39,7 @@ const Configuracoes = () => {
   const updateSettings = useUpdateClinicSettings();
   const { data: queue = [], isLoading: loadingQueue } = useNotificationsQueue();
   const [copied, setCopied] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const qrRef = useRef<HTMLDivElement>(null);
-
-  const { data: clinicData } = useQuery({
-    queryKey: ["clinic-slug", profile?.tenant_id],
-    enabled: !!profile?.tenant_id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("clinics")
-        .select("slug, name")
-        .eq("id", profile!.tenant_id)
-        .single();
-      return data;
-    },
-  });
-
-  const clinicSlug = clinicData?.slug ?? null;
-  const clinicName = clinicData?.name ?? "";
-
-  const bookingUrl = clinicSlug
-    ? `${window.location.origin}/agendar/${clinicSlug}`
-    : null;
-
-  const whatsappEnabled = settings?.whatsapp_reminders_enabled ?? false;
-
-  const handleToggleWhatsApp = () => {
-    updateSettings.mutate({ whatsapp_reminders_enabled: !whatsappEnabled });
-  };
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem."); return; }
-    if (file.size > 2 * 1024 * 1024) { toast.error("A imagem deve ter no máximo 2MB."); return; }
-
-    setUploadingAvatar(true);
-    try {
-      const ext = file.name.split(".").pop() ?? "jpg";
-      const path = `${user.id}/avatar.${ext}`;
-      const { data: existing } = await supabase.storage.from("avatars").list(user.id);
-      if (existing && existing.length > 0) {
-        await supabase.storage.from("avatars").remove(existing.map(f => `${user.id}/${f.name}`));
-      }
-      const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-      const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-      const { error: updateError } = await supabase.from("profiles").update({ avatar_url: avatarUrl }).eq("user_id", user.id);
-      if (updateError) throw updateError;
-      await refreshProfile();
-      toast.success("Foto de perfil atualizada!");
-    } catch (err: any) {
-      toast.error("Erro ao enviar foto", { description: err.message });
-    } finally {
-      setUploadingAvatar(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
 
   const handleDownloadQR = useCallback(() => {
     if (!qrRef.current) return;
