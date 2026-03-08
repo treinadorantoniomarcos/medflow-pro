@@ -8,10 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useClinicSettings, useUpdateClinicSettings, useNotificationsQueue } from "@/hooks/use-clinic-settings";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
   pending: { label: "Pendente", icon: <Clock className="h-3 w-3" />, className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
