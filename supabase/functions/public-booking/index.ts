@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     // GET: fetch clinic info, professionals, and available slots
     if (req.method === "GET") {
       const slug = url.searchParams.get("slug");
-      const date = url.searchParams.get("date"); // yyyy-MM-dd
+      const date = url.searchParams.get("date");
 
       if (!slug) {
         return new Response(JSON.stringify({ error: "slug_required" }), {
@@ -29,7 +29,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Fetch clinic by slug
       const { data: clinic, error: clinicError } = await supabase
         .from("clinics")
         .select("id, name, logo_url, settings, slug")
@@ -43,18 +42,17 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Fetch distinct professional names for this clinic
+      // Fetch professionals with avatar
       const { data: profRows } = await supabase
         .from("profiles")
-        .select("full_name")
+        .select("full_name, avatar_url")
         .eq("tenant_id", clinic.id);
 
       const professionals = (profRows ?? [])
-        .map((p) => p.full_name)
-        .filter(Boolean)
-        .sort();
+        .filter((p) => p.full_name)
+        .map((p) => ({ name: p.full_name!, avatar_url: p.avatar_url }))
+        .sort((a, b) => a.name.localeCompare(b.name));
 
-      // If date provided, fetch existing appointments for that date
       let bookedSlots: { starts_at: string; professional_name: string }[] = [];
       if (date) {
         const dayStart = `${date}T00:00:00`;
@@ -74,7 +72,6 @@ Deno.serve(async (req) => {
         }));
       }
 
-      // Working hours config from clinic settings or defaults
       const settings = (clinic.settings as Record<string, unknown>) ?? {};
       const workStart = (settings.work_start_hour as number) ?? 8;
       const workEnd = (settings.work_end_hour as number) ?? 18;
@@ -91,19 +88,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // POST: create appointment (public, no auth required)
+    // POST: create appointment
     if (req.method === "POST") {
       const body = await req.json();
-      const { slug, patient_name, patient_phone, professional_name, starts_at, type } = body;
+      const { slug, patient_name, patient_phone, patient_cpf, professional_name, starts_at, type } = body;
 
-      if (!slug || !patient_name || !professional_name || !starts_at) {
+      if (!slug || !patient_name?.trim() || !professional_name || !starts_at || !patient_phone?.trim() || !patient_cpf?.trim()) {
         return new Response(
-          JSON.stringify({ error: "missing_fields", required: ["slug", "patient_name", "professional_name", "starts_at"] }),
+          JSON.stringify({ error: "missing_fields", required: ["slug", "patient_name", "patient_phone", "patient_cpf", "professional_name", "starts_at"] }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Find clinic
       const { data: clinic } = await supabase
         .from("clinics")
         .select("id")
@@ -132,6 +128,31 @@ Deno.serve(async (req) => {
           JSON.stringify({ error: "slot_already_booked" }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+
+      // Upsert patient record (find by CPF or create new)
+      const cleanCpf = patient_cpf.trim().replace(/\D/g, "");
+      const { data: existingPatient } = await supabase
+        .from("patients")
+        .select("id")
+        .eq("tenant_id", clinic.id)
+        .eq("cpf", cleanCpf)
+        .limit(1);
+
+      if (existingPatient && existingPatient.length > 0) {
+        // Update phone/name if changed
+        await supabase
+          .from("patients")
+          .update({ full_name: patient_name.trim(), phone: patient_phone.trim() })
+          .eq("id", existingPatient[0].id);
+      } else {
+        await supabase.from("patients").insert({
+          tenant_id: clinic.id,
+          full_name: patient_name.trim(),
+          phone: patient_phone.trim(),
+          cpf: cleanCpf,
+          status: "active",
+        });
       }
 
       // Create appointment
