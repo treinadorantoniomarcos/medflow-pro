@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
   Calendar,
+  Stethoscope,
   Users,
   MessageSquare,
   BarChart3,
@@ -29,6 +30,7 @@ interface AdminLayoutProps {
 const navItems = [
   { icon: LayoutDashboard, label: "Início", path: "/" },
   { icon: Calendar, label: "Agenda", path: "/agenda" },
+  { icon: Stethoscope, label: "Minha Agenda", path: "/minha-agenda" },
   { icon: Users, label: "Pacientes", path: "/pacientes" },
   { icon: MessageSquare, label: "Mensagens", path: "/mensagens" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
