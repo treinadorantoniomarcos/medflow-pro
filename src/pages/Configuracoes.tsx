@@ -254,6 +254,89 @@ const Configuracoes = () => {
           </Card>
         </motion.div>
 
+        {/* Professional agenda link card */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.035 }}
+        >
+          <Card className="shadow-soft">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                  <CalendarDays className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-base">Agenda dos Profissionais</CardTitle>
+                  <CardDescription>
+                    Link direto para os profissionais acessarem sua agenda pessoal
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(() => {
+                const agendaUrl = `${window.location.origin}/minha-agenda`;
+                return (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        readOnly
+                        value={agendaUrl}
+                        className="bg-secondary border-0 text-sm font-mono"
+                        onFocus={(e) => e.target.select()}
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        onClick={() => {
+                          navigator.clipboard.writeText(agendaUrl);
+                          setCopiedAgenda(true);
+                          setTimeout(() => setCopiedAgenda(false), 2000);
+                        }}
+                        title="Copiar link"
+                      >
+                        {copiedAgenda ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const text = `Acesse sua agenda profissional: ${agendaUrl}`;
+                          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+                        }}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
+                        WhatsApp
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const subject = `Acesse sua agenda - ${clinicName}`;
+                          const body = `Olá!\n\nAcesse sua agenda profissional pelo link:\n${agendaUrl}\n\nAtenciosamente,\n${clinicName}`;
+                          window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                        }}
+                      >
+                        <Mail className="h-3.5 w-3.5 mr-1.5" />
+                        E-mail
+                      </Button>
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground">
+                      Compartilhe este link com os profissionais da equipe para que acessem suas agendas individuais.
+                    </p>
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Team management */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
