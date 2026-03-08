@@ -158,12 +158,29 @@ const MinhaAgenda = () => {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-            Agenda
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {profile?.full_name ?? "Profissional"}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+                Agenda
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {profile?.full_name ?? "Profissional"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "text-xs font-medium",
+                acceptingBookings ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+              )}>
+                {acceptingBookings ? "Aberto" : "Fechado"}
+              </span>
+              <Switch
+                checked={acceptingBookings}
+                onCheckedChange={handleToggleBookings}
+                disabled={toggling}
+              />
+            </div>
+          </div>
         </motion.div>
 
         {/* Metric cards row */}
