@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Agenda from "./pages/Agenda";
+import MinhaAgenda from "./pages/MinhaAgenda";
 import Pacientes from "./pages/Pacientes";
 import Mensagens from "./pages/Mensagens";
 import Relatorios from "./pages/Relatorios";
