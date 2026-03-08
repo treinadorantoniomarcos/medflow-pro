@@ -35,6 +35,7 @@ interface ClinicInfo {
 interface Professional {
   name: string;
   avatar_url: string | null;
+  accepting_bookings: boolean;
 }
 
 interface WorkHours {
@@ -185,6 +186,9 @@ const PublicBooking = () => {
           setStep("datetime");
           setSelectedTime("");
           if (selectedDate) fetchSlots(selectedDate);
+        } else if (err.error === "professional_not_accepting") {
+          toast.error("Este profissional fechou a agenda.", { description: "Escolha outro profissional." });
+          setStep("professional");
         } else {
           toast.error("Erro ao agendar. Tente novamente.");
         }
@@ -258,37 +262,58 @@ const PublicBooking = () => {
               </div>
 
               <div className="space-y-2">
-                {professionals.length === 0 ? (
+                {professionals.filter((p) => p.accepting_bookings).length === 0 ? (
                   <p className="text-center text-sm text-muted-foreground py-8">Nenhum profissional disponível no momento.</p>
                 ) : (
-                  professionals.map((p) => (
-                    <button
-                      key={p.name}
-                      className={cn(
-                        "w-full flex items-center gap-3 rounded-xl border p-4 text-left transition-all",
-                        selectedProfessional?.name === p.name
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border bg-card hover:border-primary/40"
-                      )}
-                      onClick={() => {
-                        setSelectedProfessional(p);
-                        setStep("datetime");
-                      }}
-                    >
-                      {p.avatar_url ? (
-                        <img
-                          src={p.avatar_url}
-                          alt={p.name}
-                          className="h-12 w-12 rounded-full object-cover border-2 border-primary/20 shrink-0"
-                        />
-                      ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shrink-0">
-                          {p.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
+                  professionals.map((p) => {
+                    const closed = !p.accepting_bookings;
+                    return (
+                      <button
+                        key={p.name}
+                        disabled={closed}
+                        className={cn(
+                          "w-full flex items-center gap-3 rounded-xl border p-4 text-left transition-all",
+                          closed
+                            ? "border-border bg-muted/50 opacity-60 cursor-not-allowed"
+                            : selectedProfessional?.name === p.name
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border bg-card hover:border-primary/40"
+                        )}
+                        onClick={() => {
+                          if (closed) return;
+                          setSelectedProfessional(p);
+                          setStep("datetime");
+                        }}
+                      >
+                        {p.avatar_url ? (
+                          <img
+                            src={p.avatar_url}
+                            alt={p.name}
+                            className={cn(
+                              "h-12 w-12 rounded-full object-cover border-2 shrink-0",
+                              closed ? "border-muted-foreground/20 grayscale" : "border-primary/20"
+                            )}
+                          />
+                        ) : (
+                          <div className={cn(
+                            "flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold shrink-0",
+                            closed ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+                          )}>
+                            {p.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-semibold text-foreground block truncate">{p.name}</span>
+                          {closed && (
+                            <span className="text-[10px] text-muted-foreground">Agenda fechada</span>
+                          )}
                         </div>
-                      )}
-                      <span className="text-sm font-semibold text-foreground">{p.name}</span>
-                    </button>
-                  ))
+                        {!closed && (
+                          <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
