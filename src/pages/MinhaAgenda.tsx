@@ -227,18 +227,29 @@ const MinhaAgenda = () => {
                           )}
                         </div>
 
-                        {/* Action button */}
-                        {action && (
+                        {/* Actions */}
+                        <div className="flex flex-col gap-1.5 shrink-0">
+                          {action && (
+                            <Button
+                              size="sm"
+                              variant={action.to === "completed" ? "default" : "outline"}
+                              className="gap-1.5 text-xs"
+                              onClick={() => handleStatusChange(apt.id, action.to)}
+                            >
+                              {action.icon}
+                              {action.label}
+                            </Button>
+                          )}
                           <Button
                             size="sm"
-                            variant={action.to === "completed" ? "default" : "outline"}
-                            className="gap-1.5 text-xs shrink-0"
-                            onClick={() => handleStatusChange(apt.id, action.to)}
+                            variant="outline"
+                            className="gap-1.5 text-xs text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                            onClick={() => handleWhatsAppReminder(apt)}
                           >
-                            {action.icon}
-                            {action.label}
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            Lembrete
                           </Button>
-                        )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
