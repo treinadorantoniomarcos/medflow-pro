@@ -12,6 +12,7 @@ import {
   useDashboardMetrics,
   type DashboardPeriod,
 } from "@/hooks/use-appointments";
+import { useNavigate } from "react-router-dom";
 
 const statusFilters: { value: AppointmentStatus | "all"; label: string }[] = [
   { value: "all", label: "Todas" },
@@ -43,6 +44,7 @@ const periodTitleMap: Record<DashboardPeriod, string> = {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<AppointmentStatus | "all">("all");
   const [period, setPeriod] = useState<DashboardPeriod>("today");
 
@@ -97,7 +99,12 @@ const Dashboard = () => {
           >
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-foreground">Agenda do Periodo</h2>
-              <Button variant="ghost" size="sm" className="text-primary gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary gap-1"
+                onClick={() => navigate(`/agenda?period=${period}`)}
+              >
                 Ver completa <ChevronRight className="h-4 w-4" />
               </Button>
             </div>

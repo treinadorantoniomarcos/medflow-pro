@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { startOfDay, endOfDay, format } from "date-fns";
+import { addDays, addMonths, addYears, endOfDay, startOfDay } from "date-fns";
 import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
 
 export interface AgendaAppointment {
@@ -13,6 +13,38 @@ export interface AgendaAppointment {
   status: AppointmentStatus;
   type: string | null;
   notes: string | null;
+}
+
+export type AgendaPeriod =
+  | "today"
+  | "week"
+  | "15days"
+  | "month"
+  | "bimester"
+  | "semester"
+  | "year";
+
+function getPeriodRange(period: AgendaPeriod, baseDate: Date) {
+  const start = startOfDay(baseDate);
+
+  switch (period) {
+    case "today":
+      return { start, end: endOfDay(baseDate) };
+    case "week":
+      return { start, end: endOfDay(addDays(start, 6)) };
+    case "15days":
+      return { start, end: endOfDay(addDays(start, 14)) };
+    case "month":
+      return { start, end: endOfDay(addMonths(start, 1)) };
+    case "bimester":
+      return { start, end: endOfDay(addMonths(start, 2)) };
+    case "semester":
+      return { start, end: endOfDay(addMonths(start, 6)) };
+    case "year":
+      return { start, end: endOfDay(addYears(start, 1)) };
+    default:
+      return { start, end: endOfDay(addDays(start, 6)) };
+  }
 }
 
 export const useWeekAppointments = (weekStart: Date, weekEnd: Date) => {
@@ -52,6 +84,35 @@ export const useProfessionals = () => {
 
       const unique = [...new Set((data ?? []).map((d) => d.professional_name))].sort();
       return unique;
+    },
+  });
+};
+
+export const useAgendaAppointments = (period: AgendaPeriod, baseDate: Date) => {
+  const { profile } = useAuth();
+  const { start, end } = getPeriodRange(period, baseDate);
+
+  return useQuery({
+    queryKey: [
+      "appointments",
+      "agenda-period",
+      period,
+      profile?.tenant_id,
+      start.toISOString(),
+      end.toISOString(),
+    ],
+    enabled: !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes")
+        .eq("tenant_id", profile!.tenant_id)
+        .gte("starts_at", start.toISOString())
+        .lte("starts_at", end.toISOString())
+        .order("starts_at", { ascending: true });
+
+      if (error) throw error;
+      return (data ?? []) as AgendaAppointment[];
     },
   });
 };

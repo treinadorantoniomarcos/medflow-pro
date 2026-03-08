@@ -1,26 +1,30 @@
-import { useState, useMemo, useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   addDays,
-  startOfWeek,
+  addWeeks,
   endOfWeek,
   format,
   isSameDay,
   isToday,
+  startOfWeek,
+  subDays,
   subWeeks,
-  addWeeks,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  CalendarDays,
   Filter,
+  List,
   X,
 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import NewAppointmentDialog from "@/components/dashboard/NewAppointmentDialog";
 import WeeklySlotCard from "@/components/agenda/WeeklySlotCard";
+import StatusChip from "@/components/dashboard/StatusChip";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -30,24 +34,49 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useWeekAppointments, useProfessionals } from "@/hooks/use-agenda";
+import {
+  type AgendaPeriod,
+  useAgendaAppointments,
+  useProfessionals,
+  useWeekAppointments,
+} from "@/hooks/use-agenda";
 import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
 
-const HOURS = Array.from({ length: 12 }, (_, i) => i + 7); // 07:00 - 18:00
+const HOURS = Array.from({ length: 12 }, (_, i) => i + 7);
 
 const statusFilters: { value: AppointmentStatus | "all"; label: string }[] = [
   { value: "all", label: "Todos os status" },
   { value: "confirmed", label: "Confirmadas" },
   { value: "scheduled", label: "Agendadas" },
   { value: "in_progress", label: "Em atendimento" },
-  { value: "available", label: "Disponíveis" },
-  { value: "completed", label: "Concluídas" },
+  { value: "available", label: "Disponiveis" },
+  { value: "completed", label: "Concluidas" },
   { value: "cancelled", label: "Canceladas" },
   { value: "no_show", label: "No-show" },
 ];
 
+const periodOptions: { value: AgendaPeriod; label: string }[] = [
+  { value: "today", label: "Hoje" },
+  { value: "week", label: "Semana" },
+  { value: "15days", label: "15 dias" },
+  { value: "month", label: "Mensal" },
+  { value: "bimester", label: "Bimestral" },
+  { value: "semester", label: "Semestral" },
+  { value: "year", label: "Anual" },
+];
+
+const isValidPeriod = (value: string | null): value is AgendaPeriod =>
+  value !== null &&
+  ["today", "week", "15days", "month", "bimester", "semester", "year"].includes(value);
+
 const Agenda = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialPeriod: AgendaPeriod = isValidPeriod(searchParams.get("period"))
+    ? (searchParams.get("period") as AgendaPeriod)
+    : "week";
+
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedPeriod, setSelectedPeriod] = useState<AgendaPeriod>(initialPeriod);
   const [selectedProfessional, setSelectedProfessional] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<AppointmentStatus | "all">("all");
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
@@ -63,36 +92,60 @@ const Agenda = () => {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const isGridView = selectedPeriod === "today" || selectedPeriod === "week";
 
-  const { data: appointments = [], isLoading } = useWeekAppointments(weekStart, weekEnd);
+  const { data: weekAppointments = [], isLoading: loadingWeek } = useWeekAppointments(
+    weekStart,
+    weekEnd
+  );
+  const { data: periodAppointments = [], isLoading: loadingPeriod } = useAgendaAppointments(
+    selectedPeriod,
+    currentDate
+  );
+  const appointments = isGridView ? weekAppointments : periodAppointments;
+  const isLoading = isGridView ? loadingWeek : loadingPeriod;
   const { data: professionals = [] } = useProfessionals();
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((apt) => {
-      if (selectedProfessional !== "all" && apt.professional_name !== selectedProfessional)
+      if (selectedProfessional !== "all" && apt.professional_name !== selectedProfessional) {
         return false;
-      if (selectedStatus !== "all" && apt.status !== selectedStatus) return false;
+      }
+      if (selectedStatus !== "all" && apt.status !== selectedStatus) {
+        return false;
+      }
       return true;
     });
   }, [appointments, selectedProfessional, selectedStatus]);
 
   const getAppointmentsForSlot = (day: Date, hour: number) => {
     return filteredAppointments.filter((apt) => {
-      const d = new Date(apt.starts_at);
-      return isSameDay(d, day) && d.getHours() === hour;
+      const startsAt = new Date(apt.starts_at);
+      return isSameDay(startsAt, day) && startsAt.getHours() === hour;
     });
   };
 
   const goToToday = () => setCurrentDate(new Date());
-  const goPrev = () => setCurrentDate((d) => subWeeks(d, 1));
-  const goNext = () => setCurrentDate((d) => addWeeks(d, 1));
+  const goPrev = () => {
+    if (selectedPeriod === "today") {
+      setCurrentDate((d) => subDays(d, 1));
+      return;
+    }
+    setCurrentDate((d) => subWeeks(d, 1));
+  };
+  const goNext = () => {
+    if (selectedPeriod === "today") {
+      setCurrentDate((d) => addDays(d, 1));
+      return;
+    }
+    setCurrentDate((d) => addWeeks(d, 1));
+  };
 
   const hasFilters = selectedProfessional !== "all" || selectedStatus !== "all";
 
   return (
     <AdminLayout>
       <div className="space-y-4">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -103,31 +156,26 @@ const Agenda = () => {
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Agenda</h1>
               <p className="text-sm text-muted-foreground">
-                {format(weekStart, "dd MMM", { locale: ptBR })} — {format(weekEnd, "dd MMM yyyy", { locale: ptBR })}
+                {isGridView
+                  ? `${format(weekStart, "dd MMM", { locale: ptBR })} - ${format(weekEnd, "dd MMM yyyy", { locale: ptBR })}`
+                  : `Periodo ${periodOptions.find((item) => item.value === selectedPeriod)?.label ?? ""}`}
               </p>
             </div>
           </div>
           <NewAppointmentDialog />
         </motion.div>
 
-        {/* Controls */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
           className="flex flex-wrap items-center gap-3"
         >
-          {/* Week navigation */}
           <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goPrev}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs font-semibold"
-              onClick={goToToday}
-            >
+            <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold" onClick={goToToday}>
               Hoje
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goNext}>
@@ -135,7 +183,27 @@ const Agenda = () => {
             </Button>
           </div>
 
-          {/* Professional filter */}
+          <Select
+            value={selectedPeriod}
+            onValueChange={(value) => {
+              const next = value as AgendaPeriod;
+              setSelectedPeriod(next);
+              setSearchParams({ period: next });
+            }}
+          >
+            <SelectTrigger className="w-[150px] h-9 text-xs">
+              <List className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              <SelectValue placeholder="Periodo" />
+            </SelectTrigger>
+            <SelectContent>
+              {periodOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Select value={selectedProfessional} onValueChange={setSelectedProfessional}>
             <SelectTrigger className="w-[200px] h-9 text-xs">
               <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
@@ -143,23 +211,25 @@ const Agenda = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos profissionais</SelectItem>
-              {professionals.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
+              {professionals.map((professional) => (
+                <SelectItem key={professional} value={professional}>
+                  {professional}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          {/* Status filter */}
-          <Select value={selectedStatus} onValueChange={(v) => setSelectedStatus(v as AppointmentStatus | "all")}>
+          <Select
+            value={selectedStatus}
+            onValueChange={(value) => setSelectedStatus(value as AppointmentStatus | "all")}
+          >
             <SelectTrigger className="w-[180px] h-9 text-xs">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              {statusFilters.map((f) => (
-                <SelectItem key={f.value} value={f.value}>
-                  {f.label}
+              {statusFilters.map((filter) => (
+                <SelectItem key={filter.value} value={filter.value}>
+                  {filter.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -180,92 +250,107 @@ const Agenda = () => {
             </Button>
           )}
 
-          {/* Count */}
           <span className="ml-auto text-xs text-muted-foreground">
             {filteredAppointments.length} consulta{filteredAppointments.length !== 1 ? "s" : ""}
           </span>
         </motion.div>
 
-        {/* Weekly Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-lg border border-border bg-card shadow-soft overflow-auto"
-        >
-          <div className="min-w-[800px]">
-            {/* Day headers */}
-            <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-border sticky top-0 bg-card z-10">
-              <div className="p-2" />
-              {weekDays.map((day) => (
-                <div
-                  key={day.toISOString()}
-                  className={cn(
-                    "p-2 text-center border-l border-border",
-                    isToday(day) && "bg-primary/5"
-                  )}
-                >
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    {format(day, "EEE", { locale: ptBR })}
-                  </p>
-                  <p
-                    className={cn(
-                      "text-lg font-bold",
-                      isToday(day)
-                        ? "text-primary"
-                        : "text-foreground"
-                    )}
+        {isGridView ? (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-lg border border-border bg-card shadow-soft overflow-auto"
+          >
+            <div className="min-w-[800px]">
+              <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-border sticky top-0 bg-card z-10">
+                <div className="p-2" />
+                {weekDays.map((day) => (
+                  <div
+                    key={day.toISOString()}
+                    className={cn("p-2 text-center border-l border-border", isToday(day) && "bg-primary/5")}
                   >
-                    {format(day, "dd")}
-                  </p>
-                </div>
-              ))}
-            </div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {format(day, "EEE", { locale: ptBR })}
+                    </p>
+                    <p className={cn("text-lg font-bold", isToday(day) ? "text-primary" : "text-foreground")}>
+                      {format(day, "dd")}
+                    </p>
+                  </div>
+                ))}
+              </div>
 
-            {/* Time rows */}
+              {isLoading ? (
+                <div className="p-8 text-center">
+                  <div className="h-6 w-6 mx-auto animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <p className="text-xs text-muted-foreground mt-2">Carregando agenda...</p>
+                </div>
+              ) : (
+                HOURS.map((hour) => (
+                  <div
+                    key={hour}
+                    className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-border last:border-b-0 min-h-[72px]"
+                  >
+                    <div className="p-2 text-right pr-3 border-r border-border">
+                      <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                        {String(hour).padStart(2, "0")}:00
+                      </span>
+                    </div>
+                    {weekDays.map((day) => {
+                      const slotAppointments = getAppointmentsForSlot(day, hour);
+                      return (
+                        <div
+                          key={`${day.toISOString()}-${hour}`}
+                          className={cn(
+                            "border-l border-border p-1 space-y-1 cursor-pointer hover:bg-muted/40 transition-colors",
+                            isToday(day) && "bg-primary/[0.02]"
+                          )}
+                          onClick={() => handleSlotClick(day, hour)}
+                        >
+                          {slotAppointments.map((appointment) => (
+                            <WeeklySlotCard key={appointment.id} appointment={appointment} />
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-lg border border-border bg-card shadow-soft p-4 space-y-3"
+          >
             {isLoading ? (
               <div className="p-8 text-center">
                 <div className="h-6 w-6 mx-auto animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 <p className="text-xs text-muted-foreground mt-2">Carregando agenda...</p>
               </div>
+            ) : filteredAppointments.length === 0 ? (
+              <div className="text-sm text-muted-foreground text-center py-8">
+                Nenhuma consulta para o periodo selecionado.
+              </div>
             ) : (
-              HOURS.map((hour) => (
-                <div
-                  key={hour}
-                  className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-border last:border-b-0 min-h-[72px]"
-                >
-                  {/* Hour label */}
-                  <div className="p-2 text-right pr-3 border-r border-border">
-                    <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                      {String(hour).padStart(2, "0")}:00
-                    </span>
+              filteredAppointments.map((appointment) => (
+                <div key={appointment.id} className="rounded-md border border-border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-foreground">{appointment.patient_name}</p>
+                    <StatusChip status={appointment.status} />
                   </div>
-
-                  {/* Day cells */}
-                  {weekDays.map((day) => {
-                    const slotAppts = getAppointmentsForSlot(day, hour);
-                    return (
-                      <div
-                        key={day.toISOString()}
-                        className={cn(
-                          "border-l border-border p-1 space-y-1 cursor-pointer hover:bg-muted/40 transition-colors",
-                          isToday(day) && "bg-primary/[0.02]"
-                        )}
-                        onClick={() => handleSlotClick(day, hour)}
-                      >
-                        {slotAppts.map((apt) => (
-                          <WeeklySlotCard key={apt.id} appointment={apt} />
-                        ))}
-                      </div>
-                    );
-                  })}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {format(new Date(appointment.starts_at), "dd/MM/yyyy HH:mm", { locale: ptBR })} -{" "}
+                    {appointment.professional_name}
+                  </p>
                 </div>
               ))
             )}
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
 
-        {/* Controlled dialog for slot clicks */}
         <NewAppointmentDialog
           open={slotDialogOpen}
           onOpenChange={setSlotDialogOpen}
