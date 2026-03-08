@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -5,13 +6,26 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { User, Mail, Phone, Calendar, MapPin, FileText, CreditCard } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { User, Mail, Phone, Calendar, MapPin, FileText, CreditCard, Pencil, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Patient } from "@/hooks/use-patients";
+import { useUpdatePatient } from "@/hooks/use-patients";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface PatientDetailSheetProps {
   patient: Patient | null;
@@ -26,7 +40,40 @@ const genderLabel: Record<string, string> = {
 };
 
 const PatientDetailSheet = ({ patient, open, onOpenChange }: PatientDetailSheetProps) => {
-  // Fetch appointment history for this patient
+  const [editing, setEditing] = useState(false);
+  const updatePatient = useUpdatePatient();
+
+  // Edit form state
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState("active");
+
+  // Sync form when entering edit mode or patient changes
+  useEffect(() => {
+    if (patient && editing) {
+      setFullName(patient.full_name);
+      setEmail(patient.email ?? "");
+      setPhone(patient.phone ?? "");
+      setDob(patient.date_of_birth ?? "");
+      setGender(patient.gender ?? "");
+      setCpf(patient.cpf ?? "");
+      setAddress(patient.address ?? "");
+      setNotes(patient.notes ?? "");
+      setStatus(patient.status);
+    }
+  }, [patient, editing]);
+
+  // Reset edit mode when sheet closes
+  useEffect(() => {
+    if (!open) setEditing(false);
+  }, [open]);
+
   const { data: appointments = [] } = useQuery({
     queryKey: ["patient-appointments", patient?.id],
     enabled: !!patient,
@@ -53,97 +100,191 @@ const PatientDetailSheet = ({ patient, open, onOpenChange }: PatientDetailSheetP
     .join("")
     .toUpperCase();
 
-  const statusLabel = patient.status === "active" ? "Ativo" : "Inativo";
+  const statusLabelText = patient.status === "active" ? "Ativo" : "Inativo";
+
+  const handleSave = async () => {
+    try {
+      await updatePatient.mutateAsync({
+        id: patient.id,
+        full_name: fullName.trim(),
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+        date_of_birth: dob || undefined,
+        gender: gender || undefined,
+        cpf: cpf.trim() || undefined,
+        address: address.trim() || undefined,
+        notes: notes.trim() || undefined,
+      });
+      toast.success("Paciente atualizado!");
+      setEditing(false);
+    } catch (err: any) {
+      toast.error("Erro ao salvar", { description: err.message });
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-[440px] overflow-y-auto">
         <SheetHeader className="pb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary shrink-0">
               {initials}
             </div>
-            <div className="flex-1">
-              <SheetTitle className="text-lg">{patient.full_name}</SheetTitle>
+            <div className="flex-1 min-w-0">
+              <SheetTitle className="text-lg truncate">{patient.full_name}</SheetTitle>
               <Badge
                 variant={patient.status === "active" ? "default" : "secondary"}
                 className="mt-1"
               >
-                {statusLabel}
+                {statusLabelText}
               </Badge>
             </div>
+            <Button
+              variant={editing ? "destructive" : "outline"}
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => setEditing(!editing)}
+            >
+              {editing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+            </Button>
           </div>
         </SheetHeader>
 
         <Separator />
 
-        <div className="space-y-4 py-4">
-          <h3 className="text-sm font-semibold text-foreground">Informações</h3>
-          <div className="space-y-3">
-            {patient.email && (
-              <InfoRow icon={<Mail className="h-4 w-4" />} label="E-mail" value={patient.email} />
-            )}
-            {patient.phone && (
-              <InfoRow icon={<Phone className="h-4 w-4" />} label="Telefone" value={patient.phone} />
-            )}
-            {patient.date_of_birth && (
-              <InfoRow
-                icon={<Calendar className="h-4 w-4" />}
-                label="Data de Nascimento"
-                value={format(new Date(patient.date_of_birth + "T12:00:00"), "dd/MM/yyyy")}
-              />
-            )}
-            {patient.gender && (
-              <InfoRow icon={<User className="h-4 w-4" />} label="Gênero" value={genderLabel[patient.gender] ?? patient.gender} />
-            )}
-            {patient.cpf && (
-              <InfoRow icon={<CreditCard className="h-4 w-4" />} label="CPF" value={patient.cpf} />
-            )}
-            {patient.address && (
-              <InfoRow icon={<MapPin className="h-4 w-4" />} label="Endereço" value={patient.address} />
-            )}
-            {patient.notes && (
-              <InfoRow icon={<FileText className="h-4 w-4" />} label="Observações" value={patient.notes} />
-            )}
-          </div>
-        </div>
-
-        <Separator />
-
-        <div className="space-y-3 py-4">
-          <h3 className="text-sm font-semibold text-foreground">
-            Últimas Consultas ({appointments.length})
-          </h3>
-          {appointments.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhuma consulta encontrada.</p>
-          ) : (
+        {editing ? (
+          /* ========== EDIT MODE ========== */
+          <div className="space-y-4 py-4">
             <div className="space-y-2">
-              {appointments.map((apt) => (
-                <div
-                  key={apt.id}
-                  className="rounded-md border border-border bg-secondary/50 p-3 space-y-0.5"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-foreground">
-                      {format(new Date(apt.starts_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                    </span>
-                    <Badge variant="outline" className="text-[10px]">
-                      {apt.status}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{apt.professional_name}</p>
-                  {apt.type && (
-                    <p className="text-xs text-muted-foreground">{apt.type}</p>
-                  )}
-                </div>
-              ))}
+              <Label>Nome Completo</Label>
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={100} />
             </div>
-          )}
-        </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>E-mail</Label>
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Telefone</Label>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Data de Nascimento</Label>
+                <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Gênero</Label>
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Masculino</SelectItem>
+                    <SelectItem value="female">Feminino</SelectItem>
+                    <SelectItem value="other">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>CPF</Label>
+                <Input value={cpf} onChange={(e) => setCpf(e.target.value)} maxLength={14} />
+              </div>
+              <div className="space-y-2">
+                <Label>Endereço</Label>
+                <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Observações</Label>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={500} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditing(false)}>
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1 bg-primary hover:bg-primary/90"
+                onClick={handleSave}
+                disabled={updatePatient.isPending || !fullName.trim()}
+              >
+                {updatePatient.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          /* ========== VIEW MODE ========== */
+          <>
+            <div className="space-y-4 py-4">
+              <h3 className="text-sm font-semibold text-foreground">Informações</h3>
+              <div className="space-y-3">
+                {patient.email && (
+                  <InfoRow icon={<Mail className="h-4 w-4" />} label="E-mail" value={patient.email} />
+                )}
+                {patient.phone && (
+                  <InfoRow icon={<Phone className="h-4 w-4" />} label="Telefone" value={patient.phone} />
+                )}
+                {patient.date_of_birth && (
+                  <InfoRow
+                    icon={<Calendar className="h-4 w-4" />}
+                    label="Data de Nascimento"
+                    value={format(new Date(patient.date_of_birth + "T12:00:00"), "dd/MM/yyyy")}
+                  />
+                )}
+                {patient.gender && (
+                  <InfoRow icon={<User className="h-4 w-4" />} label="Gênero" value={genderLabel[patient.gender] ?? patient.gender} />
+                )}
+                {patient.cpf && (
+                  <InfoRow icon={<CreditCard className="h-4 w-4" />} label="CPF" value={patient.cpf} />
+                )}
+                {patient.address && (
+                  <InfoRow icon={<MapPin className="h-4 w-4" />} label="Endereço" value={patient.address} />
+                )}
+                {patient.notes && (
+                  <InfoRow icon={<FileText className="h-4 w-4" />} label="Observações" value={patient.notes} />
+                )}
+              </div>
+            </div>
 
-        <p className="text-[10px] text-muted-foreground pt-2">
-          Cadastrado em {format(new Date(patient.created_at), "dd/MM/yyyy", { locale: ptBR })}
-        </p>
+            <Separator />
+
+            <div className="space-y-3 py-4">
+              <h3 className="text-sm font-semibold text-foreground">
+                Últimas Consultas ({appointments.length})
+              </h3>
+              {appointments.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhuma consulta encontrada.</p>
+              ) : (
+                <div className="space-y-2">
+                  {appointments.map((apt) => (
+                    <div
+                      key={apt.id}
+                      className="rounded-md border border-border bg-secondary/50 p-3 space-y-0.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-foreground">
+                          {format(new Date(apt.starts_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </span>
+                        <Badge variant="outline" className="text-[10px]">
+                          {apt.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{apt.professional_name}</p>
+                      {apt.type && (
+                        <p className="text-xs text-muted-foreground">{apt.type}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <p className="text-[10px] text-muted-foreground pt-2">
+              Cadastrado em {format(new Date(patient.created_at), "dd/MM/yyyy", { locale: ptBR })}
+            </p>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );
