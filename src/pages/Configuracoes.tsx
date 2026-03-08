@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Settings, MessageCircle, Bell, Clock, CheckCircle2, XCircle,
   AlertTriangle, Link2, Copy, Check,
-  Mail, Share2, Download,
+  Mail, Share2, Download, CalendarDays,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
