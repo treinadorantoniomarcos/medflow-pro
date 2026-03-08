@@ -17,11 +17,11 @@ import { useTodayAppointments, useDashboardMetrics } from "@/hooks/use-appointme
 
 const statusFilters: { value: AppointmentStatus | "all"; label: string }[] = [
   { value: "all", label: "Todas" },
-  { value: "confirmada", label: "Confirmadas" },
-  { value: "agendada", label: "Pendentes" },
-  { value: "em_atendimento", label: "Atendendo" },
-  { value: "disponivel", label: "Disponíveis" },
-  { value: "concluida", label: "Concluídas" },
+  { value: "confirmed", label: "Confirmadas" },
+  { value: "scheduled", label: "Pendentes" },
+  { value: "in_progress", label: "Atendendo" },
+  { value: "available", label: "Disponíveis" },
+  { value: "completed", label: "Concluídas" },
 ];
 
 const Dashboard = () => {
