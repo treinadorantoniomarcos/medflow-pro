@@ -27,33 +27,16 @@ const Onboarding = () => {
     setLoading(true);
 
     try {
-      // 1. Create clinic
-      const { data: clinic, error: clinicError } = await supabase
-        .from("clinics")
-        .insert({ name: clinicName.trim() })
-        .select("id")
-        .single();
+      const clinicId = crypto.randomUUID();
 
-      if (clinicError) throw clinicError;
-
-      // 2. Create profile
-      const { error: profileError } = await supabase.from("profiles").insert({
-        user_id: user.id,
-        tenant_id: clinic.id,
-        full_name: fullName.trim(),
-        phone: phone.trim() || null,
+      const { error } = await supabase.rpc("complete_onboarding", {
+        _clinic_id: clinicId,
+        _clinic_name: clinicName.trim(),
+        _full_name: fullName.trim(),
+        _phone: phone.trim() || null,
       });
 
-      if (profileError) throw profileError;
-
-      // 3. Assign owner role
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: user.id,
-        tenant_id: clinic.id,
-        role: "owner",
-      });
-
-      if (roleError) throw roleError;
+      if (error) throw error;
 
       await refreshProfile();
       toast.success("Tudo pronto!", { description: "Sua clínica foi configurada." });
