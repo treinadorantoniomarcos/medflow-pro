@@ -49,6 +49,26 @@ const MinhaAgenda = () => {
   const { data: appointments = [], isLoading } = useProfessionalAgenda(selectedDate);
   const { data: stats } = useProfessionalStats(selectedDate);
 
+  const acceptingBookings = profile?.accepting_bookings ?? true;
+  const [toggling, setToggling] = useState(false);
+
+  const handleToggleBookings = async () => {
+    if (!profile?.user_id) return;
+    setToggling(true);
+    const newValue = !acceptingBookings;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ accepting_bookings: newValue })
+      .eq("user_id", profile.user_id);
+    if (error) {
+      toast.error("Erro ao atualizar disponibilidade");
+    } else {
+      toast.success(newValue ? "Agendamento aberto!" : "Agendamento fechado!");
+      queryClient.invalidateQueries({ queryKey: ["auth-profile"] });
+    }
+    setToggling(false);
+  };
+
   const goPrev = () => setSelectedDate((d) => subDays(d, 1));
   const goNext = () => setSelectedDate((d) => addDays(d, 1));
   const goToday = () => setSelectedDate(new Date());
