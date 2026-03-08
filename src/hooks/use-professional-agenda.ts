@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { startOfDay, endOfDay, addDays, format } from "date-fns";
+import { startOfDay, endOfDay } from "date-fns";
 import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
 
 export interface ProfessionalAppointment {
@@ -14,6 +14,7 @@ export interface ProfessionalAppointment {
   status: AppointmentStatus;
   type: string | null;
   notes: string | null;
+  patient_avatar_url?: string | null;
 }
 
 export const useProfessionalAgenda = (date: Date) => {
@@ -90,6 +91,8 @@ export const useProfessionalStats = (date: Date) => {
         completed: rows.filter((r) => r.status === "completed").length,
         pending: rows.filter((r) => r.status === "scheduled").length,
         inProgress: rows.filter((r) => r.status === "in_progress").length,
+        available: rows.filter((r) => r.status === "available").length,
+        cancelled: rows.filter((r) => r.status === "cancelled" || r.status === "no_show").length,
       };
     },
   });
