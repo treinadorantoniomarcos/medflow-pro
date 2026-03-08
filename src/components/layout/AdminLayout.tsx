@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
   Calendar,
+  Stethoscope,
   Users,
   MessageSquare,
   BarChart3,
