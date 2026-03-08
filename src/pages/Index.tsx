@@ -5,17 +5,15 @@ import {
   Clock,
   Users,
   AlertTriangle,
-  DollarSign,
   ChevronRight,
-  Filter,
 } from "lucide-react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import MetricCard from "@/components/dashboard/MetricCard";
 import AppointmentRow from "@/components/dashboard/AppointmentRow";
 import NewAppointmentDialog from "@/components/dashboard/NewAppointmentDialog";
 import { Button } from "@/components/ui/button";
-import { todayAppointments, pendencias } from "@/data/mockData";
 import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
+import { useTodayAppointments, useDashboardMetrics } from "@/hooks/use-appointments";
 
 const statusFilters: { value: AppointmentStatus | "all"; label: string }[] = [
   { value: "all", label: "Todas" },
@@ -28,11 +26,13 @@ const statusFilters: { value: AppointmentStatus | "all"; label: string }[] = [
 
 const Dashboard = () => {
   const [activeFilter, setActiveFilter] = useState<AppointmentStatus | "all">("all");
+  const { data: appointments = [], isLoading: loadingApts } = useTodayAppointments();
+  const { data: metrics } = useDashboardMetrics();
 
   const filteredAppointments =
     activeFilter === "all"
-      ? todayAppointments
-      : todayAppointments.filter((a) => a.status === activeFilter);
+      ? appointments
+      : appointments.filter((a) => a.status === activeFilter);
 
   const today = new Date();
   const formattedDate = today.toLocaleDateString("pt-BR", {
@@ -62,18 +62,12 @@ const Dashboard = () => {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5"
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
         >
-          <MetricCard value={32} label="Atendimentos Hoje" icon={Calendar} />
-          <MetricCard value={12} label="Vagas Disponíveis" icon={Clock} variant="accent" />
-          <MetricCard value={4} label="Novos Pacientes" icon={Users} variant="success" />
-          <MetricCard value={3} label="Pendências" icon={AlertTriangle} variant="warning" />
-          <MetricCard
-            value="R$ 48.2k"
-            label="Receita Mensal"
-            icon={DollarSign}
-            className="col-span-2 sm:col-span-1"
-          />
+          <MetricCard value={metrics?.todayCount ?? 0} label="Atendimentos Hoje" icon={Calendar} />
+          <MetricCard value={metrics?.availableCount ?? 0} label="Vagas Disponíveis" icon={Clock} variant="accent" />
+          <MetricCard value={appointments.length} label="Na Agenda" icon={Users} variant="success" />
+          <MetricCard value={metrics?.pendingCount ?? 0} label="Pendências" icon={AlertTriangle} variant="warning" />
         </motion.div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -108,19 +102,28 @@ const Dashboard = () => {
 
             {/* Appointments */}
             <div className="space-y-2">
-              {filteredAppointments.map((apt, i) => (
-                <motion.div
-                  key={apt.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.12 + i * 0.04 }}
-                >
-                  <AppointmentRow appointment={apt} />
-                </motion.div>
-              ))}
-              {filteredAppointments.length === 0 && (
+              {loadingApts ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 animate-pulse rounded-lg bg-muted" />
+                  ))}
+                </div>
+              ) : filteredAppointments.length > 0 ? (
+                filteredAppointments.map((apt, i) => (
+                  <motion.div
+                    key={apt.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.12 + i * 0.04 }}
+                  >
+                    <AppointmentRow appointment={apt} />
+                  </motion.div>
+                ))
+              ) : (
                 <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                  Nenhuma consulta com esse filtro.
+                  {activeFilter === "all"
+                    ? "Nenhuma consulta agendada para hoje."
+                    : "Nenhuma consulta com esse filtro."}
                 </div>
               )}
             </div>
@@ -133,50 +136,39 @@ const Dashboard = () => {
             transition={{ delay: 0.15 }}
             className="space-y-4"
           >
-            {/* Pendências */}
-            <div className="rounded-lg border border-border bg-card p-4 shadow-soft">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-foreground">Pendências</h3>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div className="space-y-2.5">
-                {pendencias.map((p, i) => (
-                  <div key={i} className="flex items-start gap-2.5 text-sm">
-                    <span className="text-base">{p.icon}</span>
-                    <span className="text-muted-foreground">{p.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Visão Geral */}
             <div className="rounded-lg border border-border bg-card p-4 shadow-soft">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-foreground">Visão Geral</h3>
-                <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground">
-                  Mês <ChevronRight className="h-3 w-3" />
-                </Button>
+                <h3 className="text-sm font-bold text-foreground">Resumo do Dia</h3>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Consulta por Tipo</span>
-                  <span className="font-semibold text-foreground">5.2%</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-                  <div className="h-full w-[62%] rounded-full bg-primary transition-all" />
+                  <span className="text-muted-foreground">Total agendados</span>
+                  <span className="font-semibold text-foreground">{metrics?.todayCount ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Últimos 30 dias</span>
-                  <div className="flex gap-0.5">
-                    {[40, 55, 45, 70, 60, 80, 65].map((h, i) => (
-                      <div
-                        key={i}
-                        className="w-3 rounded-sm bg-primary/80"
-                        style={{ height: `${h * 0.3}px` }}
-                      />
-                    ))}
-                  </div>
+                  <span className="text-muted-foreground">Disponíveis</span>
+                  <span className="font-semibold text-accent">{metrics?.availableCount ?? 0}</span>
                 </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Aguardando confirmação</span>
+                  <span className="font-semibold text-warning">{metrics?.pendingCount ?? 0}</span>
+                </div>
+                {(metrics?.todayCount ?? 0) > 0 && (
+                  <>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{
+                          width: `${Math.min(100, ((metrics?.todayCount ?? 0) - (metrics?.availableCount ?? 0)) / Math.max(1, metrics?.todayCount ?? 1) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {((metrics?.todayCount ?? 0) - (metrics?.availableCount ?? 0))} de {metrics?.todayCount} horários preenchidos
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
