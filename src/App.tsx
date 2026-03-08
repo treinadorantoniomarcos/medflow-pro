@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Agenda from "./pages/Agenda";
+import PublicBooking from "./pages/PublicBooking";
 import MinhaAgenda from "./pages/MinhaAgenda";
 import Pacientes from "./pages/Pacientes";
 import Mensagens from "./pages/Mensagens";
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/agendar/:slug" element={<PublicBooking />} />
 
               {/* Protected routes */}
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
