@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User, Mail, Phone, Calendar, MapPin, FileText, CreditCard, Pencil, X } from "lucide-react";
+import { User, Mail, Phone, Calendar, MapPin, FileText, CreditCard, Pencil, X, MessageCircle } from "lucide-react";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Patient } from "@/hooks/use-patients";
