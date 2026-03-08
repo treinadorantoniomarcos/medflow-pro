@@ -186,6 +186,9 @@ const PublicBooking = () => {
           setStep("datetime");
           setSelectedTime("");
           if (selectedDate) fetchSlots(selectedDate);
+        } else if (err.error === "professional_not_accepting") {
+          toast.error("Este profissional fechou a agenda.", { description: "Escolha outro profissional." });
+          setStep("professional");
         } else {
           toast.error("Erro ao agendar. Tente novamente.");
         }
