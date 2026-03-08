@@ -1,0 +1,459 @@
+import { useState, useEffect, useMemo } from "react";
+import { useParams } from "react-router-dom";
+import { format, addDays, isBefore, startOfDay, parse } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  CalendarDays,
+  Clock,
+  User,
+  CheckCircle2,
+  ChevronLeft,
+  Stethoscope,
+  Phone,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import medfluxLogo from "@/assets/medflux-logo.png";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+interface ClinicInfo {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  slug: string;
+}
+
+interface WorkHours {
+  start: number;
+  end: number;
+  slotDuration: number;
+}
+
+type Step = "professional" | "datetime" | "info" | "confirmed";
+
+const PublicBooking = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const [clinic, setClinic] = useState<ClinicInfo | null>(null);
+  const [professionals, setProfessionals] = useState<string[]>([]);
+  const [workHours, setWorkHours] = useState<WorkHours>({ start: 8, end: 18, slotDuration: 60 });
+  const [bookedSlots, setBookedSlots] = useState<{ starts_at: string; professional_name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form state
+  const [step, setStep] = useState<Step>("professional");
+  const [selectedProfessional, setSelectedProfessional] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState("");
+  const [patientName, setPatientName] = useState("");
+  const [patientPhone, setPatientPhone] = useState("");
+
+  const fetchClinic = async () => {
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/public-booking?slug=${slug}`,
+        { headers: { apikey: SUPABASE_ANON_KEY } }
+      );
+      if (!res.ok) {
+        setError("Clínica não encontrada");
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      setClinic(data.clinic);
+      setProfessionals(data.professionals);
+      setWorkHours(data.workHours);
+      setLoading(false);
+    } catch {
+      setError("Erro ao carregar dados da clínica");
+      setLoading(false);
+    }
+  };
+
+  const fetchSlots = async (date: Date) => {
+    if (!slug) return;
+    const dateStr = format(date, "yyyy-MM-dd");
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/public-booking?slug=${slug}&date=${dateStr}`,
+        { headers: { apikey: SUPABASE_ANON_KEY } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setBookedSlots(data.bookedSlots);
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  useEffect(() => {
+    if (slug) fetchClinic();
+  }, [slug]);
+
+  useEffect(() => {
+    if (selectedDate) fetchSlots(selectedDate);
+  }, [selectedDate]);
+
+  const timeSlots = useMemo(() => {
+    const slots: string[] = [];
+    const { start, end, slotDuration } = workHours;
+    for (let h = start; h < end; h++) {
+      for (let m = 0; m < 60; m += slotDuration) {
+        if (h + m / 60 >= end) break;
+        slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+      }
+    }
+    return slots;
+  }, [workHours]);
+
+  const availableSlots = useMemo(() => {
+    if (!selectedDate || !selectedProfessional) return timeSlots;
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    return timeSlots.filter((time) => {
+      const slotIso = `${dateStr}T${time}:00`;
+      return !bookedSlots.some(
+        (b) =>
+          b.professional_name === selectedProfessional &&
+          b.starts_at.startsWith(slotIso.slice(0, 16))
+      );
+    });
+  }, [timeSlots, bookedSlots, selectedDate, selectedProfessional]);
+
+  const handleSubmit = async () => {
+    if (!selectedDate || !selectedTime || !patientName.trim()) return;
+    setSubmitting(true);
+
+    const startsAt = `${format(selectedDate, "yyyy-MM-dd")}T${selectedTime}:00`;
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/public-booking`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          slug,
+          patient_name: patientName.trim(),
+          patient_phone: patientPhone.trim() || null,
+          professional_name: selectedProfessional,
+          starts_at: startsAt,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        if (err.error === "slot_already_booked") {
+          toast.error("Esse horário acabou de ser reservado. Escolha outro.");
+          setStep("datetime");
+          setSelectedTime("");
+          if (selectedDate) fetchSlots(selectedDate);
+        } else {
+          toast.error("Erro ao agendar. Tente novamente.");
+        }
+        setSubmitting(false);
+        return;
+      }
+
+      setStep("confirmed");
+    } catch {
+      toast.error("Erro de conexão. Tente novamente.");
+    }
+    setSubmitting(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error || !clinic) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="text-center space-y-3">
+          <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/40" />
+          <h1 className="text-xl font-bold text-foreground">Clínica não encontrada</h1>
+          <p className="text-sm text-muted-foreground">
+            Verifique o link de agendamento com sua clínica.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="border-b border-border bg-card px-4 py-4">
+        <div className="max-w-xl mx-auto flex items-center gap-3">
+          <img
+            src={clinic.logo_url || medfluxLogo}
+            alt={clinic.name}
+            className="h-10 w-10 rounded-lg object-cover"
+          />
+          <div>
+            <h1 className="text-lg font-bold text-foreground">{clinic.name}</h1>
+            <p className="text-xs text-muted-foreground">Agendamento online</p>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 flex items-start justify-center px-4 py-8">
+        <div className="w-full max-w-xl space-y-6">
+          {/* Step indicator */}
+          {step !== "confirmed" && (
+            <div className="flex items-center gap-2 justify-center">
+              {(["professional", "datetime", "info"] as Step[]).map((s, i) => (
+                <div
+                  key={s}
+                  className={cn(
+                    "h-2 w-12 rounded-full transition-colors",
+                    step === s || (["professional", "datetime", "info"].indexOf(step) > i)
+                      ? "bg-primary"
+                      : "bg-muted"
+                  )}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Step 1: Select Professional */}
+          {step === "professional" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="text-center space-y-1">
+                <Stethoscope className="h-8 w-8 mx-auto text-primary" />
+                <h2 className="text-xl font-bold text-foreground">Escolha o profissional</h2>
+                <p className="text-sm text-muted-foreground">
+                  Selecione com quem deseja agendar
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {professionals.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-8">
+                    Nenhum profissional disponível no momento.
+                  </p>
+                ) : (
+                  professionals.map((p) => (
+                    <button
+                      key={p}
+                      className={cn(
+                        "w-full flex items-center gap-3 rounded-xl border p-4 text-left transition-all",
+                        selectedProfessional === p
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border bg-card hover:border-primary/40"
+                      )}
+                      onClick={() => {
+                        setSelectedProfessional(p);
+                        setStep("datetime");
+                      }}
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shrink-0">
+                        {p.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
+                      </div>
+                      <span className="text-sm font-semibold text-foreground">{p}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Select Date & Time */}
+          {step === "datetime" && (
+            <div className="space-y-4 animate-fade-in">
+              <button
+                onClick={() => { setStep("professional"); setSelectedDate(undefined); setSelectedTime(""); }}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Voltar
+              </button>
+
+              <div className="text-center space-y-1">
+                <CalendarDays className="h-8 w-8 mx-auto text-primary" />
+                <h2 className="text-xl font-bold text-foreground">Escolha a data e horário</h2>
+                <p className="text-sm text-muted-foreground">
+                  Profissional: <span className="font-medium text-foreground">{selectedProfessional}</span>
+                </p>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Calendar */}
+                <div className="bg-card rounded-xl border border-border p-3 flex justify-center">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(d) => { setSelectedDate(d); setSelectedTime(""); }}
+                    disabled={(date) => isBefore(date, startOfDay(new Date())) || date.getDay() === 0}
+                    locale={ptBR}
+                    className="pointer-events-auto"
+                  />
+                </div>
+
+                {/* Time slots */}
+                {selectedDate && (
+                  <div className="flex-1 bg-card rounded-xl border border-border p-4 space-y-3">
+                    <p className="text-sm font-semibold text-foreground">
+                      {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                    </p>
+                    {availableSlots.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4 text-center">
+                        Nenhum horário disponível nesta data.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-2 max-h-[260px] overflow-y-auto">
+                        {availableSlots.map((time) => (
+                          <button
+                            key={time}
+                            className={cn(
+                              "rounded-lg border px-3 py-2 text-sm font-medium transition-all",
+                              selectedTime === time
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border bg-card text-foreground hover:border-primary/40"
+                            )}
+                            onClick={() => {
+                              setSelectedTime(time);
+                              setStep("info");
+                            }}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Patient Info */}
+          {step === "info" && (
+            <div className="space-y-4 animate-fade-in">
+              <button
+                onClick={() => setStep("datetime")}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Voltar
+              </button>
+
+              <div className="text-center space-y-1">
+                <User className="h-8 w-8 mx-auto text-primary" />
+                <h2 className="text-xl font-bold text-foreground">Seus dados</h2>
+                <p className="text-sm text-muted-foreground">
+                  {selectedProfessional} — {selectedDate && format(selectedDate, "dd/MM")} às {selectedTime}
+                </p>
+              </div>
+
+              <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="patientName">Nome completo *</Label>
+                  <Input
+                    id="patientName"
+                    placeholder="Seu nome completo"
+                    value={patientName}
+                    onChange={(e) => setPatientName(e.target.value)}
+                    maxLength={100}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="patientPhone">Telefone (opcional)</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="patientPhone"
+                      type="tel"
+                      placeholder="(11) 99999-9999"
+                      className="pl-9"
+                      value={patientPhone}
+                      onChange={(e) => setPatientPhone(e.target.value)}
+                      maxLength={20}
+                    />
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="rounded-lg bg-secondary/50 p-3 space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Resumo
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <Stethoscope className="h-3.5 w-3.5 text-primary" />
+                    {selectedProfessional}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                    {selectedDate && format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <Clock className="h-3.5 w-3.5 text-primary" />
+                    {selectedTime}
+                  </div>
+                </div>
+
+                <Button
+                  className="w-full"
+                  disabled={!patientName.trim() || submitting}
+                  onClick={handleSubmit}
+                >
+                  {submitting ? "Agendando..." : "Confirmar agendamento"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Confirmation */}
+          {step === "confirmed" && (
+            <div className="text-center space-y-4 py-12 animate-fade-in">
+              <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
+              <h2 className="text-2xl font-bold text-foreground">Agendamento confirmado!</h2>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{selectedProfessional}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedDate && format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })} às {selectedTime}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStep("professional");
+                  setSelectedProfessional("");
+                  setSelectedDate(undefined);
+                  setSelectedTime("");
+                  setPatientName("");
+                  setPatientPhone("");
+                }}
+              >
+                Fazer novo agendamento
+              </Button>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-card px-4 py-3 text-center">
+        <p className="text-xs text-muted-foreground">
+          Powered by <span className="font-semibold text-primary">MedFlux Pro</span>
+        </p>
+      </footer>
+    </div>
+  );
+};
+
+export default PublicBooking;
