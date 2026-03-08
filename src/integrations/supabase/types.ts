@@ -318,6 +318,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          accepting_bookings: boolean
           avatar_url: string | null
           created_at: string
           full_name: string | null
@@ -328,6 +329,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accepting_bookings?: boolean
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
@@ -338,6 +340,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          accepting_bookings?: boolean
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
