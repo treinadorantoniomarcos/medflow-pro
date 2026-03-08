@@ -10,6 +10,7 @@ import {
   AlertCircle,
   PlayCircle,
   CalendarCheck,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { buildWhatsAppUrl, buildAppointmentReminder } from "@/lib/whatsapp";
 import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
 
 const statusActions: { from: AppointmentStatus; to: AppointmentStatus; label: string; icon: React.ReactNode }[] = [
@@ -69,6 +71,37 @@ const MinhaAgenda = () => {
       queryClient.invalidateQueries({ queryKey: ["professional-stats"] });
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
     }
+  };
+
+  const handleWhatsAppReminder = async (apt: typeof appointments[number]) => {
+    // Look up patient phone from patients table
+    const { data: patient } = await supabase
+      .from("patients")
+      .select("phone")
+      .eq("tenant_id", profile!.tenant_id)
+      .eq("full_name", apt.patient_name)
+      .maybeSingle();
+
+    if (!patient?.phone) {
+      toast.error("Telefone não encontrado", {
+        description: "O paciente não possui telefone cadastrado.",
+      });
+      return;
+    }
+
+    const dateStr = format(new Date(apt.starts_at), "dd/MM/yyyy", { locale: ptBR });
+    const timeStr = format(new Date(apt.starts_at), "HH:mm");
+
+    const message = buildAppointmentReminder({
+      patientName: apt.patient_name,
+      date: dateStr,
+      time: timeStr,
+      professionalName: apt.professional_name,
+      type: apt.type,
+    });
+
+    const url = buildWhatsAppUrl(patient.phone, message);
+    if (url) window.open(url, "_blank");
   };
 
   return (
@@ -194,18 +227,29 @@ const MinhaAgenda = () => {
                           )}
                         </div>
 
-                        {/* Action button */}
-                        {action && (
+                        {/* Actions */}
+                        <div className="flex flex-col gap-1.5 shrink-0">
+                          {action && (
+                            <Button
+                              size="sm"
+                              variant={action.to === "completed" ? "default" : "outline"}
+                              className="gap-1.5 text-xs"
+                              onClick={() => handleStatusChange(apt.id, action.to)}
+                            >
+                              {action.icon}
+                              {action.label}
+                            </Button>
+                          )}
                           <Button
                             size="sm"
-                            variant={action.to === "completed" ? "default" : "outline"}
-                            className="gap-1.5 text-xs shrink-0"
-                            onClick={() => handleStatusChange(apt.id, action.to)}
+                            variant="outline"
+                            className="gap-1.5 text-xs text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                            onClick={() => handleWhatsAppReminder(apt)}
                           >
-                            {action.icon}
-                            {action.label}
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            Lembrete
                           </Button>
-                        )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
