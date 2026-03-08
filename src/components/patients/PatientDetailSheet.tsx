@@ -140,14 +140,33 @@ const PatientDetailSheet = ({ patient, open, onOpenChange }: PatientDetailSheetP
                 {statusLabelText}
               </Badge>
             </div>
-            <Button
-              variant={editing ? "destructive" : "outline"}
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={() => setEditing(!editing)}
-            >
-              {editing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-            </Button>
+            <div className="flex gap-1 shrink-0">
+              {!editing && buildWhatsAppUrl(patient.phone) && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                  asChild
+                >
+                  <a
+                    href={buildWhatsAppUrl(patient.phone)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Abrir WhatsApp"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+              <Button
+                variant={editing ? "destructive" : "outline"}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setEditing(!editing)}
+              >
+                {editing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
         </SheetHeader>
 
