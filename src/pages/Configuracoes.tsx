@@ -1,6 +1,6 @@
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
-import { Settings, MessageCircle, Bell, Clock, CheckCircle2, XCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Settings, MessageCircle, Bell, Clock, CheckCircle2, XCircle, AlertTriangle, Loader2, Link2, Copy, Check } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -8,10 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useClinicSettings, useUpdateClinicSettings, useNotificationsQueue } from "@/hooks/use-clinic-settings";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
   pending: { label: "Pendente", icon: <Clock className="h-3 w-3" />, className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
@@ -21,9 +27,28 @@ const statusConfig: Record<string, { label: string; icon: React.ReactNode; class
 };
 
 const Configuracoes = () => {
+  const { profile } = useAuth();
   const { data: settings, isLoading: loadingSettings } = useClinicSettings();
   const updateSettings = useUpdateClinicSettings();
   const { data: queue = [], isLoading: loadingQueue } = useNotificationsQueue();
+  const [copied, setCopied] = useState(false);
+
+  const { data: clinicSlug } = useQuery({
+    queryKey: ["clinic-slug", profile?.tenant_id],
+    enabled: !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clinics")
+        .select("slug")
+        .eq("id", profile!.tenant_id)
+        .single();
+      return data?.slug ?? null;
+    },
+  });
+
+  const bookingUrl = clinicSlug
+    ? `${window.location.origin}/agendar/${clinicSlug}`
+    : null;
 
   const whatsappEnabled = settings?.whatsapp_reminders_enabled ?? false;
 
@@ -51,6 +76,58 @@ const Configuracoes = () => {
               Gestão de notificações e preferências da clínica
             </p>
           </div>
+        </motion.div>
+
+        {/* Booking link card */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.03 }}
+        >
+          <Card className="shadow-soft">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                  <Link2 className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-base">Link de Agendamento Online</CardTitle>
+                  <CardDescription>
+                    Compartilhe este link no WhatsApp, Instagram ou site para seus pacientes agendarem
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {bookingUrl ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={bookingUrl}
+                    className="bg-secondary border-0 text-sm font-mono"
+                    onFocus={(e) => e.target.select()}
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(bookingUrl);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    title="Copiar link"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum slug configurado para a clínica. Entre em contato para configurar.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* WhatsApp settings card */}
