@@ -185,6 +185,78 @@ export type Database = {
           },
         ]
       }
+      notifications_queue: {
+        Row: {
+          appointment_date: string
+          appointment_id: string | null
+          attempts: number
+          channel: string
+          created_at: string
+          id: string
+          last_error: string | null
+          message_template: string
+          patient_name: string
+          patient_phone: string | null
+          professional_name: string
+          scheduled_for: string
+          sent_at: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_date: string
+          appointment_id?: string | null
+          attempts?: number
+          channel?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          message_template?: string
+          patient_name: string
+          patient_phone?: string | null
+          professional_name: string
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_date?: string
+          appointment_id?: string | null
+          attempts?: number
+          channel?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          message_template?: string
+          patient_name?: string
+          patient_phone?: string | null
+          professional_name?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_queue_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_queue_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null
