@@ -14,17 +14,17 @@ import medfluxLogo from "@/assets/medflux-logo.png";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { user, loading, needsOnboarding } = useAuth();
+  const { user, loading: authLoading, needsOnboarding } = useAuth();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!authLoading && user) {
       if (needsOnboarding) {
         navigate("/onboarding", { replace: true });
       } else {
         navigate("/", { replace: true });
       }
     }
-  }, [user, loading, needsOnboarding, navigate]);
+  }, [user, authLoading, needsOnboarding, navigate]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
