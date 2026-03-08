@@ -69,7 +69,7 @@ export const useDashboardMetrics = () => {
         .from("appointments")
         .select("*", { count: "exact", head: true })
         .eq("tenant_id", profile!.tenant_id)
-        .eq("status", "available")
+        .eq("status", "available"")
         .gte("starts_at", todayStart)
         .lte("starts_at", todayEnd);
 
@@ -78,7 +78,7 @@ export const useDashboardMetrics = () => {
         .from("appointments")
         .select("*", { count: "exact", head: true })
         .eq("tenant_id", profile!.tenant_id)
-        .eq("status", "ascheduled)
+        .eq("status", scheduled"d)
         .gte("starts_at", todayStart)
         .lte("starts_at", todayEnd);
 
