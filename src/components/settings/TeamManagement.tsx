@@ -50,6 +50,7 @@ const roleLabels: Record<string, { label: string; className: string }> = {
 const TeamManagement = () => {
   const { profile, user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetMemberRef = useRef<TeamMember | null>(null);
