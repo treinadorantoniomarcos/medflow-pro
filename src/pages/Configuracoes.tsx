@@ -28,7 +28,7 @@ const statusConfig: Record<string, { label: string; icon: React.ReactNode; class
 };
 
 const Configuracoes = () => {
-  const { profile } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const { data: settings, isLoading: loadingSettings } = useClinicSettings();
   const updateSettings = useUpdateClinicSettings();
   const { data: queue = [], isLoading: loadingQueue } = useNotificationsQueue();
