@@ -38,7 +38,7 @@ export const useTodayAppointments = () => {
           patientInitials: initials,
           type: row.type || "Consulta",
           status: row.status as AppointmentStatus,
-          notes: row.notes ?? undefined,
+          alert: row.notes ?? undefined,
         };
       });
     },
