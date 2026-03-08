@@ -24,6 +24,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
+import TeamManagement from "@/components/settings/TeamManagement";
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
   pending: { label: "Pendente", icon: <Clock className="h-3 w-3" />, className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
