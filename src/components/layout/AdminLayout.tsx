@@ -39,6 +39,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { profile, signOut } = useAuth();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
