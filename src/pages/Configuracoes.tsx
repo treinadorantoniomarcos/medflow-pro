@@ -27,9 +27,28 @@ const statusConfig: Record<string, { label: string; icon: React.ReactNode; class
 };
 
 const Configuracoes = () => {
+  const { profile } = useAuth();
   const { data: settings, isLoading: loadingSettings } = useClinicSettings();
   const updateSettings = useUpdateClinicSettings();
   const { data: queue = [], isLoading: loadingQueue } = useNotificationsQueue();
+  const [copied, setCopied] = useState(false);
+
+  const { data: clinicSlug } = useQuery({
+    queryKey: ["clinic-slug", profile?.tenant_id],
+    enabled: !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clinics")
+        .select("slug")
+        .eq("id", profile!.tenant_id)
+        .single();
+      return data?.slug ?? null;
+    },
+  });
+
+  const bookingUrl = clinicSlug
+    ? `${window.location.origin}/agendar/${clinicSlug}`
+    : null;
 
   const whatsappEnabled = settings?.whatsapp_reminders_enabled ?? false;
 
