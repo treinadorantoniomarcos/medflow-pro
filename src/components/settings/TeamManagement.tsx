@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Camera, Loader2, Users, Plus, Trash2, CircleDot } from "lucide-react";
+import { Camera, Loader2, Users, Plus, Trash2, CircleDot, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
