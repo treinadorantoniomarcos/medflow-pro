@@ -69,16 +69,16 @@ export const useDashboardMetrics = () => {
         .from("appointments")
         .select("*", { count: "exact", head: true })
         .eq("tenant_id", profile!.tenant_id)
-        .eq("status", "disponivel")
+        .eq("status", "available")
         .gte("starts_at", todayStart)
         .lte("starts_at", todayEnd);
 
-      // Pending (agendada, not confirmed)
+      // Pending (scheduled, not confirmed)
       const { count: pendingCount } = await supabase
         .from("appointments")
         .select("*", { count: "exact", head: true })
         .eq("tenant_id", profile!.tenant_id)
-        .eq("status", "agendada")
+        .eq("status", "scheduled")
         .gte("starts_at", todayStart)
         .lte("starts_at", todayEnd);
 

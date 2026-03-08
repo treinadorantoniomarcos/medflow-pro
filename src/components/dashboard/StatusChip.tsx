@@ -1,24 +1,24 @@
 import { cn } from "@/lib/utils";
 
 export type AppointmentStatus =
-  | "confirmada"
-  | "agendada"
-  | "em_atendimento"
-  | "concluida"
+  | "confirmed"
+  | "scheduled"
+  | "in_progress"
+  | "completed"
   | "no_show"
-  | "cancelada"
-  | "remarcada"
-  | "disponivel";
+  | "cancelled"
+  | "rescheduled"
+  | "available";
 
 const statusConfig: Record<AppointmentStatus, { label: string; className: string }> = {
-  confirmada: { label: "Confirmada", className: "bg-success/15 text-success border-success/25" },
-  agendada: { label: "Agendada", className: "bg-primary/15 text-primary border-primary/25" },
-  em_atendimento: { label: "Em atendimento", className: "bg-warning/15 text-warning border-warning/25" },
-  concluida: { label: "Concluída", className: "bg-muted text-muted-foreground border-border" },
+  confirmed: { label: "Confirmada", className: "bg-success/15 text-success border-success/25" },
+  scheduled: { label: "Agendada", className: "bg-primary/15 text-primary border-primary/25" },
+  in_progress: { label: "Em atendimento", className: "bg-warning/15 text-warning border-warning/25" },
+  completed: { label: "Concluída", className: "bg-muted text-muted-foreground border-border" },
   no_show: { label: "No-show", className: "bg-destructive/15 text-destructive border-destructive/25" },
-  cancelada: { label: "Cancelada", className: "bg-destructive/10 text-destructive border-destructive/20" },
-  remarcada: { label: "Remarcada", className: "bg-accent/15 text-accent border-accent/25" },
-  disponivel: { label: "Disponível", className: "bg-lime/15 text-lime border-lime/25" },
+  cancelled: { label: "Cancelada", className: "bg-destructive/10 text-destructive border-destructive/20" },
+  rescheduled: { label: "Remarcada", className: "bg-accent/15 text-accent border-accent/25" },
+  available: { label: "Disponível", className: "bg-lime/15 text-lime border-lime/25" },
 };
 
 interface StatusChipProps {

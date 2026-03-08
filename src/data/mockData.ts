@@ -7,7 +7,7 @@ export const todayAppointments: Appointment[] = [
     patientName: "Dr. Pedro Pereira",
     patientInitials: "PP",
     type: "Primeira consulta",
-    status: "confirmada",
+    status: "confirmed",
     progress: 81,
   },
   {
@@ -16,7 +16,7 @@ export const todayAppointments: Appointment[] = [
     patientName: "Sophia Amaral",
     patientInitials: "SA",
     type: "Retorno",
-    status: "confirmada",
+    status: "confirmed",
   },
   {
     id: "3",
@@ -24,7 +24,7 @@ export const todayAppointments: Appointment[] = [
     patientName: "João Almeida",
     patientInitials: "JA",
     type: "Revisão",
-    status: "em_atendimento",
+    status: "in_progress",
     alert: "Paciente pode se atrasar",
   },
   {
@@ -33,7 +33,7 @@ export const todayAppointments: Appointment[] = [
     patientName: "Ana Soares Menehab",
     patientInitials: "AS",
     type: "Primeira consulta",
-    status: "confirmada",
+    status: "confirmed",
   },
   {
     id: "5",
@@ -41,7 +41,7 @@ export const todayAppointments: Appointment[] = [
     patientName: "Carolina Martins",
     patientInitials: "CM",
     type: "Retorno",
-    status: "agendada",
+    status: "scheduled",
   },
   {
     id: "6",
@@ -49,7 +49,7 @@ export const todayAppointments: Appointment[] = [
     patientName: "Renato Oliveira",
     patientInitials: "RO",
     type: "Revisão",
-    status: "disponivel",
+    status: "available",
   },
 ];
 
