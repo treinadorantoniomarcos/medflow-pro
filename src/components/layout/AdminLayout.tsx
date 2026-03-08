@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
   Calendar,
@@ -16,6 +17,7 @@ import {
   Moon,
 } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
+import { LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import medfluxLogo from "@/assets/medflux-logo.png";
@@ -37,6 +39,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { profile, signOut } = useAuth();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -90,12 +93,15 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         <div className="border-t border-border p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-              MC
+              {profile?.full_name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?"}
             </div>
             <div className="flex-1 truncate">
-              <p className="text-sm font-semibold text-foreground">Dra. Mariana Costa</p>
-              <p className="text-xs text-muted-foreground">Administradora</p>
+              <p className="text-sm font-semibold text-foreground">{profile?.full_name || "Usuário"}</p>
+              <p className="text-xs text-muted-foreground">Administrador(a)</p>
             </div>
+            <Button variant="ghost" size="icon" onClick={signOut} title="Sair">
+              <LogOut className="h-4 w-4 text-muted-foreground" />
+            </Button>
           </div>
         </div>
       </aside>

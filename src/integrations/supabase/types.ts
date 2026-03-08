@@ -241,6 +241,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_has_no_profile: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "owner" | "professional" | "receptionist" | "patient"
