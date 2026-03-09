@@ -322,6 +322,53 @@ export type Database = {
           },
         ]
       }
+      professional_availability_blocks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_at: string
+          id: string
+          professional_name: string
+          professional_user_id: string
+          reason: string | null
+          start_at: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_at: string
+          id?: string
+          professional_name: string
+          professional_user_id: string
+          reason?: string | null
+          start_at: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_at?: string
+          id?: string
+          professional_name?: string
+          professional_user_id?: string
+          reason?: string | null
+          start_at?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_availability_blocks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       professional_slot_overrides: {
         Row: {
           created_at: string
