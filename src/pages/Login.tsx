@@ -103,7 +103,7 @@ const Login = () => {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
+                  placeholder="********"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -150,8 +150,14 @@ const Login = () => {
             {googleLoading ? "Conectando..." : "Entrar com Google"}
           </Button>
 
+          <div className="mt-3 rounded-md border border-border bg-secondary/40 px-3 py-2 text-center">
+            <p className="text-xs text-muted-foreground">
+              Link separado do painel: <Link to="/super-admin" className="font-semibold text-primary hover:underline">/super-admin</Link>
+            </p>
+          </div>
+
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Não tem conta?{" "}
+            Nao tem conta?{" "}
             <Link to="/register" className="font-semibold text-primary hover:underline">
               Criar conta
             </Link>
