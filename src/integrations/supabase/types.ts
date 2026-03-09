@@ -192,6 +192,7 @@ export type Database = {
         Row: {
           appointment_date: string
           appointment_id: string | null
+          appointment_type: string | null
           attempts: number
           channel: string
           created_at: string
@@ -210,6 +211,7 @@ export type Database = {
         Insert: {
           appointment_date: string
           appointment_id?: string | null
+          appointment_type?: string | null
           attempts?: number
           channel?: string
           created_at?: string
@@ -228,6 +230,7 @@ export type Database = {
         Update: {
           appointment_date?: string
           appointment_id?: string | null
+          appointment_type?: string | null
           attempts?: number
           channel?: string
           created_at?: string
