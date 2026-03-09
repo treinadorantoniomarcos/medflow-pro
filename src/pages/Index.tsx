@@ -53,16 +53,17 @@ const Dashboard = () => {
   const [period, setPeriod] = useState<DashboardPeriod>("today");
   const { data: userRole } = useQuery({
     queryKey: ["dashboard-user-role", user?.id, profile?.tenant_id],
-    enabled: !!user?.id && !!profile?.tenant_id,
+    enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_roles")
-        .select("role")
-        .eq("tenant_id", profile!.tenant_id)
-        .eq("user_id", user!.id)
-        .maybeSingle();
+        .select("role, tenant_id")
+        .eq("user_id", user!.id);
       if (error) throw error;
-      return data?.role ?? null;
+      const roles = (data ?? []) as Array<{ role: string; tenant_id: string }>;
+      if (roles.some((item) => item.role === "super_admin")) return "super_admin";
+      const scoped = roles.find((item) => item.tenant_id === profile?.tenant_id);
+      return scoped?.role ?? null;
     },
   });
 
@@ -86,6 +87,9 @@ const Dashboard = () => {
   useEffect(() => {
     if (userRole === "patient") {
       navigate("/paciente/home", { replace: true });
+    }
+    if (userRole === "super_admin") {
+      navigate("/super-admin", { replace: true });
     }
   }, [userRole, navigate]);
 

@@ -25,13 +25,14 @@ import { Button } from "@/components/ui/button";
 import medfluxLogo from "@/assets/medflux-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 
-type AppRole = "owner" | "admin" | "professional" | "receptionist" | "patient";
+type AppRole = "owner" | "admin" | "professional" | "receptionist" | "patient" | "super_admin";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 const navItems: Array<{ icon: any; label: string; path: string; roles: AppRole[] }> = [
+  { icon: LayoutDashboard, label: "Super Admin", path: "/super-admin", roles: ["super_admin"] },
   { icon: LayoutDashboard, label: "Inicio", path: "/", roles: ["owner", "admin", "professional", "receptionist"] },
   { icon: Calendar, label: "Agenda", path: "/agenda", roles: ["owner", "admin", "receptionist"] },
   { icon: Stethoscope, label: "Minha Agenda", path: "/minha-agenda", roles: ["owner", "admin", "professional"] },
@@ -47,6 +48,7 @@ const roleLabelMap: Record<AppRole, string> = {
   professional: "Profissional",
   receptionist: "Recepcao",
   patient: "Paciente",
+  super_admin: "Super Admin",
 };
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
@@ -57,17 +59,19 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
   const { data: userRole } = useQuery<AppRole | null>({
     queryKey: ["layout-user-role", user?.id, profile?.tenant_id],
-    enabled: !!user?.id && !!profile?.tenant_id,
+    enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_roles")
-        .select("role")
-        .eq("tenant_id", profile!.tenant_id)
-        .eq("user_id", user!.id)
-        .maybeSingle();
+        .select("role, tenant_id")
+        .eq("user_id", user!.id);
 
       if (error) throw error;
-      return (data?.role as AppRole | undefined) ?? null;
+
+      const roles = (data ?? []) as Array<{ role: AppRole; tenant_id: string }>;
+      if (roles.some((item) => item.role === "super_admin")) return "super_admin";
+      const scoped = roles.find((item) => item.tenant_id === profile?.tenant_id);
+      return scoped?.role ?? null;
     },
   });
 

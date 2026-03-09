@@ -14,17 +14,19 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 
   const { data: userRole, isLoading: loadingRole } = useQuery({
     queryKey: ["protected-route-role", user?.id, profile?.tenant_id],
-    enabled: !!allowedRoles?.length && !!user?.id && !!profile?.tenant_id,
+    enabled: !!allowedRoles?.length && !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_roles")
-        .select("role")
-        .eq("user_id", user!.id)
-        .eq("tenant_id", profile!.tenant_id)
-        .maybeSingle();
+        .select("role, tenant_id")
+        .eq("user_id", user!.id);
 
       if (error) throw error;
-      return (data?.role ?? null) as Enums<"app_role"> | null;
+      const roles = (data ?? []) as Array<{ role: Enums<"app_role">; tenant_id: string }>;
+      const superAdmin = roles.find((item) => item.role === "super_admin");
+      if (superAdmin) return "super_admin" as Enums<"app_role">;
+      const scoped = roles.find((item) => item.tenant_id === profile?.tenant_id);
+      return (scoped?.role ?? null) as Enums<"app_role"> | null;
     },
   });
 
@@ -39,6 +41,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   if (!user) return <Navigate to="/login" replace />;
   if (needsOnboarding) return <Navigate to="/onboarding" replace />;
   if (allowedRoles?.length && (!userRole || !allowedRoles.includes(userRole))) {
+    if (userRole === "super_admin") return <Navigate to="/super-admin" replace />;
     return <Navigate to={userRole === "patient" ? "/paciente/home" : "/"} replace />;
   }
 

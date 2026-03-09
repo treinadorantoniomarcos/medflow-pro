@@ -21,6 +21,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import PatientHome from "./pages/PatientHome";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/agenda" element={<ProtectedRoute allowedRoles={["owner", "admin", "receptionist"]}><Agenda /></ProtectedRoute>} />
               <Route path="/paciente/home" element={<ProtectedRoute allowedRoles={["patient"]}><PatientHome /></ProtectedRoute>} />
+              <Route path="/super-admin" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminDashboard /></ProtectedRoute>} />
               <Route path="/minha-agenda" element={<ProtectedRoute allowedRoles={["owner", "admin", "professional"]}><MinhaAgenda /></ProtectedRoute>} />
               <Route path="/pacientes" element={<ProtectedRoute allowedRoles={["owner", "admin", "receptionist"]}><Pacientes /></ProtectedRoute>} />
               <Route path="/mensagens" element={<ProtectedRoute allowedRoles={["owner", "admin", "receptionist", "patient"]}><Mensagens /></ProtectedRoute>} />
