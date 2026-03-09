@@ -50,6 +50,7 @@ interface TeamMember {
   avatar_url: string | null;
   phone: string | null;
   accepting_bookings: boolean;
+  is_active: boolean;
   role?: string;
 }
 
