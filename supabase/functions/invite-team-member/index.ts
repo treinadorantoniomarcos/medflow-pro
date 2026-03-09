@@ -24,7 +24,7 @@ async function findUserByEmail(supabaseAdmin: any, email: string) {
     if (error) throw error;
 
     const users = data.users ?? [];
-    const found = users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+    const found = users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
     if (found) return found;
     if (users.length < perPage) break;
     page += 1;
