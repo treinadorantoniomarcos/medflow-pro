@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { UserPlus, Eye, EyeOff } from "lucide-react";
 import medfluxLogo from "@/assets/medflux-logo.png";
 import { validateStrongPassword } from "@/lib/password-policy";
+import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator";
 
 const Register = () => {
   const navigate = useNavigate();
