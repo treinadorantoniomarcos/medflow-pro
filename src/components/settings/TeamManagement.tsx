@@ -1,12 +1,11 @@
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -15,8 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -25,10 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Camera, Loader2, Users, Plus, Trash2, CircleDot, CalendarDays } from "lucide-react";
+import { Camera, Loader2, Users, CircleDot, CalendarDays, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { Tables } from "@/integrations/supabase/types";
 
 interface TeamMember {
   id: string;
@@ -41,21 +37,29 @@ interface TeamMember {
 }
 
 const roleLabels: Record<string, { label: string; className: string }> = {
-  owner: { label: "Proprietário", className: "bg-primary/10 text-primary" },
+  owner: { label: "Proprietario", className: "bg-primary/10 text-primary" },
   admin: { label: "Administrador", className: "bg-primary/10 text-primary" },
   professional: { label: "Profissional", className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
   receptionist: { label: "Recepcionista", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" },
 };
 
 const TeamManagement = () => {
-  const { profile, user } = useAuth();
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitePhone, setInvitePhone] = useState("");
+  const [inviteRole, setInviteRole] = useState<"professional" | "receptionist" | "admin">("professional");
+  const [inviteAccepting, setInviteAccepting] = useState(true);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetMemberRef = useRef<TeamMember | null>(null);
 
-  // Fetch team members (profiles + roles)
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["team-members", profile?.tenant_id],
     enabled: !!profile?.tenant_id,
@@ -67,7 +71,6 @@ const TeamManagement = () => {
 
       if (error) throw error;
 
-      // Fetch roles for all members
       const { data: roles } = await supabase
         .from("user_roles")
         .select("user_id, role")
@@ -82,6 +85,55 @@ const TeamManagement = () => {
       })) as TeamMember[];
     },
   });
+
+  const handleInviteMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!inviteName.trim() || !inviteEmail.trim()) {
+      toast.error("Preencha nome e e-mail.");
+      return;
+    }
+
+    setInviteLoading(true);
+    const { data, error } = await supabase.functions.invoke("invite-team-member", {
+      body: {
+        full_name: inviteName.trim(),
+        email: inviteEmail.trim().toLowerCase(),
+        phone: invitePhone.trim() || null,
+        role: inviteRole,
+        accepting_bookings: inviteAccepting,
+      },
+    });
+
+    if (error || !data?.ok) {
+      const detail = (data && data.detail) || error?.message || "Falha ao convidar profissional.";
+      const code = data?.error;
+
+      if (code === "user_belongs_to_another_tenant") {
+        toast.error("Este e-mail ja pertence a outro assinante.");
+      } else if (code === "forbidden") {
+        toast.error("Somente admin/owner pode convidar equipe.");
+      } else {
+        toast.error("Erro ao convidar profissional", { description: String(detail) });
+      }
+      setInviteLoading(false);
+      return;
+    }
+
+    toast.success("Profissional convidado com sucesso!", {
+      description: "Um e-mail de convite foi enviado para acesso.",
+    });
+
+    setInviteName("");
+    setInviteEmail("");
+    setInvitePhone("");
+    setInviteRole("professional");
+    setInviteAccepting(true);
+    setInviteOpen(false);
+    setInviteLoading(false);
+
+    queryClient.invalidateQueries({ queryKey: ["team-members"] });
+  };
 
   const handlePhotoClick = (member: TeamMember) => {
     targetMemberRef.current = member;
@@ -98,7 +150,7 @@ const TeamManagement = () => {
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 2MB.");
+      toast.error("A imagem deve ter no maximo 2MB.");
       return;
     }
 
@@ -107,7 +159,6 @@ const TeamManagement = () => {
       const ext = file.name.split(".").pop() ?? "jpg";
       const path = `${member.user_id}/avatar.${ext}`;
 
-      // Remove old files
       const { data: existing } = await supabase.storage.from("avatars").list(member.user_id);
       if (existing && existing.length > 0) {
         await supabase.storage.from("avatars").remove(existing.map((f) => `${member.user_id}/${f.name}`));
@@ -158,9 +209,93 @@ const TeamManagement = () => {
           <div className="flex-1">
             <CardTitle className="text-base">Equipe Profissional</CardTitle>
             <CardDescription>
-              Gerencie os profissionais e suas fotos de perfil que aparecem no agendamento online
+              Gerencie profissionais, papeis e fotos exibidas no agendamento online.
             </CardDescription>
           </div>
+          <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1.5">
+                <Plus className="h-4 w-4" />
+                Novo profissional
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[520px]">
+              <DialogHeader>
+                <DialogTitle>Convidar membro da equipe</DialogTitle>
+                <DialogDescription>
+                  Cria acesso e vincula o profissional ao assinante atual.
+                </DialogDescription>
+              </DialogHeader>
+              <form className="space-y-3" onSubmit={handleInviteMember}>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Nome completo</label>
+                  <Input
+                    value={inviteName}
+                    onChange={(e) => setInviteName(e.target.value)}
+                    placeholder="Ex.: Maria da Silva"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">E-mail</label>
+                  <Input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="profissional@clinica.com"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Telefone</label>
+                  <Input
+                    value={invitePhone}
+                    onChange={(e) => setInvitePhone(e.target.value)}
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Papel</label>
+                    <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as typeof inviteRole)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="professional">Profissional</SelectItem>
+                        <SelectItem value="receptionist">Recepcionista</SelectItem>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Agendamento publico</label>
+                    <Select
+                      value={inviteAccepting ? "open" : "closed"}
+                      onValueChange={(v) => setInviteAccepting(v === "open")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">Aberto</SelectItem>
+                        <SelectItem value="closed">Fechado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setInviteOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={inviteLoading}>
+                    {inviteLoading ? "Enviando..." : "Enviar convite"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </CardHeader>
       <CardContent>
@@ -185,7 +320,6 @@ const TeamManagement = () => {
                   key={member.id}
                   className="flex items-center gap-4 rounded-xl border border-border p-4 transition-colors hover:bg-secondary/30"
                 >
-                  {/* Avatar */}
                   <button
                     onClick={() => handlePhotoClick(member)}
                     disabled={isUploading}
@@ -212,7 +346,6 @@ const TeamManagement = () => {
                     </div>
                   </button>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">
                       {member.full_name ?? "Sem nome"}
@@ -222,10 +355,9 @@ const TeamManagement = () => {
                     )}
                   </div>
 
-                  {/* Booking status indicator */}
                   <span
                     className={cn(
-                      "flex items-center gap-1 shrink-0 text-[10px] font-medium rounded-full px-2 py-0.5 border",
+                      "flex items-center gap-1 shrink-0 text-xs font-medium rounded-full px-2 py-0.5 border",
                       member.accepting_bookings
                         ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
                         : "bg-muted text-muted-foreground border-border"
@@ -235,12 +367,10 @@ const TeamManagement = () => {
                     {member.accepting_bookings ? "Aberto" : "Fechado"}
                   </span>
 
-                  {/* Role badge */}
-                  <Badge variant="secondary" className={cn("shrink-0 text-[10px]", rl.className)}>
+                  <Badge variant="secondary" className={cn("shrink-0 text-xs", rl.className)}>
                     {rl.label}
                   </Badge>
 
-                  {/* Agenda link */}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -251,33 +381,12 @@ const TeamManagement = () => {
                     <CalendarDays className="h-3.5 w-3.5 mr-1" />
                     <span className="hidden sm:inline text-xs">Agenda</span>
                   </Button>
-
-                  {/* Upload button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handlePhotoClick(member)}
-                    disabled={isUploading}
-                    className="shrink-0"
-                  >
-                    {isUploading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        <Camera className="h-3.5 w-3.5 mr-1" />
-                        <span className="hidden sm:inline text-xs">
-                          {member.avatar_url ? "Trocar" : "Foto"}
-                        </span>
-                      </>
-                    )}
-                  </Button>
                 </div>
               );
             })}
           </div>
         )}
 
-        {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
