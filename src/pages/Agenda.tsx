@@ -28,6 +28,7 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import NewAppointmentDialog from "@/components/dashboard/NewAppointmentDialog";
 import WeeklySlotCard from "@/components/agenda/WeeklySlotCard";
+import AppointmentAudioPlayer from "@/components/agenda/AppointmentAudioPlayer";
 import StatusChip from "@/components/dashboard/StatusChip";
 import { Button } from "@/components/ui/button";
 import {
@@ -400,6 +401,15 @@ const Agenda = () => {
                     {format(new Date(appointment.starts_at), "dd/MM/yyyy HH:mm", { locale: ptBR })} -{" "}
                     {appointment.professional_name}
                   </p>
+                  {appointment.notes && (
+                    <p className="text-xs text-muted-foreground mt-2 italic">{appointment.notes}</p>
+                  )}
+                  {appointment.audio_note_path && (
+                    <div className="mt-2">
+                      <p className="text-[11px] text-muted-foreground mb-1">Audio anexado</p>
+                      <AppointmentAudioPlayer audioPath={appointment.audio_note_path} />
+                    </div>
+                  )}
                 </div>
               ))
             )}

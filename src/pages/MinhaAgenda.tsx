@@ -33,6 +33,7 @@ import { buildWhatsAppUrl, buildAppointmentReminder } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
+import AppointmentAudioPlayer from "@/components/agenda/AppointmentAudioPlayer";
 
 const statusActions: { from: AppointmentStatus; to: AppointmentStatus; label: string; icon: React.ReactNode }[] = [
   { from: "scheduled", to: "confirmed", label: "Confirmar", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
@@ -397,6 +398,12 @@ const MinhaAgenda = () => {
                                 <p className="w-full text-xs text-muted-foreground mt-1 italic">
                                   {apt.notes}
                                 </p>
+                              )}
+                              {apt.audio_note_path && (
+                                <div className="w-full mt-2">
+                                  <p className="text-[11px] text-muted-foreground mb-1">Audio anexado</p>
+                                  <AppointmentAudioPlayer audioPath={apt.audio_note_path} />
+                                </div>
                               )}
                             </div>
                           </motion.div>

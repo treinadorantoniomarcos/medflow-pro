@@ -14,6 +14,7 @@ export interface ProfessionalAppointment {
   status: AppointmentStatus;
   type: string | null;
   notes: string | null;
+  audio_note_path: string | null;
   patient_avatar_url?: string | null;
 }
 
@@ -57,7 +58,7 @@ export const useProfessionalAgenda = (date: Date) => {
 
       const { data, error } = await supabase
         .from("appointments")
-        .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes")
+        .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes, audio_note_path")
         .eq("tenant_id", profile!.tenant_id)
         .eq("professional_user_id", user!.id)
         .gte("starts_at", start)
@@ -71,7 +72,7 @@ export const useProfessionalAgenda = (date: Date) => {
 
       const { data: legacyData, error: legacyError } = await supabase
         .from("appointments")
-        .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes")
+        .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes, audio_note_path")
         .eq("tenant_id", profile.tenant_id)
         .eq("professional_name", profile.full_name)
         .gte("starts_at", start)

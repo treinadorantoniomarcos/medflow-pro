@@ -71,6 +71,7 @@ const NewAppointmentDialog = ({
   const [professionalName, setProfessionalName] = useState("");
   const [type, setType] = useState("");
   const [notes, setNotes] = useState("");
+  const [audioFile, setAudioFile] = useState<File | null>(null);
 
   // Fetch all patients for the combobox
   const { data: patients = [] } = usePatients("");
@@ -100,6 +101,7 @@ const NewAppointmentDialog = ({
       setProfessionalName("");
       setType("");
       setNotes("");
+      setAudioFile(null);
     }
   }, [open, defaultDate, defaultTime]);
 
@@ -120,6 +122,32 @@ const NewAppointmentDialog = ({
 
     const startsAt = new Date(`${date}T${time}`).toISOString();
 
+    let audioNotePath: string | null = null;
+    if (audioFile) {
+      if (!audioFile.type.startsWith("audio/")) {
+        toast.error("Arquivo de áudio inválido");
+        setLoading(false);
+        return;
+      }
+      if (audioFile.size > 15 * 1024 * 1024) {
+        toast.error("O áudio deve ter no máximo 15MB.");
+        setLoading(false);
+        return;
+      }
+
+      const extension = audioFile.name.split(".").pop() ?? "webm";
+      audioNotePath = `${profile.tenant_id}/${user.id}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage
+        .from("appointment-audios")
+        .upload(audioNotePath, audioFile, { upsert: false });
+
+      if (uploadError) {
+        toast.error("Erro ao enviar áudio", { description: uploadError.message });
+        setLoading(false);
+        return;
+      }
+    }
+
     const { error } = await supabase.from("appointments").insert({
       tenant_id: profile.tenant_id,
       patient_name: patientName.trim(),
@@ -128,6 +156,7 @@ const NewAppointmentDialog = ({
       starts_at: startsAt,
       type: type || null,
       notes: notes.trim() || null,
+      audio_note_path: audioNotePath,
       created_by: user.id,
       status: "scheduled",
     });
@@ -251,6 +280,20 @@ const NewAppointmentDialog = ({
         <div className="space-y-2">
           <Label htmlFor="notes">Observações</Label>
           <Textarea id="notes" placeholder="Observações opcionais..." rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="audio-note">Áudio (opcional)</Label>
+          <Input
+            id="audio-note"
+            type="file"
+            accept="audio/*"
+            onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
+          />
+          {audioFile && (
+            <p className="text-xs text-muted-foreground">
+              Arquivo selecionado: {audioFile.name}
+            </p>
+          )}
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

@@ -13,6 +13,7 @@ export interface AgendaAppointment {
   status: AppointmentStatus;
   type: string | null;
   notes: string | null;
+  audio_note_path: string | null;
 }
 
 export type AgendaPeriod =
@@ -56,7 +57,7 @@ export const useWeekAppointments = (weekStart: Date, weekEnd: Date) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("appointments")
-        .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes")
+        .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes, audio_note_path")
         .eq("tenant_id", profile!.tenant_id)
         .gte("starts_at", startOfDay(weekStart).toISOString())
         .lte("starts_at", endOfDay(weekEnd).toISOString())
@@ -128,7 +129,7 @@ export const useAgendaAppointments = (period: AgendaPeriod, baseDate: Date) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("appointments")
-        .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes")
+        .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes, audio_note_path")
         .eq("tenant_id", profile!.tenant_id)
         .gte("starts_at", start.toISOString())
         .lte("starts_at", end.toISOString())
