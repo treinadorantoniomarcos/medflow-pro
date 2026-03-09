@@ -108,9 +108,7 @@ const Register = () => {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Use 12+ caracteres com maiuscula, minuscula, numero e simbolo.
-              </p>
+              <PasswordStrengthIndicator password={password} email={email} />
             </div>
 
             <div className="space-y-2">
