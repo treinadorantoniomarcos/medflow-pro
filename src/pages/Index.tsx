@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, Calendar, ChevronRight, Clock, Users } from "lucide-react";
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -13,6 +13,9 @@ import {
   type DashboardPeriod,
 } from "@/hooks/use-appointments";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const statusFilters: { value: AppointmentStatus | "all"; label: string }[] = [
   { value: "all", label: "Todas" },
@@ -45,8 +48,23 @@ const periodTitleMap: Record<DashboardPeriod, string> = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const [activeFilter, setActiveFilter] = useState<AppointmentStatus | "all">("all");
   const [period, setPeriod] = useState<DashboardPeriod>("today");
+  const { data: userRole } = useQuery({
+    queryKey: ["dashboard-user-role", user?.id, profile?.tenant_id],
+    enabled: !!user?.id && !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("tenant_id", profile!.tenant_id)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.role ?? null;
+    },
+  });
 
   const { data: appointments = [], isLoading: loadingApts } = useAppointmentsByPeriod(period);
   const { data: metrics } = useDashboardMetrics(period);
@@ -55,6 +73,8 @@ const Dashboard = () => {
     activeFilter === "all"
       ? appointments
       : appointments.filter((appointment) => appointment.status === activeFilter);
+  const confirmedCount = appointments.filter((appointment) => appointment.status === "confirmed").length;
+  const completedCount = appointments.filter((appointment) => appointment.status === "completed").length;
 
   const now = new Date();
   const formattedDate = now.toLocaleDateString("pt-BR", {
@@ -62,6 +82,12 @@ const Dashboard = () => {
     day: "numeric",
     month: "long",
   });
+
+  useEffect(() => {
+    if (userRole === "patient") {
+      navigate("/paciente/home", { replace: true });
+    }
+  }, [userRole, navigate]);
 
   return (
     <AdminLayout>
@@ -82,12 +108,14 @@ const Dashboard = () => {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6"
         >
           <MetricCard value={metrics?.todayCount ?? 0} label="Atendimentos no Periodo" icon={Calendar} />
           <MetricCard value={metrics?.availableCount ?? 0} label="Vagas Disponiveis" icon={Clock} variant="accent" />
           <MetricCard value={appointments.length} label="Na Agenda" icon={Users} variant="success" />
           <MetricCard value={metrics?.pendingCount ?? 0} label="Pendencias" icon={AlertTriangle} variant="warning" />
+          <MetricCard value={confirmedCount} label="Confirmadas" icon={Calendar} />
+          <MetricCard value={completedCount} label="Concluidas" icon={Calendar} variant="accent" />
         </motion.div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -115,7 +143,7 @@ const Dashboard = () => {
                   key={filter.value}
                   variant={period === filter.value ? "default" : "outline"}
                   size="sm"
-                  className="h-7 rounded-full text-xs"
+                  className="h-10 rounded-full px-4 text-sm"
                   onClick={() => setPeriod(filter.value)}
                 >
                   {filter.label}
@@ -129,7 +157,7 @@ const Dashboard = () => {
                   key={filter.value}
                   variant={activeFilter === filter.value ? "default" : "outline"}
                   size="sm"
-                  className="h-7 rounded-full text-xs"
+                  className="h-10 rounded-full px-4 text-sm"
                   onClick={() => setActiveFilter(filter.value)}
                 >
                   {filter.label}

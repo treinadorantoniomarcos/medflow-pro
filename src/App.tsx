@@ -20,6 +20,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import PatientHome from "./pages/PatientHome";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
               {/* Protected routes */}
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/agenda" element={<ProtectedRoute><Agenda /></ProtectedRoute>} />
+              <Route path="/paciente/home" element={<ProtectedRoute><PatientHome /></ProtectedRoute>} />
               <Route path="/minha-agenda" element={<ProtectedRoute><MinhaAgenda /></ProtectedRoute>} />
               <Route path="/pacientes" element={<ProtectedRoute><Pacientes /></ProtectedRoute>} />
               <Route path="/mensagens" element={<ProtectedRoute><Mensagens /></ProtectedRoute>} />
