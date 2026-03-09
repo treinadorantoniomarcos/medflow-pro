@@ -2,11 +2,12 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Enums } from "@/integrations/supabase/types";
+
+type AppRole = "admin" | "owner" | "professional" | "receptionist" | "patient" | "super_admin";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: Enums<"app_role">[];
+  allowedRoles?: AppRole[];
 }
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
@@ -22,11 +23,11 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
         .eq("user_id", user!.id);
 
       if (error) throw error;
-      const roles = (data ?? []) as Array<{ role: Enums<"app_role">; tenant_id: string }>;
+      const roles = (data ?? []) as Array<{ role: AppRole; tenant_id: string }>;
       const superAdmin = roles.find((item) => item.role === "super_admin");
-      if (superAdmin) return "super_admin" as Enums<"app_role">;
+      if (superAdmin) return "super_admin" as AppRole;
       const scoped = roles.find((item) => item.tenant_id === profile?.tenant_id);
-      return (scoped?.role ?? null) as Enums<"app_role"> | null;
+      return (scoped?.role ?? null) as AppRole | null;
     },
   });
 
