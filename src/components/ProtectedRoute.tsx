@@ -2,11 +2,12 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Enums } from "@/integrations/supabase/types";
+
+type AppRole = "admin" | "owner" | "professional" | "receptionist" | "patient" | "super_admin";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: Enums<"app_role">[];
+  allowedRoles?: AppRole[];
 }
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
