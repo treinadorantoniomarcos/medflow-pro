@@ -55,7 +55,7 @@ const buildReminderMessage = (item: QueueItem) => {
 };
 
 const resolveSystemSenderId = async (
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   item: QueueItem
 ) => {
   if (item.appointment_id) {
