@@ -13,6 +13,7 @@ import {
   CreditCard,
   Download,
   Share2,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import medfluxLogo from "@/assets/medflux-logo.png";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -94,6 +96,31 @@ const PublicBooking = () => {
         text: `Consulta com ${selectedProfessional.name} em ${dateStr} às ${selectedTime} - ${clinic?.name}`,
       });
     } catch { /* user cancelled */ }
+  };
+
+  const handleWhatsAppShare = () => {
+    if (!selectedProfessional || !selectedDate || !patientPhone) return;
+
+    const dateStr = format(selectedDate, "dd/MM/yyyy");
+    const message = [
+      `Confirmacao de agendamento`,
+      ``,
+      `Paciente: ${patientName}`,
+      `Profissional: ${selectedProfessional.name}`,
+      `Data: ${dateStr}`,
+      `Horario: ${selectedTime}`,
+      `Clinica: ${clinic?.name ?? "MedFlux Pro"}`,
+      ``,
+      `Seu agendamento foi confirmado com sucesso.`,
+    ].join("\n");
+
+    const url = buildWhatsAppUrl(patientPhone, message);
+    if (!url) {
+      toast.error("Numero de WhatsApp invalido.");
+      return;
+    }
+
+    window.open(url, "_blank");
   };
 
   const fetchClinic = async () => {
@@ -547,6 +574,10 @@ const PublicBooking = () => {
                 <Button className="flex-1" onClick={handlePrint}>
                   <Download className="h-4 w-4 mr-2" />
                   Salvar comprovante
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={handleWhatsAppShare}>
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Enviar no WhatsApp
                 </Button>
                 {!!navigator.share && (
                   <Button variant="outline" className="flex-1" onClick={handleShare}>
