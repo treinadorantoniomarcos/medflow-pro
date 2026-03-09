@@ -15,7 +15,7 @@ interface InvitePayload {
   accepting_bookings?: boolean;
 }
 
-async function findUserByEmail(supabaseAdmin: ReturnType<typeof createClient>, email: string) {
+async function findUserByEmail(supabaseAdmin: any, email: string) {
   let page = 1;
   const perPage = 200;
 
