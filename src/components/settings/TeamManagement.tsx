@@ -210,6 +210,42 @@ const TeamManagement = () => {
     }
   };
 
+  const handleMemberAction = async () => {
+    if (!confirmAction) return;
+    const { member, action } = confirmAction;
+    setActionLoading(true);
+
+    const { data, error } = await supabase.functions.invoke("manage-team-member", {
+      body: { action, target_user_id: member.user_id },
+    });
+
+    if (error || !data?.ok) {
+      const code = data?.error;
+      if (code === "cannot_modify_self") {
+        toast.error("Você não pode modificar sua própria conta.");
+      } else if (code === "cannot_modify_owner") {
+        toast.error("Não é possível remover o proprietário.");
+      } else if (code === "forbidden") {
+        toast.error("Somente admin/owner pode gerenciar equipe.");
+      } else {
+        toast.error("Erro ao executar ação", { description: data?.detail || error?.message });
+      }
+      setActionLoading(false);
+      setConfirmAction(null);
+      return;
+    }
+
+    const messages: Record<string, string> = {
+      deactivate: `${member.full_name ?? "Membro"} foi desativado.`,
+      reactivate: `${member.full_name ?? "Membro"} foi reativado!`,
+      remove: `${member.full_name ?? "Membro"} foi removido permanentemente.`,
+    };
+    toast.success(messages[action]);
+    setActionLoading(false);
+    setConfirmAction(null);
+    queryClient.invalidateQueries({ queryKey: ["team-members"] });
+  };
+
   const getInitials = (name: string | null) => {
     if (!name) return "?";
     return name
