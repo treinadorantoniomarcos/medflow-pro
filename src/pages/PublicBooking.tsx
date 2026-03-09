@@ -47,6 +47,13 @@ interface SlotOverride {
   is_available: boolean;
 }
 
+interface PeriodBlock {
+  professional_name: string;
+  start_at: string;
+  end_at: string;
+  reason: string | null;
+}
+
 interface WorkHours {
   start: number;
   end: number;
@@ -77,6 +84,7 @@ const PublicBooking = () => {
   const [workHours, setWorkHours] = useState<WorkHours>({ start: 8, end: 18, slotDuration: 60 });
   const [bookedSlots, setBookedSlots] = useState<{ starts_at: string; professional_name: string }[]>([]);
   const [slotOverrides, setSlotOverrides] = useState<SlotOverride[]>([]);
+  const [periodBlocks, setPeriodBlocks] = useState<PeriodBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -161,6 +169,7 @@ const PublicBooking = () => {
         const data = await res.json();
         setBookedSlots(data.bookedSlots);
         setSlotOverrides(data.slotOverrides ?? []);
+        setPeriodBlocks(data.periodBlocks ?? []);
       }
     } catch { /* silent */ }
   };
@@ -185,6 +194,16 @@ const PublicBooking = () => {
     const dateStr = format(selectedDate, "yyyy-MM-dd");
     return timeSlots.filter((time) => {
       const slotIso = `${dateStr}T${time}:00`;
+      const slotDateTime = new Date(slotIso);
+
+      const blockedByPeriod = periodBlocks.some((block) => {
+        if (block.professional_name !== selectedProfessional.name) return false;
+        const start = new Date(block.start_at);
+        const end = new Date(block.end_at);
+        return slotDateTime >= start && slotDateTime < end;
+      });
+      if (blockedByPeriod) return false;
+
       const override = slotOverrides.find(
         (item) => item.professional_name === selectedProfessional.name && item.slot_time === time
       );
@@ -195,7 +214,7 @@ const PublicBooking = () => {
           b.starts_at.startsWith(slotIso.slice(0, 16))
       );
     });
-  }, [timeSlots, bookedSlots, slotOverrides, selectedDate, selectedProfessional]);
+  }, [timeSlots, bookedSlots, slotOverrides, periodBlocks, selectedDate, selectedProfessional]);
 
   const isFormValid = patientName.trim().length >= 3 && patientPhone.replace(/\D/g, "").length >= 10 && patientCpf.replace(/\D/g, "").length === 11;
 
@@ -228,6 +247,13 @@ const PublicBooking = () => {
           if (selectedDate) fetchSlots(selectedDate);
         } else if (err.error === "slot_closed_by_professional") {
           toast.error("Este horario foi fechado pelo profissional.", { description: "Escolha outro horario." });
+          setStep("datetime");
+          setSelectedTime("");
+          if (selectedDate) fetchSlots(selectedDate);
+        } else if (err.error === "slot_blocked_by_period") {
+          toast.error("Horario indisponivel por bloqueio de agenda.", {
+            description: "Escolha outro horario disponivel.",
+          });
           setStep("datetime");
           setSelectedTime("");
           if (selectedDate) fetchSlots(selectedDate);

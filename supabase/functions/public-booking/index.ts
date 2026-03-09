@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
 
       let bookedSlots: { starts_at: string; professional_name: string }[] = [];
       let slotOverrides: { professional_name: string; slot_time: string; is_available: boolean }[] = [];
+      let periodBlocks: { professional_name: string; start_at: string; end_at: string; reason: string | null }[] = [];
       if (date) {
         const dayStart = `${date}T00:00:00`;
         const dayEnd = `${date}T23:59:59`;
@@ -88,6 +89,20 @@ Deno.serve(async (req) => {
           slot_time: String(row.slot_time).slice(0, 5),
           is_available: row.is_available,
         }));
+
+        const { data: blocks } = await supabase
+          .from("professional_availability_blocks")
+          .select("professional_name, start_at, end_at, reason")
+          .eq("tenant_id", clinic.id)
+          .lte("start_at", dayEnd)
+          .gte("end_at", dayStart);
+
+        periodBlocks = (blocks ?? []).map((row) => ({
+          professional_name: row.professional_name,
+          start_at: row.start_at,
+          end_at: row.end_at,
+          reason: row.reason,
+        }));
       }
 
       const settings = (clinic.settings as Record<string, unknown>) ?? {};
@@ -101,6 +116,7 @@ Deno.serve(async (req) => {
           professionals,
           bookedSlots,
           slotOverrides,
+          periodBlocks,
           workHours: { start: workStart, end: workEnd, slotDuration },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -162,6 +178,23 @@ Deno.serve(async (req) => {
       if (slotOverride && !slotOverride.is_available) {
         return new Response(
           JSON.stringify({ error: "slot_closed_by_professional" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: periodBlock } = await supabase
+        .from("professional_availability_blocks")
+        .select("id, reason")
+        .eq("tenant_id", clinic.id)
+        .eq("professional_name", professional_name.trim())
+        .lte("start_at", starts_at)
+        .gt("end_at", starts_at)
+        .limit(1)
+        .maybeSingle();
+
+      if (periodBlock) {
+        return new Response(
+          JSON.stringify({ error: "slot_blocked_by_period", reason: periodBlock.reason }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

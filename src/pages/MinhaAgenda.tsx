@@ -4,12 +4,15 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
 import { addDays, format, isToday, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import StatusChip from "@/components/dashboard/StatusChip";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +43,10 @@ const MinhaAgenda = () => {
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>(user?.id ?? "");
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
+  const [blockStart, setBlockStart] = useState("");
+  const [blockEnd, setBlockEnd] = useState("");
+  const [blockReason, setBlockReason] = useState("");
+  const [savingBlock, setSavingBlock] = useState(false);
 
   const { data: role } = useQuery({
     queryKey: ["my-agenda-role", user?.id, profile?.tenant_id],
@@ -146,6 +153,23 @@ const MinhaAgenda = () => {
     return map;
   }, [slotOverrides]);
 
+  const { data: periodBlocks = [] } = useQuery({
+    queryKey: ["availability-blocks", profile?.tenant_id, managedProfessionalId],
+    enabled: !!profile?.tenant_id && !!managedProfessionalId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("professional_availability_blocks")
+        .select("id, start_at, end_at, reason")
+        .eq("tenant_id", profile!.tenant_id)
+        .eq("professional_user_id", managedProfessionalId!)
+        .gte("end_at", new Date().toISOString())
+        .order("start_at", { ascending: true })
+        .limit(20);
+      if (error) throw error;
+      return (data ?? []) as Array<{ id: string; start_at: string; end_at: string; reason: string | null }>;
+    },
+  });
+
   const acceptingBookings = managedProfessional?.accepting_bookings ?? true;
 
   const bookedTimes = useMemo(() => {
@@ -157,6 +181,27 @@ const MinhaAgenda = () => {
     });
     return set;
   }, [appointments]);
+
+  const blockedTimesByPeriod = useMemo(() => {
+    const result = new Set<string>();
+    const dateStart = new Date(`${slotDate}T00:00:00`);
+    const dateEnd = new Date(`${slotDate}T23:59:59`);
+
+    periodBlocks.forEach((block) => {
+      const start = new Date(block.start_at);
+      const end = new Date(block.end_at);
+      if (end < dateStart || start > dateEnd) return;
+
+      timeSlots.forEach((time) => {
+        const slotInstant = new Date(`${slotDate}T${time}:00`);
+        if (slotInstant >= start && slotInstant < end) {
+          result.add(time);
+        }
+      });
+    });
+
+    return result;
+  }, [periodBlocks, timeSlots, slotDate]);
 
   const handleToggleBookings = async () => {
     if (!managedProfessionalId) return;
@@ -209,6 +254,58 @@ const MinhaAgenda = () => {
     }
 
     setSavingSlot(null);
+  };
+
+  const handleCreateBlock = async () => {
+    if (!managedProfessionalId || !managedProfessionalName || !profile?.tenant_id || !user?.id) return;
+    if (!blockStart || !blockEnd) {
+      toast.error("Informe inicio e fim do bloqueio.");
+      return;
+    }
+
+    const startIso = new Date(blockStart).toISOString();
+    const endIso = new Date(blockEnd).toISOString();
+    if (new Date(endIso) <= new Date(startIso)) {
+      toast.error("O fim deve ser maior que o inicio.");
+      return;
+    }
+
+    setSavingBlock(true);
+    const { error } = await supabase.from("professional_availability_blocks").insert({
+      tenant_id: profile.tenant_id,
+      professional_user_id: managedProfessionalId,
+      professional_name: managedProfessionalName,
+      start_at: startIso,
+      end_at: endIso,
+      reason: blockReason.trim() || null,
+      created_by: user.id,
+    });
+
+    if (error) {
+      toast.error("Erro ao criar bloqueio", { description: error.message });
+    } else {
+      toast.success("Bloqueio por periodo criado.");
+      setBlockStart("");
+      setBlockEnd("");
+      setBlockReason("");
+      queryClient.invalidateQueries({ queryKey: ["availability-blocks"] });
+    }
+    setSavingBlock(false);
+  };
+
+  const handleRemoveBlock = async (id: string) => {
+    const { error } = await supabase
+      .from("professional_availability_blocks")
+      .delete()
+      .eq("id", id)
+      .eq("tenant_id", profile!.tenant_id);
+
+    if (error) {
+      toast.error("Erro ao remover bloqueio");
+    } else {
+      toast.success("Bloqueio removido.");
+      queryClient.invalidateQueries({ queryKey: ["availability-blocks"] });
+    }
   };
 
   const handleStatusChange = async (id: string, newStatus: AppointmentStatus) => {
@@ -309,23 +406,84 @@ const MinhaAgenda = () => {
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
             {timeSlots.map((time) => {
               const override = overrideMap.get(time);
-              const effective = override ?? acceptingBookings;
+              const blockedByPeriod = blockedTimesByPeriod.has(time);
+              const effective = blockedByPeriod ? false : (override ?? acceptingBookings);
               const busy = bookedTimes.has(time);
               return (
                 <Button
                   key={time}
                   variant={effective ? "outline" : "secondary"}
                   size="sm"
-                  disabled={savingSlot === time}
+                  disabled={savingSlot === time || blockedByPeriod}
                   className={effective ? "border-emerald-300 text-emerald-700" : "border-destructive/40 text-destructive"}
                   onClick={() => handleToggleSlot(time)}
                 >
-                  {time}{busy ? " *" : ""}
+                  {time}{busy ? " *" : ""}{blockedByPeriod ? " !" : ""}
                 </Button>
               );
             })}
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">* horario com consulta registrada neste dia.</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">* horario com consulta registrada | ! bloqueado por periodo.</p>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h2 className="mb-3 text-sm font-bold">Bloqueio em massa por periodo</h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="block-start">Inicio</Label>
+              <Input
+                id="block-start"
+                type="datetime-local"
+                value={blockStart}
+                onChange={(e) => setBlockStart(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="block-end">Fim</Label>
+              <Input
+                id="block-end"
+                type="datetime-local"
+                value={blockEnd}
+                onChange={(e) => setBlockEnd(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="mt-3 space-y-2">
+            <Label htmlFor="block-reason">Motivo (opcional)</Label>
+            <Textarea
+              id="block-reason"
+              rows={2}
+              value={blockReason}
+              onChange={(e) => setBlockReason(e.target.value)}
+              placeholder="Ferias, almoco, evento, indisponivel..."
+            />
+          </div>
+          <div className="mt-3">
+            <Button size="sm" onClick={handleCreateBlock} disabled={savingBlock || !managedProfessionalId}>
+              {savingBlock ? "Salvando..." : "Adicionar bloqueio"}
+            </Button>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground">Bloqueios ativos/futuros</p>
+            {periodBlocks.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nenhum bloqueio cadastrado.</p>
+            ) : (
+              periodBlocks.map((block) => (
+                <div key={block.id} className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+                  <div>
+                    <p className="text-xs font-medium">
+                      {format(new Date(block.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(block.end_at), "dd/MM HH:mm")}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">{block.reason || "Sem motivo informado"}</p>
+                  </div>
+                  <Button size="icon" variant="ghost" onClick={() => handleRemoveBlock(block.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         <div className="space-y-2">
