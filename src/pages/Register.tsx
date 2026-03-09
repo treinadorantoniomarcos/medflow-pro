@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
 import { UserPlus, Eye, EyeOff } from "lucide-react";
 import medfluxLogo from "@/assets/medflux-logo.png";
+import { validateStrongPassword } from "@/lib/password-policy";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -20,13 +21,16 @@ const Register = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (password.length < 6) {
-      toast.error("A senha deve ter no mínimo 6 caracteres");
+    const passwordValidation = validateStrongPassword(password, email.trim());
+    if (!passwordValidation.valid) {
+      toast.error("Senha fora da politica de seguranca", {
+        description: passwordValidation.errors[0],
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error("As senhas não coincidem");
+      toast.error("As senhas nao coincidem");
       return;
     }
 
@@ -86,11 +90,11 @@ const Register = () => {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Minimo 12 caracteres"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={12}
                   autoComplete="new-password"
                 />
                 <Button
@@ -103,6 +107,9 @@ const Register = () => {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Use 12+ caracteres com maiuscula, minuscula, numero e simbolo.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -114,7 +121,7 @@ const Register = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={12}
                 autoComplete="new-password"
               />
             </div>
@@ -126,7 +133,7 @@ const Register = () => {
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Já tem conta?{" "}
+            Ja tem conta?{" "}
             <Link to="/login" className="font-semibold text-primary hover:underline">
               Fazer login
             </Link>

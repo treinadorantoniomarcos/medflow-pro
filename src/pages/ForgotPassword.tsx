@@ -44,7 +44,7 @@ const ForgotPassword = () => {
           <p className="text-sm text-muted-foreground mt-1">
             {sent
               ? "Verifique seu e-mail para redefinir a senha"
-              : "Digite seu e-mail para receber o link de recuperação"}
+              : "Digite seu e-mail para receber o link de recuperacao"}
           </p>
         </CardHeader>
         <CardContent>

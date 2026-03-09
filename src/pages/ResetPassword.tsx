@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
 import { KeyRound } from "lucide-react";
 import medfluxLogo from "@/assets/medflux-logo.png";
+import { validateStrongPassword } from "@/lib/password-policy";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -25,12 +26,17 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      toast.error("As senhas não coincidem");
+
+    const validation = validateStrongPassword(password);
+    if (!validation.valid) {
+      toast.error("Senha fora da politica de seguranca", {
+        description: validation.errors[0],
+      });
       return;
     }
-    if (password.length < 6) {
-      toast.error("A senha deve ter no mínimo 6 caracteres");
+
+    if (password !== confirmPassword) {
+      toast.error("As senhas nao coincidem");
       return;
     }
 
@@ -51,7 +57,7 @@ const ResetPassword = () => {
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <Card className="w-full max-w-[420px] shadow-medium border-border">
           <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground">Link inválido ou expirado.</p>
+            <p className="text-muted-foreground">Link invalido ou expirado.</p>
             <Button className="mt-4" onClick={() => navigate("/login")}>
               Voltar ao login
             </Button>
@@ -82,12 +88,15 @@ const ResetPassword = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Minimo 12 caracteres"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={12}
               />
+              <p className="text-xs text-muted-foreground">
+                Use 12+ caracteres com maiuscula, minuscula, numero e simbolo.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
@@ -98,7 +107,7 @@ const ResetPassword = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={12}
               />
             </div>
             <Button type="submit" className="w-full gap-2" disabled={loading}>
