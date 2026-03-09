@@ -16,13 +16,30 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Camera, Loader2, Users, CircleDot, CalendarDays, Plus } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Camera, Loader2, Users, CircleDot, CalendarDays, Plus, MoreVertical, UserX, UserCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +50,7 @@ interface TeamMember {
   avatar_url: string | null;
   phone: string | null;
   accepting_bookings: boolean;
+  is_active: boolean;
   role?: string;
 }
 
@@ -57,6 +75,9 @@ const TeamManagement = () => {
   const [inviteRole, setInviteRole] = useState<"professional" | "receptionist" | "admin">("professional");
   const [inviteAccepting, setInviteAccepting] = useState(true);
 
+  const [confirmAction, setConfirmAction] = useState<{ member: TeamMember; action: "deactivate" | "reactivate" | "remove" } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetMemberRef = useRef<TeamMember | null>(null);
 
@@ -66,7 +87,7 @@ const TeamManagement = () => {
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, avatar_url, phone, accepting_bookings")
+        .select("id, user_id, full_name, avatar_url, phone, accepting_bookings, is_active")
         .eq("tenant_id", profile!.tenant_id);
 
       if (error) throw error;
@@ -187,6 +208,42 @@ const TeamManagement = () => {
       if (fileInputRef.current) fileInputRef.current.value = "";
       targetMemberRef.current = null;
     }
+  };
+
+  const handleMemberAction = async () => {
+    if (!confirmAction) return;
+    const { member, action } = confirmAction;
+    setActionLoading(true);
+
+    const { data, error } = await supabase.functions.invoke("manage-team-member", {
+      body: { action, target_user_id: member.user_id },
+    });
+
+    if (error || !data?.ok) {
+      const code = data?.error;
+      if (code === "cannot_modify_self") {
+        toast.error("Você não pode modificar sua própria conta.");
+      } else if (code === "cannot_modify_owner") {
+        toast.error("Não é possível remover o proprietário.");
+      } else if (code === "forbidden") {
+        toast.error("Somente admin/owner pode gerenciar equipe.");
+      } else {
+        toast.error("Erro ao executar ação", { description: data?.detail || error?.message });
+      }
+      setActionLoading(false);
+      setConfirmAction(null);
+      return;
+    }
+
+    const messages: Record<string, string> = {
+      deactivate: `${member.full_name ?? "Membro"} foi desativado.`,
+      reactivate: `${member.full_name ?? "Membro"} foi reativado!`,
+      remove: `${member.full_name ?? "Membro"} foi removido permanentemente.`,
+    };
+    toast.success(messages[action]);
+    setActionLoading(false);
+    setConfirmAction(null);
+    queryClient.invalidateQueries({ queryKey: ["team-members"] });
   };
 
   const getInitials = (name: string | null) => {
@@ -314,11 +371,17 @@ const TeamManagement = () => {
             {members.map((member) => {
               const rl = roleLabels[member.role ?? ""] ?? roleLabels.professional;
               const isUploading = uploadingFor === member.id;
+              const isSelf = member.user_id === profile?.user_id;
+              const isOwner = member.role === "owner";
+              const isInactive = member.is_active === false;
 
               return (
                 <div
                   key={member.id}
-                  className="flex items-center gap-4 rounded-xl border border-border p-4 transition-colors hover:bg-secondary/30"
+                  className={cn(
+                    "flex items-center gap-4 rounded-xl border border-border p-4 transition-colors hover:bg-secondary/30",
+                    isInactive && "opacity-50"
+                  )}
                 >
                   <button
                     onClick={() => handlePhotoClick(member)}
@@ -347,9 +410,16 @@ const TeamManagement = () => {
                   </button>
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">
-                      {member.full_name ?? "Sem nome"}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {member.full_name ?? "Sem nome"}
+                      </p>
+                      {isInactive && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-destructive/50 text-destructive">
+                          Inativo
+                        </Badge>
+                      )}
+                    </div>
                     {member.phone && (
                       <p className="text-xs text-muted-foreground truncate">{member.phone}</p>
                     )}
@@ -359,7 +429,7 @@ const TeamManagement = () => {
                     className={cn(
                       "flex items-center gap-1 shrink-0 text-xs font-medium rounded-full px-2 py-0.5 border",
                       member.accepting_bookings
-                        ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
+                        ? "bg-accent/50 text-accent-foreground border-accent dark:bg-accent/30"
                         : "bg-muted text-muted-foreground border-border"
                     )}
                   >
@@ -381,6 +451,41 @@ const TeamManagement = () => {
                     <CalendarDays className="h-3.5 w-3.5 mr-1" />
                     <span className="hidden sm:inline text-xs">Agenda</span>
                   </Button>
+
+                  {!isSelf && !isOwner && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {isInactive ? (
+                          <DropdownMenuItem
+                            onClick={() => setConfirmAction({ member, action: "reactivate" })}
+                          >
+                            <UserCheck className="h-4 w-4 mr-2" />
+                            Reativar membro
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            onClick={() => setConfirmAction({ member, action: "deactivate" })}
+                          >
+                            <UserX className="h-4 w-4 mr-2" />
+                            Desativar membro
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setConfirmAction({ member, action: "remove" })}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Remover permanentemente
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
               );
             })}
@@ -395,6 +500,37 @@ const TeamManagement = () => {
           onChange={handleFileChange}
         />
       </CardContent>
+
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.action === "remove"
+                ? "Remover membro permanentemente?"
+                : confirmAction?.action === "deactivate"
+                ? "Desativar membro?"
+                : "Reativar membro?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.action === "remove"
+                ? `Esta ação é irreversível. O perfil e papel de "${confirmAction.member.full_name}" serão excluídos permanentemente do sistema.`
+                : confirmAction?.action === "deactivate"
+                ? `"${confirmAction?.member.full_name}" será marcado como inativo e não aparecerá no agendamento online.`
+                : `"${confirmAction?.member.full_name}" será reativado e voltará a aparecer normalmente.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleMemberAction}
+              disabled={actionLoading}
+              className={cn(confirmAction?.action === "remove" && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
+            >
+              {actionLoading ? "Processando..." : confirmAction?.action === "remove" ? "Remover" : confirmAction?.action === "deactivate" ? "Desativar" : "Reativar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
