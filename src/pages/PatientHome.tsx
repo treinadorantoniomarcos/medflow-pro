@@ -74,7 +74,7 @@ const PatientHome = () => {
 
   const dateLabel = useMemo(() => {
     if (!nextAppointment?.starts_at) return null;
-    return format(new Date(nextAppointment.starts_at), "EEEE, dd 'de' MMMM 'as' HH:mm", {
+    return format(new Date(nextAppointment.starts_at), "EEEE, dd 'de' MMMM 'às' HH:mm", {
       locale: ptBR,
     });
   }, [nextAppointment?.starts_at]);
@@ -82,7 +82,7 @@ const PatientHome = () => {
   const handleConfirm = async () => {
     if (!nextAppointment) return;
     if (nextAppointment.status !== "scheduled") {
-      toast.info("Consulta jÃ¡ confirmada.");
+      toast.info("Consulta já confirmada.");
       return;
     }
 
@@ -93,8 +93,8 @@ const PatientHome = () => {
       .eq("tenant_id", profile!.tenant_id);
 
     if (error) {
-      toast.error("NÃ£o foi possÃ­vel confirmar automaticamente.", {
-        description: "Use a opÃ§Ã£o de mensagens para confirmar com a clÃ­nica.",
+      toast.error("Não foi possível confirmar automaticamente.", {
+        description: "Use a opção de mensagens para confirmar com a clínica.",
       });
       return;
     }
@@ -112,7 +112,7 @@ const PatientHome = () => {
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Paciente</p>
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Sua agenda</h1>
           <p className="text-sm text-muted-foreground">
-            Visualize sua prÃ³xima consulta e confirme em poucos toques.
+            Visualize sua próxima consulta e confirme em poucos toques.
           </p>
         </header>
 
@@ -120,7 +120,7 @@ const PatientHome = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <CalendarDays className="h-4 w-4 text-primary" />
-              Proxima consulta
+              Próxima consulta
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -137,7 +137,7 @@ const PatientHome = () => {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <UserRound className="h-4 w-4" />
                   <p>{nextAppointment.professional_name}</p>
-                  {nextAppointment.type && <p>â€¢ {nextAppointment.type}</p>}
+                  {nextAppointment.type && <p>• {nextAppointment.type}</p>}
                 </div>
               </div>
             )}
@@ -154,7 +154,7 @@ const PatientHome = () => {
             onClick={() => navigate("/mensagens")}
           >
             <MessageCircle className="mr-2 h-4 w-4" />
-            Mensagens da clinica
+            Mensagens da clínica
           </Button>
           <Button
             variant="outline"

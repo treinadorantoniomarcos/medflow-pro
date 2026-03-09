@@ -22,8 +22,8 @@ const statusFilters: { value: AppointmentStatus | "all"; label: string }[] = [
   { value: "confirmed", label: "Confirmadas" },
   { value: "scheduled", label: "Pendentes" },
   { value: "in_progress", label: "Atendendo" },
-  { value: "available", label: "Disponiveis" },
-  { value: "completed", label: "Concluidas" },
+  { value: "available", label: "Disponíveis" },
+  { value: "completed", label: "Concluídas" },
 ];
 
 const periodFilters: { value: DashboardPeriod; label: string }[] = [
@@ -40,7 +40,7 @@ const periodTitleMap: Record<DashboardPeriod, string> = {
   today: "hoje",
   week: "semana",
   "15days": "15 dias",
-  month: "mes",
+  month: "mês",
   bimester: "bimestre",
   semester: "semestre",
   year: "ano",
@@ -110,12 +110,12 @@ const Dashboard = () => {
           transition={{ delay: 0.05 }}
           className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6"
         >
-          <MetricCard value={metrics?.todayCount ?? 0} label="Atendimentos no Periodo" icon={Calendar} />
-          <MetricCard value={metrics?.availableCount ?? 0} label="Vagas Disponiveis" icon={Clock} variant="accent" />
+          <MetricCard value={metrics?.todayCount ?? 0} label="Atendimentos no Período" icon={Calendar} />
+          <MetricCard value={metrics?.availableCount ?? 0} label="Vagas Disponíveis" icon={Clock} variant="accent" />
           <MetricCard value={appointments.length} label="Na Agenda" icon={Users} variant="success" />
-          <MetricCard value={metrics?.pendingCount ?? 0} label="Pendencias" icon={AlertTriangle} variant="warning" />
+          <MetricCard value={metrics?.pendingCount ?? 0} label="Pendências" icon={AlertTriangle} variant="warning" />
           <MetricCard value={confirmedCount} label="Confirmadas" icon={Calendar} />
-          <MetricCard value={completedCount} label="Concluidas" icon={Calendar} variant="accent" />
+          <MetricCard value={completedCount} label="Concluídas" icon={Calendar} variant="accent" />
         </motion.div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -126,7 +126,7 @@ const Dashboard = () => {
             className="space-y-3"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-foreground">Agenda do Periodo</h2>
+              <h2 className="text-lg font-bold text-foreground">Agenda do Período</h2>
               <Button
                 variant="ghost"
                 size="sm"
@@ -201,7 +201,7 @@ const Dashboard = () => {
           >
             <div className="rounded-lg border border-border bg-card p-4 shadow-soft">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-foreground">Resumo do Periodo</h3>
+                <h3 className="text-sm font-bold text-foreground">Resumo do Período</h3>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
@@ -209,11 +209,11 @@ const Dashboard = () => {
                   <span className="font-semibold text-foreground">{metrics?.todayCount ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Disponiveis</span>
+                  <span className="text-muted-foreground">Disponíveis</span>
                   <span className="font-semibold text-accent">{metrics?.availableCount ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Aguardando confirmacao</span>
+                  <span className="text-muted-foreground">Aguardando confirmação</span>
                   <span className="font-semibold text-warning">{metrics?.pendingCount ?? 0}</span>
                 </div>
                 {(metrics?.todayCount ?? 0) > 0 && (
@@ -233,7 +233,7 @@ const Dashboard = () => {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {(metrics?.todayCount ?? 0) - (metrics?.availableCount ?? 0)} de{" "}
-                      {metrics?.todayCount} horarios preenchidos
+                      {metrics?.todayCount} horários preenchidos
                     </p>
                   </>
                 )}

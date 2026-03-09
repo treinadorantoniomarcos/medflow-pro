@@ -30,7 +30,7 @@ const AppointmentRow = ({ appointment, className, onClick }: AppointmentRowProps
     >
       <div className="min-w-[68px] shrink-0">
         <p className="text-xl font-extrabold tabular-nums text-foreground">{appointment.time}</p>
-        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Horario</p>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">Horário</p>
       </div>
 
       <div className="flex-1 min-w-0">

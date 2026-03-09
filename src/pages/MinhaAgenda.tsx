@@ -170,7 +170,7 @@ const MinhaAgenda = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className={cn(
-                "text-xs font-medium",
+                "text-sm font-medium",
                 acceptingBookings ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
               )}>
                 {acceptingBookings ? "Aberto" : "Fechado"}
@@ -205,13 +205,13 @@ const MinhaAgenda = () => {
           />
           <MetricCard
             value={stats?.pending ?? 0}
-            label="Novos Pacientes"
+            label="Agendadas"
             loading={isLoading}
             accent="blue"
           />
           <MetricCard
             value={stats?.confirmed ?? 0}
-            label="Pendências"
+            label="Confirmadas"
             loading={isLoading}
             accent="amber"
           />
@@ -324,7 +324,7 @@ const MinhaAgenda = () => {
                             <StatusChip status={apt.status} className="mt-1 scale-[0.85] origin-left" />
                           )}
                           {isAvailable && (
-                            <Badge variant="secondary" className="mt-1 text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <Badge variant="secondary" className="mt-1 text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                               Disponível
                             </Badge>
                           )}
@@ -347,7 +347,7 @@ const MinhaAgenda = () => {
                       {/* Smart alert */}
                       {alert && (
                         <div className={cn(
-                          "mx-4 mb-2 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium",
+                          "mx-4 mb-2 flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium",
                           alert.type === "warning" && "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400",
                           alert.type === "alert" && "bg-destructive/10 text-destructive",
                           alert.type === "active" && "bg-primary/10 text-primary"
@@ -372,7 +372,7 @@ const MinhaAgenda = () => {
                                 <Button
                                   size="sm"
                                   variant={action.to === "completed" ? "default" : "outline"}
-                                  className="gap-1.5 text-xs"
+                                  className="gap-1.5 text-sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleStatusChange(apt.id, action.to);
@@ -385,7 +385,7 @@ const MinhaAgenda = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="gap-1.5 text-xs"
+                                className="gap-1.5 text-sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleWhatsAppReminder(apt);
@@ -401,7 +401,7 @@ const MinhaAgenda = () => {
                               )}
                               {apt.audio_note_path && (
                                 <div className="w-full mt-2">
-                                  <p className="text-[11px] text-muted-foreground mb-1">Audio anexado</p>
+                                  <p className="text-xs text-muted-foreground mb-1">Áudio anexado</p>
                                   <AppointmentAudioPlayer audioPath={apt.audio_note_path} />
                                 </div>
                               )}
@@ -450,7 +450,7 @@ const MetricCard = ({
     ) : (
       <p className="text-2xl font-extrabold text-foreground tabular-nums">{value}</p>
     )}
-    <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
+    <p className="text-xs text-muted-foreground leading-tight">{label}</p>
   </div>
 );
 
