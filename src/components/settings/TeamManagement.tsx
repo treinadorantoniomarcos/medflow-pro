@@ -75,6 +75,9 @@ const TeamManagement = () => {
   const [inviteRole, setInviteRole] = useState<"professional" | "receptionist" | "admin">("professional");
   const [inviteAccepting, setInviteAccepting] = useState(true);
 
+  const [confirmAction, setConfirmAction] = useState<{ member: TeamMember; action: "deactivate" | "reactivate" | "remove" } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetMemberRef = useRef<TeamMember | null>(null);
 
@@ -84,7 +87,7 @@ const TeamManagement = () => {
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, avatar_url, phone, accepting_bookings")
+        .select("id, user_id, full_name, avatar_url, phone, accepting_bookings, is_active")
         .eq("tenant_id", profile!.tenant_id);
 
       if (error) throw error;
