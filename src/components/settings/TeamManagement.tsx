@@ -127,10 +127,15 @@ const TeamManagement = () => {
     });
 
     if (error || !data?.ok) {
+      const rawMessage = String(error?.message ?? "");
       const detail = (data && data.detail) || error?.message || "Falha ao convidar profissional.";
       const code = data?.error;
 
-      if (code === "user_belongs_to_another_tenant") {
+      if (rawMessage.toLowerCase().includes("functions") && rawMessage.toLowerCase().includes("404")) {
+        toast.error("Funcao de convite nao publicada.", {
+          description: "Publique a Edge Function invite-team-member no Supabase e tente novamente.",
+        });
+      } else if (code === "user_belongs_to_another_tenant") {
         toast.error("Este e-mail ja pertence a outro assinante.");
       } else if (code === "forbidden") {
         toast.error("Somente admin/owner pode convidar equipe.");

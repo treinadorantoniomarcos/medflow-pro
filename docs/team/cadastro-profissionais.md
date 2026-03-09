@@ -31,3 +31,10 @@ npx supabase functions serve invite-team-member
 - Nao permite convite por usuarios sem permissao.
 - Nao permite vincular usuario de outro tenant.
 - Registra auditoria em `audit_logs` com acao `invite_team_member`.
+
+## Troubleshooting rapido
+- Erro `FunctionsHttpError 404`:
+  - a funcao `invite-team-member` nao foi publicada no projeto.
+  - rode o deploy acima e tente novamente.
+- Erro `user_belongs_to_another_tenant`:
+  - o e-mail ja esta vinculado a outro assinante.

@@ -124,7 +124,6 @@ Deno.serve(async (req) => {
 
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       data: { full_name: fullName },
-      redirectTo: `${new URL(req.url).origin}/login`,
     });
 
     if (inviteError) {
