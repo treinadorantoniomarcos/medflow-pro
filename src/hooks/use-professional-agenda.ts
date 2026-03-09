@@ -18,9 +18,16 @@ export interface ProfessionalAppointment {
   patient_avatar_url?: string | null;
 }
 
-export const useProfessionalAgenda = (date: Date) => {
+interface ProfessionalAgendaOptions {
+  professionalUserId?: string | null;
+  professionalName?: string | null;
+}
+
+export const useProfessionalAgenda = (date: Date, options?: ProfessionalAgendaOptions) => {
   const { profile, user } = useAuth();
   const queryClient = useQueryClient();
+  const targetUserId = options?.professionalUserId ?? user?.id ?? null;
+  const targetName = options?.professionalName ?? profile?.full_name ?? null;
 
   useEffect(() => {
     if (!profile?.tenant_id) return;
@@ -50,8 +57,8 @@ export const useProfessionalAgenda = (date: Date) => {
   }, [profile?.tenant_id, queryClient]);
 
   return useQuery({
-    queryKey: ["professional-agenda", profile?.tenant_id, profile?.full_name, date.toISOString()],
-    enabled: !!profile?.tenant_id && (!!profile?.full_name || !!user?.id),
+    queryKey: ["professional-agenda", profile?.tenant_id, targetUserId, targetName, date.toISOString()],
+    enabled: !!profile?.tenant_id && (!!targetName || !!targetUserId),
     queryFn: async () => {
       const start = startOfDay(date).toISOString();
       const end = endOfDay(date).toISOString();
@@ -60,21 +67,21 @@ export const useProfessionalAgenda = (date: Date) => {
         .from("appointments")
         .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes, audio_note_path")
         .eq("tenant_id", profile!.tenant_id)
-        .eq("professional_user_id", user!.id)
+        .eq("professional_user_id", targetUserId!)
         .gte("starts_at", start)
         .lte("starts_at", end)
         .order("starts_at", { ascending: true });
 
-      if (error) throw error;
-      if ((data ?? []).length > 0 || !profile?.full_name) {
+      if (error && targetUserId) throw error;
+      if ((data ?? []).length > 0 || !targetName) {
         return (data ?? []) as ProfessionalAppointment[];
       }
 
       const { data: legacyData, error: legacyError } = await supabase
         .from("appointments")
         .select("id, patient_name, professional_name, starts_at, ends_at, status, type, notes, audio_note_path")
-        .eq("tenant_id", profile.tenant_id)
-        .eq("professional_name", profile.full_name)
+        .eq("tenant_id", profile!.tenant_id)
+        .eq("professional_name", targetName)
         .gte("starts_at", start)
         .lte("starts_at", end)
         .order("starts_at", { ascending: true });
@@ -85,12 +92,14 @@ export const useProfessionalAgenda = (date: Date) => {
   });
 };
 
-export const useProfessionalStats = (date: Date) => {
+export const useProfessionalStats = (date: Date, options?: ProfessionalAgendaOptions) => {
   const { profile, user } = useAuth();
+  const targetUserId = options?.professionalUserId ?? user?.id ?? null;
+  const targetName = options?.professionalName ?? profile?.full_name ?? null;
 
   return useQuery({
-    queryKey: ["professional-stats", profile?.tenant_id, profile?.full_name, date.toISOString()],
-    enabled: !!profile?.tenant_id && (!!profile?.full_name || !!user?.id),
+    queryKey: ["professional-stats", profile?.tenant_id, targetUserId, targetName, date.toISOString()],
+    enabled: !!profile?.tenant_id && (!!targetName || !!targetUserId),
     queryFn: async () => {
       const start = startOfDay(date).toISOString();
       const end = endOfDay(date).toISOString();
@@ -99,18 +108,18 @@ export const useProfessionalStats = (date: Date) => {
         .from("appointments")
         .select("status")
         .eq("tenant_id", profile!.tenant_id)
-        .eq("professional_user_id", user!.id)
+        .eq("professional_user_id", targetUserId!)
         .gte("starts_at", start)
         .lte("starts_at", end);
 
-      if (error) throw error;
+      if (error && targetUserId) throw error;
       let rows = data ?? [];
-      if (rows.length === 0 && profile?.full_name) {
+      if (rows.length === 0 && targetName) {
         const { data: legacyData, error: legacyError } = await supabase
           .from("appointments")
           .select("status")
-          .eq("tenant_id", profile.tenant_id)
-          .eq("professional_name", profile.full_name)
+          .eq("tenant_id", profile!.tenant_id)
+          .eq("professional_name", targetName)
           .gte("starts_at", start)
           .lte("starts_at", end);
 

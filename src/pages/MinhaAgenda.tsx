@@ -1,106 +1,227 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/layout/AdminLayout";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  PlayCircle,
-  CalendarCheck,
-  MessageCircle,
-  CalendarDays,
-  Users,
-  Zap,
-  ChevronDown,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { format, addDays, subDays, isToday, isTomorrow, isYesterday } from "date-fns";
+import { motion } from "framer-motion";
+import { addDays, format, isToday, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import {
-  useProfessionalAgenda,
-  useProfessionalStats,
-} from "@/hooks/use-professional-agenda";
+import { ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import StatusChip from "@/components/dashboard/StatusChip";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { buildWhatsAppUrl, buildAppointmentReminder } from "@/lib/whatsapp";
-import { cn } from "@/lib/utils";
-import { Switch } from "@/components/ui/switch";
-import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
 import AppointmentAudioPlayer from "@/components/agenda/AppointmentAudioPlayer";
+import { buildAppointmentReminder, buildWhatsAppUrl } from "@/lib/whatsapp";
+import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
+import { useProfessionalAgenda, useProfessionalStats } from "@/hooks/use-professional-agenda";
 
-const statusActions: { from: AppointmentStatus; to: AppointmentStatus; label: string; icon: React.ReactNode }[] = [
-  { from: "scheduled", to: "confirmed", label: "Confirmar", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
-  { from: "confirmed", to: "in_progress", label: "Iniciar", icon: <PlayCircle className="h-3.5 w-3.5" /> },
-  { from: "in_progress", to: "completed", label: "Concluir", icon: <CalendarCheck className="h-3.5 w-3.5" /> },
+type AppRole = "owner" | "admin" | "professional" | "receptionist" | "patient" | "super_admin";
+
+type TeamProfessional = {
+  user_id: string;
+  full_name: string;
+  accepting_bookings: boolean;
+};
+
+const statusActions: { from: AppointmentStatus; to: AppointmentStatus; label: string }[] = [
+  { from: "scheduled", to: "confirmed", label: "Confirmar" },
+  { from: "confirmed", to: "in_progress", label: "Iniciar" },
+  { from: "in_progress", to: "completed", label: "Concluir" },
 ];
 
 const MinhaAgenda = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const queryClient = useQueryClient();
-
-  const { data: appointments = [], isLoading } = useProfessionalAgenda(selectedDate);
-  const { data: stats } = useProfessionalStats(selectedDate);
-
-  const acceptingBookings = profile?.accepting_bookings ?? true;
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>(user?.id ?? "");
+  const [savingSlot, setSavingSlot] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
 
+  const { data: role } = useQuery({
+    queryKey: ["my-agenda-role", user?.id, profile?.tenant_id],
+    enabled: !!user?.id && !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("tenant_id", profile!.tenant_id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.role ?? null) as AppRole | null;
+    },
+  });
+
+  const isAdminScope = role === "owner" || role === "admin";
+
+  const { data: professionals = [] } = useQuery({
+    queryKey: ["my-agenda-professionals", profile?.tenant_id],
+    enabled: !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, accepting_bookings")
+        .eq("tenant_id", profile!.tenant_id)
+        .not("full_name", "is", null)
+        .order("full_name", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as TeamProfessional[];
+    },
+  });
+
+  const managedProfessional = useMemo(() => {
+    if (!professionals.length) return null;
+    if (isAdminScope) {
+      return professionals.find((p) => p.user_id === selectedProfessionalId) ?? professionals[0];
+    }
+    return professionals.find((p) => p.user_id === user?.id) ?? professionals[0];
+  }, [professionals, isAdminScope, selectedProfessionalId, user?.id]);
+
+  const managedProfessionalId = managedProfessional?.user_id ?? null;
+  const managedProfessionalName = managedProfessional?.full_name ?? null;
+
+  const { data: appointments = [], isLoading } = useProfessionalAgenda(selectedDate, {
+    professionalUserId: managedProfessionalId,
+    professionalName: managedProfessionalName,
+  });
+
+  const { data: stats } = useProfessionalStats(selectedDate, {
+    professionalUserId: managedProfessionalId,
+    professionalName: managedProfessionalName,
+  });
+
+  const { data: clinicSettings } = useQuery({
+    queryKey: ["my-agenda-clinic-settings", profile?.tenant_id],
+    enabled: !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clinics")
+        .select("settings")
+        .eq("id", profile!.tenant_id)
+        .single();
+      if (error) throw error;
+      return (data?.settings as Record<string, unknown> | null) ?? {};
+    },
+  });
+
+  const workStart = Number(clinicSettings?.work_start_hour ?? 8);
+  const workEnd = Number(clinicSettings?.work_end_hour ?? 18);
+  const slotDuration = Number(clinicSettings?.slot_duration_minutes ?? 60);
+
+  const timeSlots = useMemo(() => {
+    const slots: string[] = [];
+    for (let h = workStart; h < workEnd; h++) {
+      for (let m = 0; m < 60; m += slotDuration) {
+        if (h + m / 60 >= workEnd) break;
+        slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+      }
+    }
+    return slots;
+  }, [workStart, workEnd, slotDuration]);
+
+  const slotDate = format(selectedDate, "yyyy-MM-dd");
+
+  const { data: slotOverrides = [] } = useQuery({
+    queryKey: ["slot-overrides", profile?.tenant_id, managedProfessionalId, slotDate],
+    enabled: !!profile?.tenant_id && !!managedProfessionalId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("professional_slot_overrides")
+        .select("slot_time, is_available")
+        .eq("tenant_id", profile!.tenant_id)
+        .eq("professional_user_id", managedProfessionalId!)
+        .eq("slot_date", slotDate);
+      if (error) throw error;
+      return (data ?? []) as Array<{ slot_time: string; is_available: boolean }>;
+    },
+  });
+
+  const overrideMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    slotOverrides.forEach((item) => map.set(String(item.slot_time).slice(0, 5), item.is_available));
+    return map;
+  }, [slotOverrides]);
+
+  const acceptingBookings = managedProfessional?.accepting_bookings ?? true;
+
+  const bookedTimes = useMemo(() => {
+    const set = new Set<string>();
+    appointments.forEach((apt) => {
+      if (apt.status !== "cancelled" && apt.status !== "no_show") {
+        set.add(format(new Date(apt.starts_at), "HH:mm"));
+      }
+    });
+    return set;
+  }, [appointments]);
+
   const handleToggleBookings = async () => {
-    if (!profile?.user_id) return;
+    if (!managedProfessionalId) return;
     setToggling(true);
     const newValue = !acceptingBookings;
+
     const { error } = await supabase
       .from("profiles")
       .update({ accepting_bookings: newValue })
-      .eq("user_id", profile.user_id);
+      .eq("user_id", managedProfessionalId)
+      .eq("tenant_id", profile!.tenant_id);
+
     if (error) {
-      toast.error("Erro ao atualizar disponibilidade");
+      toast.error("Erro ao atualizar disponibilidade geral");
     } else {
-      toast.success(newValue ? "Agendamento aberto!" : "Agendamento fechado!");
-      queryClient.invalidateQueries({ queryKey: ["auth-profile"] });
+      toast.success(newValue ? "Agenda geral aberta" : "Agenda geral fechada");
+      queryClient.invalidateQueries({ queryKey: ["my-agenda-professionals"] });
     }
     setToggling(false);
   };
 
-  const goPrev = () => setSelectedDate((d) => subDays(d, 1));
-  const goNext = () => setSelectedDate((d) => addDays(d, 1));
-  const goToday = () => setSelectedDate(new Date());
+  const handleToggleSlot = async (time: string) => {
+    if (!managedProfessionalId || !managedProfessionalName || !profile?.tenant_id || !user?.id) return;
 
-  const dateLabel = isToday(selectedDate)
-    ? "Hoje"
-    : isTomorrow(selectedDate)
-    ? "Amanhã"
-    : isYesterday(selectedDate)
-    ? "Ontem"
-    : "";
+    setSavingSlot(time);
+    const defaultAvailability = acceptingBookings;
+    const effective = overrideMap.has(time) ? overrideMap.get(time)! : defaultAvailability;
+    const nextValue = !effective;
 
-  const formattedDate = format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR });
+    const { error } = await supabase
+      .from("professional_slot_overrides")
+      .upsert(
+        {
+          tenant_id: profile.tenant_id,
+          professional_user_id: managedProfessionalId,
+          professional_name: managedProfessionalName,
+          slot_date: slotDate,
+          slot_time: `${time}:00`,
+          is_available: nextValue,
+          created_by: user.id,
+        },
+        { onConflict: "tenant_id,professional_user_id,slot_date,slot_time" }
+      );
+
+    if (error) {
+      toast.error("Erro ao salvar horario");
+    } else {
+      toast.success(nextValue ? `Horario ${time} liberado` : `Horario ${time} fechado`);
+      queryClient.invalidateQueries({ queryKey: ["slot-overrides"] });
+    }
+
+    setSavingSlot(null);
+  };
 
   const handleStatusChange = async (id: string, newStatus: AppointmentStatus) => {
-    const { error } = await supabase
-      .from("appointments")
-      .update({ status: newStatus })
-      .eq("id", id);
-
+    const { error } = await supabase.from("appointments").update({ status: newStatus }).eq("id", id);
     if (error) {
       toast.error("Erro ao atualizar status", { description: error.message });
     } else {
-      toast.success("Status atualizado!");
       queryClient.invalidateQueries({ queryKey: ["professional-agenda"] });
       queryClient.invalidateQueries({ queryKey: ["professional-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
     }
   };
 
-  const handleWhatsAppReminder = async (apt: typeof appointments[number]) => {
+  const handleWhatsAppReminder = async (apt: (typeof appointments)[number]) => {
     const { data: patient } = await supabase
       .from("patients")
       .select("phone")
@@ -109,19 +230,14 @@ const MinhaAgenda = () => {
       .maybeSingle();
 
     if (!patient?.phone) {
-      toast.error("Telefone não encontrado", {
-        description: "O paciente não possui telefone cadastrado.",
-      });
+      toast.error("Paciente sem telefone");
       return;
     }
 
-    const dateStr = format(new Date(apt.starts_at), "dd/MM/yyyy", { locale: ptBR });
-    const timeStr = format(new Date(apt.starts_at), "HH:mm");
-
     const message = buildAppointmentReminder({
       patientName: apt.patient_name,
-      date: dateStr,
-      time: timeStr,
+      date: format(new Date(apt.starts_at), "dd/MM/yyyy"),
+      time: format(new Date(apt.starts_at), "HH:mm"),
       professionalName: apt.professional_name,
       type: apt.type,
     });
@@ -130,327 +246,137 @@ const MinhaAgenda = () => {
     if (url) window.open(url, "_blank");
   };
 
-  const getInitials = (name: string) =>
-    name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
-
-  // Smart alerts
-  const getSmartAlert = (apt: typeof appointments[number]) => {
-    const now = new Date();
-    const startTime = new Date(apt.starts_at);
-    const diffMinutes = (startTime.getTime() - now.getTime()) / 60000;
-
-    if (apt.status === "scheduled" && diffMinutes > 0 && diffMinutes < 30) {
-      return { text: "Consulta em breve", type: "warning" as const };
-    }
-    if (apt.status === "scheduled" && diffMinutes < 0 && diffMinutes > -15) {
-      return { text: "Paciente pode se atrasar", type: "alert" as const };
-    }
-    if (apt.status === "in_progress") {
-      return { text: "Em atendimento agora", type: "active" as const };
-    }
-    return null;
-  };
-
   return (
     <AdminLayout>
-      <div className="space-y-4 max-w-2xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-center justify-between">
+      <div className="mx-auto max-w-4xl space-y-5">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-                Agenda
-              </h1>
+              <h1 className="text-2xl font-extrabold tracking-tight">Agenda Profissional</h1>
               <p className="text-sm text-muted-foreground">
-                {profile?.full_name ?? "Profissional"}
+                {managedProfessionalName ?? "Profissional"} | {isToday(selectedDate) ? "Hoje" : format(selectedDate, "dd/MM/yyyy")}
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className={cn(
-                "text-sm font-medium",
-                acceptingBookings ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
-              )}>
-                {acceptingBookings ? "Aberto" : "Fechado"}
-              </span>
-              <Switch
-                checked={acceptingBookings}
-                onCheckedChange={handleToggleBookings}
-                disabled={toggling}
-              />
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+              <span className="text-xs text-muted-foreground">Agenda geral</span>
+              <Badge variant={acceptingBookings ? "default" : "outline"}>{acceptingBookings ? "Aberta" : "Fechada"}</Badge>
+              <Switch checked={acceptingBookings} onCheckedChange={handleToggleBookings} disabled={toggling || !managedProfessionalId} />
             </div>
           </div>
-        </motion.div>
 
-        {/* Metric cards row */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.03 }}
-          className="grid grid-cols-4 gap-2"
-        >
-          <MetricCard
-            value={stats?.total ?? 0}
-            label="Atendimentos"
-            loading={isLoading}
-            accent="primary"
-          />
-          <MetricCard
-            value={stats?.available ?? 0}
-            label="Vagas Disponíveis"
-            loading={isLoading}
-            accent="emerald"
-          />
-          <MetricCard
-            value={stats?.pending ?? 0}
-            label="Agendadas"
-            loading={isLoading}
-            accent="blue"
-          />
-          <MetricCard
-            value={stats?.confirmed ?? 0}
-            label="Confirmadas"
-            loading={isLoading}
-            accent="amber"
-          />
-        </motion.div>
-
-        {/* Date navigation */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.06 }}
-        >
-          <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={goPrev}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <button
-              onClick={goToday}
-              className="text-center flex-1 min-w-0"
-            >
-              {dateLabel && (
-                <span className="text-xs font-semibold text-primary block">
-                  {dateLabel}
-                </span>
-              )}
-              <span className="text-sm font-semibold text-foreground capitalize">
-                {formattedDate}
-              </span>
-            </button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={goNext}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </motion.div>
-
-        {/* Appointment list */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.09 }}
-          className="space-y-2"
-        >
-          {isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-[76px] w-full rounded-xl" />
-            ))
-          ) : appointments.length === 0 ? (
-            <div className="py-20 text-center">
-              <CalendarDays className="mx-auto h-12 w-12 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground mt-3">
-                Nenhuma consulta para este dia.
-              </p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={goToday}>
-                Ir para hoje
-              </Button>
+          {isAdminScope && (
+            <div className="max-w-sm">
+              <Select value={managedProfessionalId ?? ""} onValueChange={setSelectedProfessionalId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar profissional" />
+                </SelectTrigger>
+                <SelectContent>
+                  {professionals.map((prof) => (
+                    <SelectItem key={prof.user_id} value={prof.user_id}>
+                      {prof.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          ) : (
-            <AnimatePresence>
-              {appointments.map((apt, i) => {
-                const time = format(new Date(apt.starts_at), "HH:mm");
-                const action = statusActions.find((a) => a.from === apt.status);
-                const alert = getSmartAlert(apt);
-                const isExpanded = expandedId === apt.id;
-                const isAvailable = apt.status === "available";
-
-                return (
-                  <motion.div
-                    key={apt.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                  >
-                    <div
-                      className={cn(
-                        "rounded-xl border border-border bg-card transition-all overflow-hidden",
-                        isExpanded && "shadow-md",
-                        apt.status === "in_progress" && "border-primary/40 bg-primary/[0.03]"
-                      )}
-                    >
-                      {/* Main row */}
-                      <button
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left"
-                        onClick={() => setExpandedId(isExpanded ? null : apt.id)}
-                      >
-                        {/* Avatar */}
-                        <div className={cn(
-                          "flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold shrink-0",
-                          isAvailable
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                            : "bg-primary/10 text-primary"
-                        )}>
-                          {isAvailable ? (
-                            <Clock className="h-4 w-4" />
-                          ) : (
-                            getInitials(apt.patient_name)
-                          )}
-                        </div>
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground truncate">
-                            {isAvailable ? "Disponível" : apt.patient_name}
-                          </p>
-                          {apt.type && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {apt.type}
-                            </p>
-                          )}
-                          {/* Status badge inline */}
-                          {!isAvailable && apt.status !== "scheduled" && (
-                            <StatusChip status={apt.status} className="mt-1 scale-[0.85] origin-left" />
-                          )}
-                          {isAvailable && (
-                            <Badge variant="secondary" className="mt-1 text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                              Disponível
-                            </Badge>
-                          )}
-                        </div>
-
-                        {/* Time + chevron */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-sm font-bold tabular-nums text-foreground">
-                            {time}
-                          </span>
-                          <ChevronDown
-                            className={cn(
-                              "h-4 w-4 text-muted-foreground transition-transform",
-                              isExpanded && "rotate-180"
-                            )}
-                          />
-                        </div>
-                      </button>
-
-                      {/* Smart alert */}
-                      {alert && (
-                        <div className={cn(
-                          "mx-4 mb-2 flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium",
-                          alert.type === "warning" && "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400",
-                          alert.type === "alert" && "bg-destructive/10 text-destructive",
-                          alert.type === "active" && "bg-primary/10 text-primary"
-                        )}>
-                          <Zap className="h-3 w-3" />
-                          <span>Alerta Inteligente •</span>
-                          <span>{alert.text}</span>
-                        </div>
-                      )}
-
-                      {/* Expanded actions */}
-                      <AnimatePresence>
-                        {isExpanded && !isAvailable && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="px-4 pb-3 pt-1 flex flex-wrap gap-2 border-t border-border">
-                              {action && (
-                                <Button
-                                  size="sm"
-                                  variant={action.to === "completed" ? "default" : "outline"}
-                                  className="gap-1.5 text-sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusChange(apt.id, action.to);
-                                  }}
-                                >
-                                  {action.icon}
-                                  {action.label}
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1.5 text-sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleWhatsAppReminder(apt);
-                                }}
-                              >
-                                <MessageCircle className="h-3.5 w-3.5" />
-                                WhatsApp
-                              </Button>
-                              {apt.notes && (
-                                <p className="w-full text-xs text-muted-foreground mt-1 italic">
-                                  {apt.notes}
-                                </p>
-                              )}
-                              {apt.audio_note_path && (
-                                <div className="w-full mt-2">
-                                  <p className="text-xs text-muted-foreground mb-1">Áudio anexado</p>
-                                  <AppointmentAudioPlayer audioPath={apt.audio_note_path} />
-                                </div>
-                              )}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
           )}
         </motion.div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Atendimentos" value={stats?.total ?? 0} loading={isLoading} />
+          <StatCard label="Disponiveis" value={stats?.available ?? 0} loading={isLoading} />
+          <StatCard label="Agendadas" value={stats?.pending ?? 0} loading={isLoading} />
+          <StatCard label="Confirmadas" value={stats?.confirmed ?? 0} loading={isLoading} />
+        </div>
+
+        <div className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
+          <Button variant="ghost" size="icon" onClick={() => setSelectedDate((d) => subDays(d, 1))}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <button className="text-sm font-semibold capitalize" onClick={() => setSelectedDate(new Date())}>
+            {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+          </button>
+          <Button variant="ghost" size="icon" onClick={() => setSelectedDate((d) => addDays(d, 1))}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-bold">Liberar/fechar dias e horarios</h2>
+            <p className="text-xs text-muted-foreground">{format(selectedDate, "dd/MM/yyyy")}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+            {timeSlots.map((time) => {
+              const override = overrideMap.get(time);
+              const effective = override ?? acceptingBookings;
+              const busy = bookedTimes.has(time);
+              return (
+                <Button
+                  key={time}
+                  variant={effective ? "outline" : "secondary"}
+                  size="sm"
+                  disabled={savingSlot === time}
+                  className={effective ? "border-emerald-300 text-emerald-700" : "border-destructive/40 text-destructive"}
+                  onClick={() => handleToggleSlot(time)}
+                >
+                  {time}{busy ? " *" : ""}
+                </Button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">* horario com consulta registrada neste dia.</p>
+        </div>
+
+        <div className="space-y-2">
+          {isLoading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : appointments.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              Nenhuma consulta para este dia.
+            </div>
+          ) : (
+            appointments.map((apt) => {
+              const action = statusActions.find((a) => a.from === apt.status);
+              return (
+                <div key={apt.id} className="rounded-xl border border-border bg-card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">{apt.patient_name}</p>
+                      <p className="text-xs text-muted-foreground">{format(new Date(apt.starts_at), "HH:mm")} {apt.type ? `| ${apt.type}` : ""}</p>
+                    </div>
+                    <StatusChip status={apt.status} />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {action && (
+                      <Button size="sm" variant="outline" onClick={() => handleStatusChange(apt.id, action.to)}>
+                        {action.label}
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => handleWhatsAppReminder(apt)}>
+                      <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> WhatsApp
+                    </Button>
+                  </div>
+                  {apt.notes && <p className="mt-2 text-xs text-muted-foreground">{apt.notes}</p>}
+                  {apt.audio_note_path && (
+                    <div className="mt-2">
+                      <AppointmentAudioPlayer audioPath={apt.audio_note_path} />
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </AdminLayout>
   );
 };
 
-/* ─── Metric card ─────────────────────────────────── */
-
-const accentClasses = {
-  primary: "border-primary/20 bg-primary/5",
-  emerald: "border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20",
-  blue: "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20",
-  amber: "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20",
-};
-
-const MetricCard = ({
-  value,
-  label,
-  loading,
-  accent,
-}: {
-  value: number;
-  label: string;
-  loading: boolean;
-  accent: keyof typeof accentClasses;
-}) => (
-  <div className={cn(
-    "rounded-xl border p-3 text-center transition-colors",
-    accentClasses[accent]
-  )}>
-    {loading ? (
-      <Skeleton className="h-8 w-10 mx-auto mb-1" />
-    ) : (
-      <p className="text-2xl font-extrabold text-foreground tabular-nums">{value}</p>
-    )}
-    <p className="text-xs text-muted-foreground leading-tight">{label}</p>
+const StatCard = ({ label, value, loading }: { label: string; value: number; loading: boolean }) => (
+  <div className="rounded-xl border border-border bg-card p-3 text-center">
+    {loading ? <Skeleton className="mx-auto h-7 w-10" /> : <p className="text-2xl font-extrabold">{value}</p>}
+    <p className="text-xs text-muted-foreground">{label}</p>
   </div>
 );
 

@@ -45,15 +45,21 @@ Deno.serve(async (req) => {
       // Fetch professionals with avatar and accepting_bookings
       const { data: profRows } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url, accepting_bookings")
+        .select("user_id, full_name, avatar_url, accepting_bookings")
         .eq("tenant_id", clinic.id);
 
       const professionals = (profRows ?? [])
         .filter((p) => p.full_name)
-        .map((p) => ({ name: p.full_name!, avatar_url: p.avatar_url, accepting_bookings: p.accepting_bookings }))
+        .map((p) => ({
+          user_id: p.user_id,
+          name: p.full_name!,
+          avatar_url: p.avatar_url,
+          accepting_bookings: p.accepting_bookings,
+        }))
         .sort((a, b) => a.name.localeCompare(b.name));
 
       let bookedSlots: { starts_at: string; professional_name: string }[] = [];
+      let slotOverrides: { professional_name: string; slot_time: string; is_available: boolean }[] = [];
       if (date) {
         const dayStart = `${date}T00:00:00`;
         const dayEnd = `${date}T23:59:59`;
@@ -70,6 +76,18 @@ Deno.serve(async (req) => {
           starts_at: a.starts_at,
           professional_name: a.professional_name,
         }));
+
+        const { data: overrides } = await supabase
+          .from("professional_slot_overrides")
+          .select("professional_name, slot_time, is_available")
+          .eq("tenant_id", clinic.id)
+          .eq("slot_date", date);
+
+        slotOverrides = (overrides ?? []).map((row) => ({
+          professional_name: row.professional_name,
+          slot_time: String(row.slot_time).slice(0, 5),
+          is_available: row.is_available,
+        }));
       }
 
       const settings = (clinic.settings as Record<string, unknown>) ?? {};
@@ -82,6 +100,7 @@ Deno.serve(async (req) => {
           clinic: { id: clinic.id, name: clinic.name, logo_url: clinic.logo_url, slug: clinic.slug },
           professionals,
           bookedSlots,
+          slotOverrides,
           workHours: { start: workStart, end: workEnd, slotDuration },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -116,7 +135,7 @@ Deno.serve(async (req) => {
       // Check if professional is accepting bookings
       const { data: profProfile } = await supabase
         .from("profiles")
-        .select("accepting_bookings")
+        .select("user_id, accepting_bookings")
         .eq("tenant_id", clinic.id)
         .eq("full_name", professional_name.trim())
         .single();
@@ -124,6 +143,25 @@ Deno.serve(async (req) => {
       if (profProfile && !profProfile.accepting_bookings) {
         return new Response(
           JSON.stringify({ error: "professional_not_accepting" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const slotDate = starts_at.slice(0, 10);
+      const slotTime = starts_at.slice(11, 16);
+
+      const { data: slotOverride } = await supabase
+        .from("professional_slot_overrides")
+        .select("is_available")
+        .eq("tenant_id", clinic.id)
+        .eq("professional_name", professional_name.trim())
+        .eq("slot_date", slotDate)
+        .eq("slot_time", `${slotTime}:00`)
+        .maybeSingle();
+
+      if (slotOverride && !slotOverride.is_available) {
+        return new Response(
+          JSON.stringify({ error: "slot_closed_by_professional" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -176,6 +214,7 @@ Deno.serve(async (req) => {
         .insert({
           tenant_id: clinic.id,
           patient_name: patient_name.trim(),
+          professional_user_id: profProfile?.user_id ?? null,
           professional_name: professional_name.trim(),
           starts_at,
           type: type || "Consulta",

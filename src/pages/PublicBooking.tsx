@@ -35,9 +35,16 @@ interface ClinicInfo {
 }
 
 interface Professional {
+  user_id: string;
   name: string;
   avatar_url: string | null;
   accepting_bookings: boolean;
+}
+
+interface SlotOverride {
+  professional_name: string;
+  slot_time: string;
+  is_available: boolean;
 }
 
 interface WorkHours {
@@ -69,6 +76,7 @@ const PublicBooking = () => {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [workHours, setWorkHours] = useState<WorkHours>({ start: 8, end: 18, slotDuration: 60 });
   const [bookedSlots, setBookedSlots] = useState<{ starts_at: string; professional_name: string }[]>([]);
+  const [slotOverrides, setSlotOverrides] = useState<SlotOverride[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +160,7 @@ const PublicBooking = () => {
       if (res.ok) {
         const data = await res.json();
         setBookedSlots(data.bookedSlots);
+        setSlotOverrides(data.slotOverrides ?? []);
       }
     } catch { /* silent */ }
   };
@@ -176,13 +185,17 @@ const PublicBooking = () => {
     const dateStr = format(selectedDate, "yyyy-MM-dd");
     return timeSlots.filter((time) => {
       const slotIso = `${dateStr}T${time}:00`;
+      const override = slotOverrides.find(
+        (item) => item.professional_name === selectedProfessional.name && item.slot_time === time
+      );
+      if (override && !override.is_available) return false;
       return !bookedSlots.some(
         (b) =>
           b.professional_name === selectedProfessional.name &&
           b.starts_at.startsWith(slotIso.slice(0, 16))
       );
     });
-  }, [timeSlots, bookedSlots, selectedDate, selectedProfessional]);
+  }, [timeSlots, bookedSlots, slotOverrides, selectedDate, selectedProfessional]);
 
   const isFormValid = patientName.trim().length >= 3 && patientPhone.replace(/\D/g, "").length >= 10 && patientCpf.replace(/\D/g, "").length === 11;
 
@@ -209,7 +222,12 @@ const PublicBooking = () => {
       if (!res.ok) {
         const err = await res.json();
         if (err.error === "slot_already_booked") {
-          toast.error("Esse horário acabou de ser reservado. Escolha outro.");
+          toast.error("Esse horario acabou de ser reservado. Escolha outro.");
+          setStep("datetime");
+          setSelectedTime("");
+          if (selectedDate) fetchSlots(selectedDate);
+        } else if (err.error === "slot_closed_by_professional") {
+          toast.error("Este horario foi fechado pelo profissional.", { description: "Escolha outro horario." });
           setStep("datetime");
           setSelectedTime("");
           if (selectedDate) fetchSlots(selectedDate);
@@ -618,3 +636,5 @@ const PublicBooking = () => {
 };
 
 export default PublicBooking;
+
+
