@@ -272,6 +272,7 @@ const NewAppointmentDialog = ({
             <SelectContent>
               <SelectItem value="Primeira consulta">Primeira consulta</SelectItem>
               <SelectItem value="Retorno">Retorno</SelectItem>
+              <SelectItem value="Entrega de exames">Entrega de exames</SelectItem>
               <SelectItem value="Revisão">Revisão</SelectItem>
               <SelectItem value="Emergência">Emergência</SelectItem>
             </SelectContent>

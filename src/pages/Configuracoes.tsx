@@ -426,9 +426,9 @@ const Configuracoes = () => {
                   <MessageCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="flex-1">
-                  <CardTitle className="text-base">Lembretes via WhatsApp</CardTitle>
+                  <CardTitle className="text-base">Lembretes por Aplicativo e WhatsApp</CardTitle>
                   <CardDescription>
-                    Envie lembretes autom√°ticos para pacientes antes das consultas
+                    Envie lembretes autom·ticos para pacientes antes das consultas (D-1 e 2h antes)
                   </CardDescription>
                 </div>
               </div>
@@ -444,7 +444,7 @@ const Configuracoes = () => {
                         Ativar lembretes autom√°ticos
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Ao ativar, lembretes ser√£o enfileirados 24h antes de cada consulta agendada
+                        Ao ativar, lembretes ser„o enfileirados no app e no WhatsApp em D-1 e 2h antes da consulta
                       </p>
                     </div>
                     <Switch
@@ -602,3 +602,4 @@ const Configuracoes = () => {
 };
 
 export default Configuracoes;
+
