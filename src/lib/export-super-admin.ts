@@ -35,7 +35,7 @@ const triggerDownload = (blob: Blob, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-const escapeCell = (value: string | number) => `"${String(value).replaceAll("\"", "\"\"")}"`;
+const escapeCell = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
 
 export const exportSuperAdminCSV = (payload: SuperAdminExportPayload) => {
   const lines: string[] = [];

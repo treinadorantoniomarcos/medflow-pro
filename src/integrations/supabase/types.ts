@@ -263,53 +263,6 @@ export type Database = {
           },
         ]
       }
-      professional_slot_overrides: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          is_available: boolean
-          professional_name: string
-          professional_user_id: string
-          slot_date: string
-          slot_time: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_available: boolean
-          professional_name: string
-          professional_user_id: string
-          slot_date: string
-          slot_time: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_available?: boolean
-          professional_name?: string
-          professional_user_id?: string
-          slot_date?: string
-          slot_time?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "professional_slot_overrides_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "clinics"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       patients: {
         Row: {
           address: string | null
@@ -362,6 +315,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "patients_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professional_slot_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_available: boolean
+          professional_name: string
+          professional_user_id: string
+          slot_date: string
+          slot_time: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_available: boolean
+          professional_name: string
+          professional_user_id: string
+          slot_date: string
+          slot_time: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_available?: boolean
+          professional_name?: string
+          professional_user_id?: string
+          slot_date?: string
+          slot_time?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_slot_overrides_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "clinics"
