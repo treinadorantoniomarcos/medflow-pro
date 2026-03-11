@@ -22,6 +22,7 @@ import {
 import { useTheme } from "@/hooks/use-theme";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import medfluxLogo from "@/assets/medflux-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -51,6 +52,60 @@ const roleLabelMap: Record<AppRole, string> = {
   super_admin: "Super Admin",
 };
 
+const roleStyleMap: Record<AppRole, { badgeClass: string; cardClass: string }> = {
+  super_admin: {
+    badgeClass: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800",
+    cardClass: "border-rose-200/70 bg-rose-50/60 dark:border-rose-900/50 dark:bg-rose-950/20",
+  },
+  owner: {
+    badgeClass: "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800",
+    cardClass: "border-violet-200/70 bg-violet-50/60 dark:border-violet-900/50 dark:bg-violet-950/20",
+  },
+  admin: {
+    badgeClass: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
+    cardClass: "border-blue-200/70 bg-blue-50/60 dark:border-blue-900/50 dark:bg-blue-950/20",
+  },
+  professional: {
+    badgeClass: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800",
+    cardClass: "border-emerald-200/70 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/20",
+  },
+  receptionist: {
+    badgeClass: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800",
+    cardClass: "border-amber-200/70 bg-amber-50/60 dark:border-amber-900/50 dark:bg-amber-950/20",
+  },
+  patient: {
+    badgeClass: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
+    cardClass: "border-slate-200/70 bg-slate-50/60 dark:border-slate-700/60 dark:bg-slate-900/30",
+  },
+};
+
+const roleGuideMap: Record<AppRole, { info: string; actions: string }> = {
+  super_admin: {
+    info: "Métricas globais de assinantes, equipe e uso da plataforma.",
+    actions: "Gerir acessos administrativos, acompanhar operação e exportar relatórios.",
+  },
+  owner: {
+    info: "Visão completa da clínica: agenda, pacientes, relatórios e equipe.",
+    actions: "Convidar equipe, definir regras operacionais e liberar agendas.",
+  },
+  admin: {
+    info: "Visão operacional da clínica com indicadores e gestão da equipe.",
+    actions: "Gerir agendas, profissionais, pacientes, configurações e relatórios.",
+  },
+  professional: {
+    info: "Agenda própria, atendimentos do dia e status dos pacientes.",
+    actions: "Confirmar consultas, iniciar/concluir atendimentos e ajustar disponibilidade.",
+  },
+  receptionist: {
+    info: "Fila diária de agendamentos e dados de pacientes da clínica.",
+    actions: "Agendar/remarcar consultas, atualizar dados e apoiar comunicação.",
+  },
+  patient: {
+    info: "Próximas consultas e histórico básico de agendamentos.",
+    actions: "Agendar, confirmar presença e acessar mensagens com a clínica.",
+  },
+};
+
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -78,6 +133,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const visibleNavItems = userRole
     ? navItems.filter((item) => item.roles.includes(userRole))
     : navItems;
+  const roleStyle = userRole ? roleStyleMap[userRole] : null;
+  const roleGuide = userRole ? roleGuideMap[userRole] : null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -131,12 +188,29 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             </div>
             <div className="flex-1 truncate">
               <p className="text-sm font-semibold text-foreground">{profile?.full_name || "Usuario"}</p>
-              <p className="text-xs text-muted-foreground">{(userRole && roleLabelMap[userRole]) || "Conta"}</p>
+              {userRole ? (
+                <Badge variant="outline" className={cn("mt-1 text-[10px] font-semibold", roleStyle?.badgeClass)}>
+                  {roleLabelMap[userRole]}
+                </Badge>
+              ) : (
+                <p className="text-xs text-muted-foreground">Conta</p>
+              )}
             </div>
             <Button variant="ghost" size="icon" onClick={signOut} title="Sair">
               <LogOut className="h-4 w-4 text-muted-foreground" />
             </Button>
           </div>
+          {userRole && roleGuide && (
+            <div className={cn("mt-3 rounded-md border p-2.5", roleStyle?.cardClass)}>
+              <p className="text-[11px] font-semibold text-foreground">Seu perfil: {roleLabelMap[userRole]}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                <span className="font-medium text-foreground">Informações:</span> {roleGuide.info}
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                <span className="font-medium text-foreground">Ações:</span> {roleGuide.actions}
+              </p>
+            </div>
+          )}
         </div>
       </aside>
 
