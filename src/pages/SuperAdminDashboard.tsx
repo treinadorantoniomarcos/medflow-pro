@@ -1,17 +1,21 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
   CalendarCheck2,
   Download,
   FileText,
   FileSpreadsheet,
-  LineChart,
+  Link2,
   Network,
   Stethoscope,
   UserRound,
   AlertTriangle,
-  Link2,
+  ShieldCheck,
+  UserPlus,
+  Save,
+  UserX,
 } from "lucide-react";
 import {
   Bar,
@@ -28,6 +32,8 @@ import MetricCard from "@/components/dashboard/MetricCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -36,24 +42,65 @@ import {
   exportSuperAdminPDF,
   exportSuperAdminXLS,
 } from "@/lib/export-super-admin";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import PlanCatalogManager from "@/components/superadmin/PlanCatalogManager";
 
 type ClinicRow = {
   id: string;
   name: string;
   slug: string | null;
+  settings: Record<string, any> | null;
   created_at: string;
   updated_at: string;
 };
 
 type RoleRow = {
   tenant_id: string;
+  user_id: string;
   role: "owner" | "admin" | "professional" | "receptionist" | "patient" | "super_admin";
+};
+
+type ProfileRow = {
+  user_id: string;
+  tenant_id: string;
+  full_name: string | null;
+  phone: string | null;
+  is_active: boolean;
 };
 
 type AppointmentRow = {
   tenant_id: string;
   starts_at: string;
   status: string;
+};
+
+type SubscriptionPlan = string;
+type SubscriptionStatus = "trialing" | "active" | "past_due" | "paused" | "canceled";
+
+type PlanRow = {
+  id: string;
+  code: string;
+  name: string;
+  monthly_price_cents: number;
+  period_days: number;
+  trial_days: number;
+  is_courtesy: boolean;
+  is_active: boolean;
 };
 
 const appIntegrations = [
@@ -88,33 +135,96 @@ const chartConfig = {
   },
 };
 
+const statusLabels: Record<SubscriptionStatus, string> = {
+  trialing: "Trialing",
+  active: "Active",
+  past_due: "Past due",
+  paused: "Paused",
+  canceled: "Canceled",
+};
+
+const statusBadgeClass: Record<SubscriptionStatus, string> = {
+  trialing: "bg-blue-100 text-blue-700",
+  active: "bg-emerald-100 text-emerald-700",
+  past_due: "bg-amber-100 text-amber-700",
+  paused: "bg-slate-200 text-slate-700",
+  canceled: "bg-rose-100 text-rose-700",
+};
+
 const monthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
+const readSubscription = (settings: Record<string, any> | null | undefined) => {
+  const raw = settings?.subscription ?? {};
+  const plan = typeof raw.plan === "string" && raw.plan.length > 0 ? raw.plan : "start";
+  const status = (["trialing", "active", "past_due", "paused", "canceled"].includes(raw.status)
+    ? raw.status
+    : "trialing") as SubscriptionStatus;
+
+  return {
+    plan,
+    status,
+    current_period_start: raw.current_period_start ?? null,
+    current_period_end: raw.current_period_end ?? null,
+    first_payment_at: raw.first_payment_at ?? null,
+    payment_method: raw.payment_method ?? null,
+    grace_until: raw.grace_until ?? null,
+  };
+};
+
 const SuperAdminDashboard = () => {
+  const queryClient = useQueryClient();
+
+  const [accessDialogOpen, setAccessDialogOpen] = useState(false);
+  const [selectedTenantId, setSelectedTenantId] = useState<string>("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitePhone, setInvitePhone] = useState("");
+  const [inviteRole, setInviteRole] = useState<"admin" | "super_admin">("admin");
+  const [inviteLoading, setInviteLoading] = useState(false);
+
+  const [billingDraft, setBillingDraft] = useState<Record<string, { plan: SubscriptionPlan; status: SubscriptionStatus }>>({});
+  const [savingTenantId, setSavingTenantId] = useState<string | null>(null);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["super-admin-dataset-v2"],
+    queryKey: ["super-admin-dataset-v3"],
     queryFn: async () => {
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const yearStart = new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1);
 
-      const [clinicsResp, rolesResp, appointmentsResp] = await Promise.all([
-        supabase.from("clinics").select("id, name, slug, created_at, updated_at").order("created_at", { ascending: false }),
-        supabase.from("user_roles").select("tenant_id, role"),
-        supabase.from("appointments").select("tenant_id, starts_at, status").gte("starts_at", yearStart.toISOString()).limit(20000),
+      const [clinicsResp, rolesResp, profilesResp, appointmentsResp, plansResp] = await Promise.all([
+        supabase
+          .from("clinics")
+          .select("id, name, slug, settings, created_at, updated_at")
+          .order("created_at", { ascending: false }),
+        supabase.from("user_roles").select("tenant_id, user_id, role"),
+        supabase.from("profiles").select("tenant_id, user_id, full_name, phone, is_active"),
+        supabase
+          .from("appointments")
+          .select("tenant_id, starts_at, status")
+          .gte("starts_at", yearStart.toISOString())
+          .limit(20000),
+        supabase
+          .from("subscription_plans")
+          .select("id, code, name, monthly_price_cents, period_days, trial_days, is_courtesy, is_active")
+          .order("monthly_price_cents", { ascending: true }),
       ]);
 
       if (clinicsResp.error) throw clinicsResp.error;
       if (rolesResp.error) throw rolesResp.error;
+      if (profilesResp.error) throw profilesResp.error;
       if (appointmentsResp.error) throw appointmentsResp.error;
+      if (plansResp.error) throw plansResp.error;
 
       const clinics = (clinicsResp.data ?? []) as ClinicRow[];
       const roles = (rolesResp.data ?? []) as RoleRow[];
+      const profiles = (profilesResp.data ?? []) as ProfileRow[];
       const appointments = (appointmentsResp.data ?? []) as AppointmentRow[];
+      const plans = (plansResp.data ?? []) as PlanRow[];
 
       const monthPrefix = monthKey(monthStart);
       const monthlyAppointments = appointments.filter((apt) => apt.starts_at.startsWith(monthPrefix));
 
-      return { clinics, roles, appointments, monthlyAppointments, monthStart };
+      return { clinics, roles, profiles, appointments, monthlyAppointments, plans };
     },
   });
 
@@ -138,11 +248,14 @@ const SuperAdminDashboard = () => {
     return data.clinics.map((clinic) => {
       const roles = byTenantRoles.get(clinic.id) ?? [];
       const monthly = byTenantMonthlyApts.get(clinic.id) ?? [];
+      const subscription = readSubscription(clinic.settings);
 
       return {
         clinic_id: clinic.id,
         clinic_name: clinic.name,
         slug: clinic.slug ?? "sem-slug",
+        settings: clinic.settings ?? {},
+        subscription,
         owners: roles.filter((r) => r.role === "owner").length,
         admins: roles.filter((r) => r.role === "admin").length,
         professionals: roles.filter((r) => r.role === "professional").length,
@@ -192,6 +305,16 @@ const SuperAdminDashboard = () => {
     };
   }, [subscriberRows]);
 
+  const subscriptionCounts = useMemo(() => {
+    return subscriberRows.reduce(
+      (acc, row) => {
+        acc[row.subscription.status] += 1;
+        return acc;
+      },
+      { trialing: 0, active: 0, past_due: 0, paused: 0, canceled: 0 } as Record<SubscriptionStatus, number>
+    );
+  }, [subscriberRows]);
+
   const exportPayload = useMemo(() => {
     const now = new Date();
     return {
@@ -201,6 +324,202 @@ const SuperAdminDashboard = () => {
       rows: subscriberRows,
     };
   }, [subscriberRows, totals]);
+
+  const selectedTenantIdSafe = selectedTenantId || subscriberRows[0]?.clinic_id || "";
+  const availablePlans = useMemo(() => {
+    if (!data?.plans?.length) return [];
+    return data.plans.filter((plan) => plan.is_active);
+  }, [data?.plans]);
+
+  const tenantAccessRows = useMemo(() => {
+    if (!data || !selectedTenantIdSafe) return [];
+
+    const profileMap = new Map<string, ProfileRow>();
+    data.profiles.forEach((profile) => {
+      if (!profileMap.has(profile.user_id)) profileMap.set(profile.user_id, profile);
+    });
+
+    return data.roles
+      .filter((role) => role.tenant_id === selectedTenantIdSafe && (role.role === "owner" || role.role === "admin"))
+      .map((role) => {
+        const profile = profileMap.get(role.user_id);
+        return {
+          user_id: role.user_id,
+          role: role.role,
+          full_name: profile?.full_name ?? "Sem nome",
+          is_active: profile?.is_active ?? true,
+          phone: profile?.phone ?? null,
+        };
+      });
+  }, [data, selectedTenantIdSafe]);
+
+  const globalSuperAdmins = useMemo(() => {
+    if (!data) return [];
+
+    const profileMap = new Map<string, ProfileRow>();
+    data.profiles.forEach((profile) => {
+      if (!profileMap.has(profile.user_id)) profileMap.set(profile.user_id, profile);
+    });
+
+    const seen = new Set<string>();
+    return data.roles
+      .filter((role) => role.role === "super_admin")
+      .filter((role) => {
+        if (seen.has(role.user_id)) return false;
+        seen.add(role.user_id);
+        return true;
+      })
+      .map((role) => {
+        const profile = profileMap.get(role.user_id);
+        return {
+          user_id: role.user_id,
+          full_name: profile?.full_name ?? "Sem nome",
+          tenant_id: role.tenant_id,
+          is_active: profile?.is_active ?? true,
+        };
+      });
+  }, [data]);
+
+  const updateBillingDraft = (tenantId: string, value: Partial<{ plan: SubscriptionPlan; status: SubscriptionStatus }>) => {
+    setBillingDraft((prev) => {
+      const currentRow = subscriberRows.find((row) => row.clinic_id === tenantId);
+      if (!currentRow) return prev;
+
+      const current = prev[tenantId] ?? {
+        plan: currentRow.subscription.plan,
+        status: currentRow.subscription.status,
+      };
+
+      return {
+        ...prev,
+        [tenantId]: {
+          plan: value.plan ?? current.plan,
+          status: value.status ?? current.status,
+        },
+      };
+    });
+  };
+
+  const saveSubscriptionState = async (tenantId: string) => {
+    const row = subscriberRows.find((item) => item.clinic_id === tenantId);
+    if (!row) return;
+
+    const draft = billingDraft[tenantId] ?? {
+      plan: row.subscription.plan,
+      status: row.subscription.status,
+    };
+
+    const nowIso = new Date().toISOString();
+    const nextPeriod = new Date();
+    nextPeriod.setMonth(nextPeriod.getMonth() + 1);
+
+    const updatedSettings = {
+      ...(row.settings ?? {}),
+      subscription: {
+        ...row.subscription,
+        plan: draft.plan,
+        status: draft.status,
+        updated_by_super_admin_at: nowIso,
+        current_period_start: row.subscription.current_period_start ?? nowIso,
+        current_period_end: row.subscription.current_period_end ?? nextPeriod.toISOString(),
+      },
+    };
+
+    setSavingTenantId(tenantId);
+
+    const { error } = await supabase
+      .from("clinics")
+      .update({ settings: updatedSettings })
+      .eq("id", tenantId);
+
+    setSavingTenantId(null);
+
+    if (error) {
+      toast.error("Falha ao atualizar assinatura", { description: error.message });
+      return;
+    }
+
+    toast.success("Assinatura atualizada", {
+      description: `Plano ${draft.plan} / status ${statusLabels[draft.status]}.`,
+    });
+
+    queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] });
+  };
+
+  const grantAccess = async () => {
+    if (!inviteName.trim() || !inviteEmail.trim() || !selectedTenantIdSafe) {
+      toast.error("Preencha nome, email e assinante.");
+      return;
+    }
+
+    setInviteLoading(true);
+    const { data: result, error } = await supabase.functions.invoke("super-admin-access", {
+      body: {
+        action: "grant_access",
+        full_name: inviteName.trim(),
+        email: inviteEmail.trim().toLowerCase(),
+        phone: invitePhone.trim() || null,
+        role: inviteRole,
+        tenant_id: selectedTenantIdSafe,
+      },
+    });
+    setInviteLoading(false);
+
+    if (error || !result?.ok) {
+      toast.error("Falha na liberacao de acesso", {
+        description: result?.detail || error?.message || result?.error || "Edge Function indisponivel.",
+      });
+      return;
+    }
+
+    toast.success("Acesso liberado com sucesso.");
+    setInviteName("");
+    setInviteEmail("");
+    setInvitePhone("");
+    queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] });
+  };
+
+  const setAccessStatus = async (targetUserId: string, isActive: boolean) => {
+    const { data: result, error } = await supabase.functions.invoke("super-admin-access", {
+      body: {
+        action: "set_access_status",
+        target_user_id: targetUserId,
+        tenant_id: selectedTenantIdSafe,
+        is_active: isActive,
+      },
+    });
+
+    if (error || !result?.ok) {
+      toast.error("Falha ao atualizar acesso", {
+        description: result?.detail || error?.message || result?.error,
+      });
+      return;
+    }
+
+    toast.success(isActive ? "Acesso reativado." : "Acesso desativado.");
+    queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] });
+  };
+
+  const revokeAccess = async (targetUserId: string, role: "admin" | "super_admin") => {
+    const { data: result, error } = await supabase.functions.invoke("super-admin-access", {
+      body: {
+        action: "revoke_access",
+        target_user_id: targetUserId,
+        role,
+        tenant_id: selectedTenantIdSafe,
+      },
+    });
+
+    if (error || !result?.ok) {
+      toast.error("Falha ao revogar acesso", {
+        description: result?.detail || error?.message || result?.error,
+      });
+      return;
+    }
+
+    toast.success("Acesso revogado.");
+    queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] });
+  };
 
   return (
     <AdminLayout>
@@ -213,6 +532,135 @@ const SuperAdminDashboard = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Dialog open={accessDialogOpen} onOpenChange={setAccessDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="default" size="sm">
+                  <ShieldCheck className="mr-1.5 h-4 w-4" /> Liberar acessos
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[640px]">
+                <DialogHeader>
+                  <DialogTitle>Gestao de acesso dos assinantes</DialogTitle>
+                  <DialogDescription>
+                    Libere novos admins por assinante e novos super admins da plataforma.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Assinante</Label>
+                    <Select value={selectedTenantIdSafe} onValueChange={setSelectedTenantId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o assinante" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subscriberRows.map((item) => (
+                          <SelectItem key={item.clinic_id} value={item.clinic_id}>
+                            {item.clinic_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Nome</Label>
+                      <Input value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder="Nome completo" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>E-mail</Label>
+                      <Input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} type="email" placeholder="usuario@dominio.com" />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Telefone</Label>
+                      <Input value={invitePhone} onChange={(e) => setInvitePhone(e.target.value)} placeholder="(11) 99999-9999" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Papel</Label>
+                      <Select value={inviteRole} onValueChange={(value) => setInviteRole(value as "admin" | "super_admin")}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin do assinante</SelectItem>
+                          <SelectItem value="super_admin">Super admin da plataforma</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Button onClick={grantAccess} disabled={inviteLoading} className="w-full">
+                    <UserPlus className="mr-1.5 h-4 w-4" /> {inviteLoading ? "Processando..." : "Liberar acesso"}
+                  </Button>
+
+                  <div className="rounded-lg border border-border p-3">
+                    <p className="mb-2 text-sm font-semibold">Admins do assinante selecionado</p>
+                    <div className="space-y-2">
+                      {tenantAccessRows.length === 0 && (
+                        <p className="text-xs text-muted-foreground">Nenhum admin/owner vinculado a este assinante.</p>
+                      )}
+                      {tenantAccessRows.map((member) => (
+                        <div key={`${member.user_id}-${member.role}`} className="flex items-center justify-between rounded border border-border px-3 py-2">
+                          <div>
+                            <p className="text-sm font-medium">{member.full_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {member.role} {member.phone ? `| ${member.phone}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setAccessStatus(member.user_id, !member.is_active)}
+                            >
+                              {member.is_active ? "Desativar" : "Reativar"}
+                            </Button>
+                            {member.role === "admin" && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => revokeAccess(member.user_id, "admin")}
+                              >
+                                <UserX className="mr-1 h-3.5 w-3.5" /> Revogar
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border p-3">
+                    <p className="mb-2 text-sm font-semibold">Super admins ativos</p>
+                    <div className="space-y-2">
+                      {globalSuperAdmins.length === 0 && (
+                        <p className="text-xs text-muted-foreground">Nenhum super admin cadastrado.</p>
+                      )}
+                      {globalSuperAdmins.map((member) => (
+                        <div key={member.user_id} className="flex items-center justify-between rounded border border-border px-3 py-2">
+                          <div>
+                            <p className="text-sm font-medium">{member.full_name}</p>
+                            <p className="text-xs text-muted-foreground">tenant base: {member.tenant_id}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => revokeAccess(member.user_id, "super_admin")}
+                          >
+                            Revogar super admin
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             <Button variant="outline" size="sm" onClick={() => exportSuperAdminPDF(exportPayload)}>
               <Download className="mr-1.5 h-4 w-4" /> PDF
             </Button>
@@ -235,6 +683,21 @@ const SuperAdminDashboard = () => {
           <MetricCard value={totals.appointmentsMonth} label="Consultas no mes" icon={CalendarCheck2} />
           <MetricCard value={totals.noShowMonth} label="No-show no mes" icon={AlertTriangle} variant="warning" />
         </div>
+
+        <div className="grid gap-3 sm:grid-cols-5">
+          {(Object.keys(subscriptionCounts) as SubscriptionStatus[]).map((statusKey) => (
+            <Card key={statusKey} className="shadow-soft">
+              <CardContent className="p-3">
+                <p className="text-xs text-muted-foreground">{statusLabels[statusKey]}</p>
+                <p className="text-xl font-bold">{subscriptionCounts[statusKey]}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <PlanCatalogManager
+          onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
+        />
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="shadow-soft">
@@ -264,10 +727,12 @@ const SuperAdminDashboard = () => {
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[250px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topSubscribers.map((item) => ({
-                    clinica: item.clinic_name.length > 18 ? `${item.clinic_name.slice(0, 18)}...` : item.clinic_name,
-                    consultas: item.month_appointments,
-                  }))}>
+                  <BarChart
+                    data={topSubscribers.map((item) => ({
+                      clinica: item.clinic_name.length > 18 ? `${item.clinic_name.slice(0, 18)}...` : item.clinic_name,
+                      consultas: item.month_appointments,
+                    }))}
+                  >
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
                     <XAxis dataKey="clinica" />
                     <YAxis allowDecimals={false} />
@@ -282,7 +747,7 @@ const SuperAdminDashboard = () => {
 
         <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle className="text-base">Assinantes - visao detalhada</CardTitle>
+            <CardTitle className="text-base">Assinantes - visao detalhada e assinatura</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -290,33 +755,104 @@ const SuperAdminDashboard = () => {
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
                     <th className="pb-2 pr-4">Clinica</th>
-                    <th className="pb-2 pr-4">Slug</th>
+                    <th className="pb-2 pr-4">Plano</th>
+                    <th className="pb-2 pr-4">Status</th>
                     <th className="pb-2 pr-4">Equipe</th>
                     <th className="pb-2 pr-4">Pacientes</th>
                     <th className="pb-2 pr-4">Consultas (mes)</th>
                     <th className="pb-2 pr-4">No-show (mes)</th>
-                    <th className="pb-2 pr-4">Atualizado</th>
+                    <th className="pb-2 pr-4">Acoes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {!isLoading && subscriberRows.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="py-4 text-muted-foreground">
+                      <td colSpan={8} className="py-4 text-muted-foreground">
                         Nenhum assinante encontrado.
                       </td>
                     </tr>
                   )}
-                  {subscriberRows.map((row) => (
-                    <tr key={row.clinic_id} className="border-b border-border/70">
-                      <td className="py-2 pr-4 font-medium">{row.clinic_name}</td>
-                      <td className="py-2 pr-4">{row.slug}</td>
-                      <td className="py-2 pr-4">{row.owners + row.admins + row.professionals}</td>
-                      <td className="py-2 pr-4">{row.patients}</td>
-                      <td className="py-2 pr-4">{row.month_appointments}</td>
-                      <td className="py-2 pr-4">{row.month_no_show}</td>
-                      <td className="py-2 pr-4">{new Date(row.updated_at).toLocaleDateString("pt-BR")}</td>
-                    </tr>
-                  ))}
+                  {subscriberRows.map((row) => {
+                    const rowDraft = billingDraft[row.clinic_id] ?? {
+                      plan: row.subscription.plan,
+                      status: row.subscription.status,
+                    };
+
+                    return (
+                      <tr key={row.clinic_id} className="border-b border-border/70 align-top">
+                        <td className="py-2 pr-4">
+                          <p className="font-medium">{row.clinic_name}</p>
+                          <p className="text-xs text-muted-foreground">{row.slug}</p>
+                        </td>
+                        <td className="py-2 pr-4">
+                          <Select
+                            value={rowDraft.plan}
+                            onValueChange={(value) => updateBillingDraft(row.clinic_id, { plan: value as SubscriptionPlan })}
+                          >
+                            <SelectTrigger className="w-[130px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availablePlans.map((plan) => (
+                                <SelectItem key={plan.id} value={plan.code}>
+                                  {plan.name}
+                                </SelectItem>
+                              ))}
+                              {!availablePlans.find((plan) => plan.code === rowDraft.plan) && (
+                                <SelectItem value={rowDraft.plan}>{rowDraft.plan}</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="py-2 pr-4">
+                          <div className="space-y-2">
+                            <Select
+                              value={rowDraft.status}
+                              onValueChange={(value) => updateBillingDraft(row.clinic_id, { status: value as SubscriptionStatus })}
+                            >
+                              <SelectTrigger className="w-[145px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="trialing">Trialing</SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="past_due">Past due</SelectItem>
+                                <SelectItem value="paused">Paused</SelectItem>
+                                <SelectItem value="canceled">Canceled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Badge className={statusBadgeClass[rowDraft.status]}>{statusLabels[rowDraft.status]}</Badge>
+                          </div>
+                        </td>
+                        <td className="py-2 pr-4">{row.owners + row.admins + row.professionals}</td>
+                        <td className="py-2 pr-4">{row.patients}</td>
+                        <td className="py-2 pr-4">{row.month_appointments}</td>
+                        <td className="py-2 pr-4">{row.month_no_show}</td>
+                        <td className="py-2 pr-4">
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => saveSubscriptionState(row.clinic_id)}
+                              disabled={savingTenantId === row.clinic_id}
+                            >
+                              <Save className="mr-1 h-3.5 w-3.5" /> {savingTenantId === row.clinic_id ? "Salvando..." : "Salvar assinatura"}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedTenantId(row.clinic_id);
+                                setAccessDialogOpen(true);
+                              }}
+                            >
+                              <ShieldCheck className="mr-1 h-3.5 w-3.5" /> Gerir acessos
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
