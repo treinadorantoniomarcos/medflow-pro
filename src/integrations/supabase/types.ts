@@ -416,48 +416,6 @@ export type Database = {
           },
         ]
       }
-      subscription_plans: {
-        Row: {
-          code: string
-          created_at: string
-          description: string | null
-          id: string
-          is_active: boolean
-          is_courtesy: boolean
-          monthly_price_cents: number
-          name: string
-          period_days: number
-          trial_days: number
-          updated_at: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_courtesy?: boolean
-          monthly_price_cents?: number
-          name: string
-          period_days?: number
-          trial_days?: number
-          updated_at?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_courtesy?: boolean
-          monthly_price_cents?: number
-          name?: string
-          period_days?: number
-          trial_days?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           accepting_bookings: boolean
@@ -504,6 +462,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_plans: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_courtesy: boolean
+          monthly_price_cents: number
+          name: string
+          period_days: number
+          trial_days: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_courtesy?: boolean
+          monthly_price_cents?: number
+          name: string
+          period_days?: number
+          trial_days?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_courtesy?: boolean
+          monthly_price_cents?: number
+          name?: string
+          period_days?: number
+          trial_days?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
