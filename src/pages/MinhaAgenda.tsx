@@ -771,6 +771,11 @@ const MinhaAgenda = () => {
               </Select>
             </div>
           )}
+          {!isAdminScope && managedProfessionalName && (
+            <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2 text-sm text-muted-foreground">
+              Pesquisa e gestÃ£o aplicadas automaticamente Ã  agenda de <span className="font-medium text-foreground">{managedProfessionalName}</span>.
+            </div>
+          )}
         </motion.div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
