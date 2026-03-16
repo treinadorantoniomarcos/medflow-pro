@@ -920,7 +920,13 @@ const SuperAdminDashboard = () => {
                     return (
                       <tr key={row.clinic_id} className="border-b border-border/70 align-top">
                         <td className="py-2 pr-4">
-                          <p className="font-medium">{row.clinic_name}</p>
+                          <button
+                            type="button"
+                            className="text-left"
+                            onClick={() => openSubscriberDetail(row.clinic_id)}
+                          >
+                            <p className="font-medium text-primary hover:underline">{row.clinic_name}</p>
+                          </button>
                           <p className="text-xs text-muted-foreground">{row.slug}</p>
                           {row.access_request.status && (
                             <div className="mt-2 space-y-1 rounded-md border border-border bg-secondary/30 p-2 text-xs">
@@ -1039,7 +1045,7 @@ const SuperAdminDashboard = () => {
             <DialogHeader>
               <DialogTitle>Dados do assinante</DialogTitle>
               <DialogDescription>
-                Visualize e altere os dados principais do assinante selecionado.
+                Clique no nome do assinante na tabela para abrir esta tela e alterar os dados principais.
               </DialogDescription>
             </DialogHeader>
 
