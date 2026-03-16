@@ -147,6 +147,9 @@ const MinhaAgenda = () => {
   const [periodViewFilter, setPeriodViewFilter] = useState<PeriodViewFilter>("week");
   const [periodStatusFilter, setPeriodStatusFilter] = useState<PeriodStatusFilter>("all");
   const [dayTypeFilter, setDayTypeFilter] = useState<DayTypeFilter>("all");
+  const [pendingPeriodViewFilter, setPendingPeriodViewFilter] = useState<PeriodViewFilter>("week");
+  const [pendingPeriodStatusFilter, setPendingPeriodStatusFilter] = useState<PeriodStatusFilter>("all");
+  const [pendingDayTypeFilter, setPendingDayTypeFilter] = useState<DayTypeFilter>("all");
 
   const { data: role } = useQuery({
     queryKey: ["my-agenda-role", user?.id, profile?.tenant_id],
@@ -704,6 +707,21 @@ const MinhaAgenda = () => {
     if (url) window.open(url, "_blank");
   };
 
+  const applyPeriodFilters = () => {
+    setPeriodViewFilter(pendingPeriodViewFilter);
+    setPeriodStatusFilter(pendingPeriodStatusFilter);
+    setDayTypeFilter(pendingDayTypeFilter);
+  };
+
+  const resetPeriodFilters = () => {
+    setPendingPeriodViewFilter("week");
+    setPendingPeriodStatusFilter("all");
+    setPendingDayTypeFilter("all");
+    setPeriodViewFilter("week");
+    setPeriodStatusFilter("all");
+    setDayTypeFilter("all");
+  };
+
   return (
     <AdminLayout>
       <div className="mx-auto max-w-4xl space-y-5">
@@ -935,7 +953,7 @@ const MinhaAgenda = () => {
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <p className="text-xs font-semibold text-muted-foreground">Períodos da agenda</p>
               <div className="grid gap-2 sm:grid-cols-3 lg:w-[640px]">
-                <Select value={periodViewFilter} onValueChange={(value) => setPeriodViewFilter(value as PeriodViewFilter)}>
+                <Select value={pendingPeriodViewFilter} onValueChange={(value) => setPendingPeriodViewFilter(value as PeriodViewFilter)}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="Visualizar período" />
                   </SelectTrigger>
@@ -946,7 +964,7 @@ const MinhaAgenda = () => {
                     <SelectItem value="all">Todos os períodos</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={periodStatusFilter} onValueChange={(value) => setPeriodStatusFilter(value as PeriodStatusFilter)}>
+                <Select value={pendingPeriodStatusFilter} onValueChange={(value) => setPendingPeriodStatusFilter(value as PeriodStatusFilter)}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -957,7 +975,7 @@ const MinhaAgenda = () => {
                     <SelectItem value="pending">Não analisado</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={dayTypeFilter} onValueChange={(value) => setDayTypeFilter(value as DayTypeFilter)}>
+                <Select value={pendingDayTypeFilter} onValueChange={(value) => setPendingDayTypeFilter(value as DayTypeFilter)}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="Tipo de dia" />
                   </SelectTrigger>
@@ -973,6 +991,14 @@ const MinhaAgenda = () => {
                     <SelectItem value="holiday">Feriados nacionais</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex gap-2 lg:justify-end">
+                <Button type="button" size="sm" variant="outline" onClick={resetPeriodFilters}>
+                  Limpar
+                </Button>
+                <Button type="button" size="sm" onClick={applyPeriodFilters}>
+                  OK
+                </Button>
               </div>
             </div>
             {visiblePendingPeriod && (
