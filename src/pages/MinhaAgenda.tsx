@@ -37,7 +37,7 @@ type BulkActionType = "open" | "close";
 type BulkUnit = "hours" | "days" | "weeks" | "months";
 type PeriodViewFilter = "day" | "week" | "month" | "all";
 type PeriodStatusFilter = "all" | "open" | "blocked" | "pending";
-type DayTypeFilter = "all" | "business" | "saturday" | "sunday" | "holiday";
+type DayTypeFilter = "all" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday" | "holiday";
 
 const statusActions: { from: AppointmentStatus; to: AppointmentStatus; label: string }[] = [
   { from: "scheduled", to: "confirmed", label: "Confirmar" },
@@ -87,16 +87,45 @@ const getDayType = (date: Date): DayTypeFilter => {
   const holidaySet = getBrazilNationalHolidaySet(date.getFullYear());
   const key = format(date, "yyyy-MM-dd");
   if (holidaySet.has(key)) return "holiday";
+  if (date.getDay() === 1) return "monday";
+  if (date.getDay() === 2) return "tuesday";
+  if (date.getDay() === 3) return "wednesday";
+  if (date.getDay() === 4) return "thursday";
+  if (date.getDay() === 5) return "friday";
   if (date.getDay() === 0) return "sunday";
   if (date.getDay() === 6) return "saturday";
-  return "business";
+  return "monday";
 };
 
 const getDayTypeLabel = (dayType: DayTypeFilter) => {
-  if (dayType === "holiday") return "Feriado nacional";
+  if (dayType === "holiday") return "FERIADO NACIONAL";
   if (dayType === "saturday") return "Sábado";
+  if (dayType === "monday") return "Segunda-feira";
+  if (dayType === "tuesday") return "Terça-feira";
+  if (dayType === "wednesday") return "Quarta-feira";
+  if (dayType === "thursday") return "Quinta-feira";
+  if (dayType === "friday") return "Sexta-feira";
   if (dayType === "sunday") return "Domingo";
   return "Dia útil";
+};
+
+const getReadableDayTypeLabel = (dayType: DayTypeFilter) => {
+  if (dayType === "holiday") return "FERIADO NACIONAL";
+  if (dayType === "monday") return "Segunda-feira";
+  if (dayType === "tuesday") return "Terça-feira";
+  if (dayType === "wednesday") return "Quarta-feira";
+  if (dayType === "thursday") return "Quinta-feira";
+  if (dayType === "friday") return "Sexta-feira";
+  if (dayType === "saturday") return "Sábado";
+  if (dayType === "sunday") return "Domingo";
+  return "Todos os dias";
+};
+
+const getDayTypeAccentClass = (dayType: DayTypeFilter) => {
+  if (dayType === "holiday") return "text-amber-800 dark:text-amber-300 font-semibold";
+  if (dayType === "saturday") return "text-sky-700 dark:text-sky-300 font-medium";
+  if (dayType === "sunday") return "text-violet-700 dark:text-violet-300 font-medium";
+  return "";
 };
 
 const MinhaAgenda = () => {
@@ -934,7 +963,11 @@ const MinhaAgenda = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os dias</SelectItem>
-                    <SelectItem value="business">Dias úteis</SelectItem>
+                    <SelectItem value="monday">Segunda-feira</SelectItem>
+                    <SelectItem value="tuesday">Terça-feira</SelectItem>
+                    <SelectItem value="wednesday">Quarta-feira</SelectItem>
+                    <SelectItem value="thursday">Quinta-feira</SelectItem>
+                    <SelectItem value="friday">Sexta-feira</SelectItem>
                     <SelectItem value="saturday">Sábado</SelectItem>
                     <SelectItem value="sunday">Domingo</SelectItem>
                     <SelectItem value="holiday">Feriados nacionais</SelectItem>
@@ -950,7 +983,7 @@ const MinhaAgenda = () => {
                       {format(new Date(visiblePendingPeriod.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(visiblePendingPeriod.end_at), "dd/MM HH:mm")}
                     </p>
                     <p className="text-[11px] text-amber-700 dark:text-amber-400">
-                      {visiblePendingPeriod.label} | {getDayTypeLabel(getDayType(new Date(visiblePendingPeriod.start_at)))}
+                      {visiblePendingPeriod.label} | <span className={getDayTypeAccentClass(getDayType(new Date(visiblePendingPeriod.start_at)))}>{getReadableDayTypeLabel(getDayType(new Date(visiblePendingPeriod.start_at)))}</span>
                     </p>
                   </div>
                   <Badge className="border-amber-200 bg-amber-100 text-amber-700">Não analisado</Badge>
@@ -965,7 +998,7 @@ const MinhaAgenda = () => {
                       {format(new Date(period.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(period.end_at), "dd/MM HH:mm")}
                     </p>
                     <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
-                      {period.reason} | {getDayTypeLabel(getDayType(new Date(period.start_at)))}
+                      {period.reason} | <span className={getDayTypeAccentClass(getDayType(new Date(period.start_at)))}>{getReadableDayTypeLabel(getDayType(new Date(period.start_at)))}</span>
                     </p>
                   </div>
                   <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">Liberado</Badge>
@@ -979,7 +1012,7 @@ const MinhaAgenda = () => {
                     {format(new Date(block.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(block.end_at), "dd/MM HH:mm")}
                   </p>
                   <p className="text-[11px] text-rose-700 dark:text-rose-400">
-                    {(block.reason || "Sem motivo informado")} | {getDayTypeLabel(getDayType(new Date(block.start_at)))}
+                    {(block.reason || "Sem motivo informado")} | <span className={getDayTypeAccentClass(getDayType(new Date(block.start_at)))}>{getReadableDayTypeLabel(getDayType(new Date(block.start_at)))}</span>
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
