@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
-import { addDays, addMonths, addWeeks, format, isToday, subDays } from "date-fns";
+import { addDays, addMonths, addWeeks, endOfMonth, endOfWeek, format, isToday, startOfDay, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,12 +35,69 @@ type TeamProfessional = {
 
 type BulkActionType = "open" | "close";
 type BulkUnit = "hours" | "days" | "weeks" | "months";
+type PeriodViewFilter = "day" | "week" | "month" | "all";
+type PeriodStatusFilter = "all" | "open" | "blocked" | "pending";
+type DayTypeFilter = "all" | "business" | "saturday" | "sunday" | "holiday";
 
 const statusActions: { from: AppointmentStatus; to: AppointmentStatus; label: string }[] = [
   { from: "scheduled", to: "confirmed", label: "Confirmar" },
   { from: "confirmed", to: "in_progress", label: "Iniciar" },
   { from: "in_progress", to: "completed", label: "Concluir" },
 ];
+
+const getEasterSunday = (year: number) => {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+};
+
+const getBrazilNationalHolidaySet = (year: number) => {
+  const fixed = [
+    `${year}-01-01`,
+    `${year}-04-21`,
+    `${year}-05-01`,
+    `${year}-09-07`,
+    `${year}-10-12`,
+    `${year}-11-02`,
+    `${year}-11-15`,
+    `${year}-11-20`,
+    `${year}-12-25`,
+  ];
+
+  const easter = getEasterSunday(year);
+  const goodFriday = subDays(easter, 2);
+  fixed.push(format(goodFriday, "yyyy-MM-dd"));
+
+  return new Set(fixed);
+};
+
+const getDayType = (date: Date): DayTypeFilter => {
+  const holidaySet = getBrazilNationalHolidaySet(date.getFullYear());
+  const key = format(date, "yyyy-MM-dd");
+  if (holidaySet.has(key)) return "holiday";
+  if (date.getDay() === 0) return "sunday";
+  if (date.getDay() === 6) return "saturday";
+  return "business";
+};
+
+const getDayTypeLabel = (dayType: DayTypeFilter) => {
+  if (dayType === "holiday") return "Feriado nacional";
+  if (dayType === "saturday") return "Sábado";
+  if (dayType === "sunday") return "Domingo";
+  return "Dia útil";
+};
 
 const MinhaAgenda = () => {
   const { profile, user } = useAuth();
@@ -58,6 +115,9 @@ const MinhaAgenda = () => {
   const [blockReason, setBlockReason] = useState("");
   const [savingBlock, setSavingBlock] = useState(false);
   const [blockSaved, setBlockSaved] = useState(false);
+  const [periodViewFilter, setPeriodViewFilter] = useState<PeriodViewFilter>("week");
+  const [periodStatusFilter, setPeriodStatusFilter] = useState<PeriodStatusFilter>("all");
+  const [dayTypeFilter, setDayTypeFilter] = useState<DayTypeFilter>("all");
 
   const { data: role } = useQuery({
     queryKey: ["my-agenda-role", user?.id, profile?.tenant_id],
@@ -343,6 +403,53 @@ const MinhaAgenda = () => {
       label: bulkAction === "close" ? "Bloqueio em análise" : "Liberação em análise",
     };
   }, [blockStart, blockEnd, bulkAmount, bulkUnit, bulkAction]);
+
+  const isPeriodVisible = (startAt: string, endAt: string) => {
+    if (periodViewFilter === "all") return true;
+
+    const start = new Date(startAt);
+    const end = new Date(endAt);
+    const rangeStart = startOfDay(selectedDate);
+    const rangeEnd =
+      periodViewFilter === "day"
+        ? new Date(rangeStart.getTime() + 24 * 60 * 60 * 1000 - 1)
+        : periodViewFilter === "week"
+          ? endOfWeek(selectedDate, { weekStartsOn: 1 })
+          : endOfMonth(selectedDate);
+
+    return end >= rangeStart && start <= rangeEnd;
+  };
+
+  const visibleReleasePeriods = useMemo(
+    () =>
+      releasePeriods.filter(
+        (period) =>
+          isPeriodVisible(period.start_at, period.end_at) &&
+          (periodStatusFilter === "all" || periodStatusFilter === "open") &&
+          (dayTypeFilter === "all" || getDayType(new Date(period.start_at)) === dayTypeFilter)
+      ),
+    [releasePeriods, periodViewFilter, selectedDate, periodStatusFilter, dayTypeFilter]
+  );
+
+  const visibleBlockedPeriods = useMemo(
+    () =>
+      periodBlocks.filter(
+        (period) =>
+          isPeriodVisible(period.start_at, period.end_at) &&
+          (periodStatusFilter === "all" || periodStatusFilter === "blocked") &&
+          (dayTypeFilter === "all" || getDayType(new Date(period.start_at)) === dayTypeFilter)
+      ),
+    [periodBlocks, periodViewFilter, selectedDate, periodStatusFilter, dayTypeFilter]
+  );
+
+  const visiblePendingPeriod = useMemo(() => {
+    if (!pendingPeriodPreview) return null;
+    if (periodStatusFilter !== "all" && periodStatusFilter !== "pending") return null;
+    if (dayTypeFilter !== "all" && getDayType(new Date(pendingPeriodPreview.start_at)) !== dayTypeFilter) return null;
+    return isPeriodVisible(pendingPeriodPreview.start_at, pendingPeriodPreview.end_at)
+      ? pendingPeriodPreview
+      : null;
+  }, [pendingPeriodPreview, periodViewFilter, selectedDate, periodStatusFilter, dayTypeFilter]);
 
   const handleToggleBookings = async () => {
     if (!managedProfessionalId) return;
@@ -796,40 +903,84 @@ const MinhaAgenda = () => {
           </div>
 
           <div className="mt-4 space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground">Períodos da agenda</p>
-            {pendingPeriodPreview && (
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <p className="text-xs font-semibold text-muted-foreground">Períodos da agenda</p>
+              <div className="grid gap-2 sm:grid-cols-3 lg:w-[640px]">
+                <Select value={periodViewFilter} onValueChange={(value) => setPeriodViewFilter(value as PeriodViewFilter)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Visualizar período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">Dia selecionado</SelectItem>
+                    <SelectItem value="week">Semana selecionada</SelectItem>
+                    <SelectItem value="month">Mês selecionado</SelectItem>
+                    <SelectItem value="all">Todos os períodos</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={periodStatusFilter} onValueChange={(value) => setPeriodStatusFilter(value as PeriodStatusFilter)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os status</SelectItem>
+                    <SelectItem value="open">Liberado</SelectItem>
+                    <SelectItem value="blocked">Bloqueado</SelectItem>
+                    <SelectItem value="pending">Não analisado</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={dayTypeFilter} onValueChange={(value) => setDayTypeFilter(value as DayTypeFilter)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Tipo de dia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os dias</SelectItem>
+                    <SelectItem value="business">Dias úteis</SelectItem>
+                    <SelectItem value="saturday">Sábado</SelectItem>
+                    <SelectItem value="sunday">Domingo</SelectItem>
+                    <SelectItem value="holiday">Feriados nacionais</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {visiblePendingPeriod && (
               <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/50 dark:bg-amber-950/20">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
-                      {format(new Date(pendingPeriodPreview.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(pendingPeriodPreview.end_at), "dd/MM HH:mm")}
+                      {format(new Date(visiblePendingPeriod.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(visiblePendingPeriod.end_at), "dd/MM HH:mm")}
                     </p>
-                    <p className="text-[11px] text-amber-700 dark:text-amber-400">{pendingPeriodPreview.label}</p>
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                      {visiblePendingPeriod.label} | {getDayTypeLabel(getDayType(new Date(visiblePendingPeriod.start_at)))}
+                    </p>
                   </div>
                   <Badge className="border-amber-200 bg-amber-100 text-amber-700">Não analisado</Badge>
                 </div>
               </div>
             )}
-            {releasePeriods.map((period) => (
+            {visibleReleasePeriods.map((period) => (
               <div key={period.id} className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-900/50 dark:bg-emerald-950/20">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-medium text-emerald-800 dark:text-emerald-300">
                       {format(new Date(period.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(period.end_at), "dd/MM HH:mm")}
                     </p>
-                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400">{period.reason}</p>
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                      {period.reason} | {getDayTypeLabel(getDayType(new Date(period.start_at)))}
+                    </p>
                   </div>
                   <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">Liberado</Badge>
                 </div>
               </div>
             ))}
-            {periodBlocks.map((block) => (
+            {visibleBlockedPeriods.map((block) => (
               <div key={block.id} className="flex items-center justify-between rounded-md border border-rose-200 bg-rose-50 px-3 py-2 dark:border-rose-900/50 dark:bg-rose-950/20">
                 <div>
                   <p className="text-xs font-medium text-rose-800 dark:text-rose-300">
                     {format(new Date(block.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(block.end_at), "dd/MM HH:mm")}
                   </p>
-                  <p className="text-[11px] text-rose-700 dark:text-rose-400">{block.reason || "Sem motivo informado"}</p>
+                  <p className="text-[11px] text-rose-700 dark:text-rose-400">
+                    {(block.reason || "Sem motivo informado")} | {getDayTypeLabel(getDayType(new Date(block.start_at)))}
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className="border-rose-200 bg-rose-100 text-rose-700">Bloqueado</Badge>
@@ -839,7 +990,7 @@ const MinhaAgenda = () => {
                 </div>
               </div>
             ))}
-            {periodBlocks.length === 0 && releasePeriods.length === 0 && !pendingPeriodPreview && (
+            {visibleBlockedPeriods.length === 0 && visibleReleasePeriods.length === 0 && !visiblePendingPeriod && (
               <p className="text-xs text-muted-foreground">Nenhum período cadastrado.</p>
             )}
           </div>
