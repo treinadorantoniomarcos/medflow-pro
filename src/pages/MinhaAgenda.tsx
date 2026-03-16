@@ -28,6 +28,8 @@ type AppRole = "owner" | "admin" | "professional" | "receptionist" | "patient" |
 type TeamProfessional = {
   user_id: string;
   full_name: string;
+  phone: string | null;
+  email: string | null;
   accepting_bookings: boolean;
 };
 
@@ -80,7 +82,7 @@ const MinhaAgenda = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("user_id, full_name, accepting_bookings")
+        .select("user_id, full_name, phone, email, accepting_bookings")
         .eq("tenant_id", profile!.tenant_id)
         .not("full_name", "is", null)
         .order("full_name", { ascending: true });
@@ -504,7 +506,12 @@ const MinhaAgenda = () => {
                 <SelectContent>
                   {professionals.map((prof) => (
                     <SelectItem key={prof.user_id} value={prof.user_id}>
-                      {prof.full_name}
+                      <div className="flex flex-col py-1">
+                        <span className="font-medium text-foreground">{prof.full_name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {prof.phone || "WhatsApp não informado"} | {prof.email || "E-mail não informado"}
+                        </span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -584,13 +591,21 @@ const MinhaAgenda = () => {
                   return (
                     <label
                       key={professional.user_id}
-                      className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm"
+                      className="flex items-start gap-3 rounded-md border border-border px-3 py-2 text-sm"
                     >
                       <Checkbox
                         checked={checked}
                         onCheckedChange={(value) => toggleBulkProfessional(professional.user_id, value === true)}
                       />
-                      <span>{professional.full_name}</span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground">{professional.full_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          WhatsApp: {professional.phone || "não informado"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          E-mail: {professional.email || "não informado"}
+                        </p>
+                      </div>
                     </label>
                   );
                 })}
