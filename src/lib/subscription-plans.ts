@@ -8,9 +8,7 @@ export type PlanMarketingContent = {
 };
 
 export type PlanCommercialCopy = {
-  social: string;
-  email: string;
-  whatsapp: string;
+  text: string;
 };
 
 export type PlanOption = {
@@ -33,47 +31,47 @@ export const START_TRIAL_DAYS = 7;
 
 export const planMarketingContent: Record<string, PlanMarketingContent> = {
   start: {
-    summary: "Operação essencial para um profissional iniciar a agenda online com organização e confirmação básica.",
-    audience: "Ideal para um único profissional de saúde, em atendimento autônomo ou em um consultório enxuto.",
+    summary: "Operacao essencial para um profissional iniciar a agenda online com organizacao e confirmacao basica.",
+    audience: "Ideal para um unico profissional de saude, em atendimento autonomo ou em um consultorio enxuto.",
     features: [
-      "Licença para 1 profissional",
-      "Contrato com vigência de 12 meses",
-      "Agenda diária com cadastro de pacientes",
-      "Confirmação simples e status da consulta",
+      "Licenca para 1 profissional",
+      "Contrato com vigencia de 12 meses",
+      "Agenda diaria com cadastro de pacientes",
+      "Confirmacao simples e status da consulta",
       "Link de agendamento para divulgar em redes sociais",
     ],
   },
   pro: {
     summary: "Fluxo completo para equipes pequenas que precisam reduzir faltas e organizar a rotina financeira.",
-    audience: "Ideal para clínicas e consultórios com até 3 profissionais.",
+    audience: "Ideal para clinicas e consultorios com ate 3 profissionais.",
     features: [
-      "Licença para até 3 profissionais",
-      "Contrato com vigência de 12 meses",
+      "Licenca para ate 3 profissionais",
+      "Contrato com vigencia de 12 meses",
       "Tudo do plano Start",
-      "Automações de lembrete D-2 e D-1",
+      "Automacoes de lembrete D-2 e D-1",
       "Controle de retorno, financeiro e repasse por profissional",
     ],
     highlight: "Mais escolhido",
   },
   signature: {
-    summary: "Camada executiva para uma operação estruturada, com governança, indicadores e automações avançadas.",
-    audience: "Ideal para clínicas com 4 a 10 profissionais.",
+    summary: "Camada executiva para uma operacao estruturada, com governanca, indicadores e automacoes avancadas.",
+    audience: "Ideal para clinicas com 4 a 10 profissionais.",
     features: [
-      "Licença para 4 a 10 profissionais",
-      "Contrato com vigência de 12 meses",
+      "Licenca para 4 a 10 profissionais",
+      "Contrato com vigencia de 12 meses",
       "Tudo do plano Pro",
       "Dashboard executivo com KPIs e fila operacional",
-      "Automações avançadas e alertas preditivos",
+      "Automacoes avancadas e alertas preditivos",
     ],
     highlight: "Escala premium",
   },
   courtesy: {
-    summary: "Cortesia temporária para onboarding assistido e ativação acompanhada.",
-    audience: "Uso interno ou comercial assistido, sem foco em autosserviço.",
+    summary: "Cortesia temporaria para onboarding assistido e ativacao acompanhada.",
+    audience: "Uso interno ou comercial assistido, sem foco em autosservico.",
     features: [
-      "Período temporário de experimentação",
-      "Configuração inicial acompanhada",
-      "Ativação controlada pelo time da plataforma",
+      "Periodo temporario de experimentacao",
+      "Configuracao inicial acompanhada",
+      "Ativacao controlada pelo time da plataforma",
     ],
   },
 };
@@ -83,7 +81,7 @@ export const fallbackPlanOptions: PlanOption[] = [
     key: "start",
     name: "Start",
     monthlyPrice: 199,
-    description: "1 profissional | agenda e operação essencial",
+    description: "1 profissional | agenda e operacao essencial",
     periodDays: SUBSCRIPTION_TERM_DAYS,
     trialDays: 0,
     isCourtesy: false,
@@ -93,7 +91,7 @@ export const fallbackPlanOptions: PlanOption[] = [
     key: "pro",
     name: "Pro",
     monthlyPrice: 399,
-    description: "Até 3 profissionais | agenda + automações + financeiro",
+    description: "Ate 3 profissionais | agenda + automacoes + financeiro",
     periodDays: SUBSCRIPTION_TERM_DAYS,
     trialDays: 0,
     isCourtesy: false,
@@ -103,7 +101,7 @@ export const fallbackPlanOptions: PlanOption[] = [
     key: "signature",
     name: "Signature",
     monthlyPrice: 799,
-    description: "4 a 10 profissionais | operação completa com controle premium",
+    description: "4 a 10 profissionais | operacao completa com controle premium",
     periodDays: SUBSCRIPTION_TERM_DAYS,
     trialDays: 0,
     isCourtesy: false,
@@ -116,11 +114,11 @@ export const paidPlanOptions = fallbackPlanOptions.filter((plan) => !plan.isCour
 export const getPlanMarketingContent = (planKey: string): PlanMarketingContent => {
   return (
     planMarketingContent[planKey] ?? {
-      summary: "Pacote configurado para operação por assinatura.",
+      summary: "Pacote configurado para operacao por assinatura.",
       audience: "Indicado para contratantes que precisam validar este escopo com o time comercial.",
       features: [
-        "Configuração operacional por tenant",
-        "Ativação conforme plano contratado",
+        "Configuracao operacional por tenant",
+        "Ativacao conforme plano contratado",
         "Suporte a agenda, atendimento e acompanhamento",
       ],
     }
@@ -128,25 +126,14 @@ export const getPlanMarketingContent = (planKey: string): PlanMarketingContent =
 };
 
 export const getPlanCommercialCopy = (plan: PlanOption): PlanCommercialCopy => {
-  const headline = `${plan.name}: ${plan.description}`;
-  const featureLine = plan.marketing.features.slice(0, 3).join(" | ");
-
   return {
-    social: `${headline}. ${plan.marketing.summary} ${plan.marketing.audience} Destaques: ${featureLine}.`,
-    email:
+    text:
       `Pacote ${plan.name}\n` +
       `${plan.description}\n\n` +
-      `Vigência contratual: ${SUBSCRIPTION_TERM_LABEL}\n` +
+      `Vigencia contratual: ${SUBSCRIPTION_TERM_LABEL}\n` +
       `${plan.marketing.summary}\n` +
       `${plan.marketing.audience}\n\n` +
       `Inclui:\n- ${plan.marketing.features.join("\n- ")}`,
-    whatsapp:
-      `*Pacote ${plan.name}*\n` +
-      `${plan.description}\n` +
-      `Vigência contratual: ${SUBSCRIPTION_TERM_LABEL}\n` +
-      `${plan.marketing.summary}\n` +
-      `${plan.marketing.audience}\n` +
-      `Principais recursos: ${featureLine}.`,
   };
 };
 

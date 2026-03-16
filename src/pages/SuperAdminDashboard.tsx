@@ -1034,63 +1034,23 @@ const SuperAdminDashboard = () => {
                     {plan.marketing.highlight && <Badge variant="outline">{plan.marketing.highlight}</Badge>}
                   </div>
 
-                  <div className="grid gap-3 lg:grid-cols-3">
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Redes sociais</p>
-                      <div className="min-h-28 rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.social}</div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(copy.social);
-                          setCopiedCopyKey(`${plan.key}-social`);
-                          toast.success(`Texto de redes sociais do pacote ${plan.name} copiado`);
-                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
-                        }}
-                      >
-                        {copiedCopyKey === `${plan.key}-social` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        Copiar
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">E-mail</p>
-                      <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.email}</div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(copy.email);
-                          setCopiedCopyKey(`${plan.key}-email`);
-                          toast.success(`Texto de e-mail do pacote ${plan.name} copiado`);
-                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
-                        }}
-                      >
-                        {copiedCopyKey === `${plan.key}-email` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        Copiar
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">WhatsApp</p>
-                      <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.whatsapp}</div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(copy.whatsapp);
-                          setCopiedCopyKey(`${plan.key}-whatsapp`);
-                          toast.success(`Texto de WhatsApp do pacote ${plan.name} copiado`);
-                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
-                        }}
-                      >
-                        {copiedCopyKey === `${plan.key}-whatsapp` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        Copiar
-                      </Button>
-                    </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Texto único para divulgação</p>
+                    <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.text}</div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(copy.text);
+                        setCopiedCopyKey(plan.key);
+                        toast.success(`Texto do pacote ${plan.name} copiado`);
+                        window.setTimeout(() => setCopiedCopyKey(null), 2000);
+                      }}
+                    >
+                      {copiedCopyKey === plan.key ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      Copiar
+                    </Button>
                   </div>
                 </div>
               );
