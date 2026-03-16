@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
-import { addDays, addMonths, addWeeks, endOfMonth, endOfWeek, format, isToday, startOfDay, subDays } from "date-fns";
+import { addDays, addMonths, addWeeks, endOfDay, format, isToday, startOfDay, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,6 @@ type TeamProfessional = {
 
 type BulkActionType = "open" | "close";
 type BulkUnit = "hours" | "days" | "weeks" | "months";
-type PeriodViewFilter = "day" | "week" | "month" | "all";
 type PeriodStatusFilter = "all" | "open" | "blocked" | "pending";
 type DayTypeFilter = "all" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday" | "holiday";
 
@@ -144,12 +143,14 @@ const MinhaAgenda = () => {
   const [blockReason, setBlockReason] = useState("");
   const [savingBlock, setSavingBlock] = useState(false);
   const [blockSaved, setBlockSaved] = useState(false);
-  const [periodViewFilter, setPeriodViewFilter] = useState<PeriodViewFilter>("week");
   const [periodStatusFilter, setPeriodStatusFilter] = useState<PeriodStatusFilter>("all");
   const [dayTypeFilter, setDayTypeFilter] = useState<DayTypeFilter>("all");
-  const [pendingPeriodViewFilter, setPendingPeriodViewFilter] = useState<PeriodViewFilter>("week");
   const [pendingPeriodStatusFilter, setPendingPeriodStatusFilter] = useState<PeriodStatusFilter>("all");
   const [pendingDayTypeFilter, setPendingDayTypeFilter] = useState<DayTypeFilter>("all");
+  const [filterStartDate, setFilterStartDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [filterEndDate, setFilterEndDate] = useState(() => format(addDays(new Date(), 7), "yyyy-MM-dd"));
+  const [pendingFilterStartDate, setPendingFilterStartDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [pendingFilterEndDate, setPendingFilterEndDate] = useState(() => format(addDays(new Date(), 7), "yyyy-MM-dd"));
 
   const { data: role } = useQuery({
     queryKey: ["my-agenda-role", user?.id, profile?.tenant_id],
@@ -437,17 +438,10 @@ const MinhaAgenda = () => {
   }, [blockStart, blockEnd, bulkAmount, bulkUnit, bulkAction]);
 
   const isPeriodVisible = (startAt: string, endAt: string) => {
-    if (periodViewFilter === "all") return true;
-
     const start = new Date(startAt);
     const end = new Date(endAt);
-    const rangeStart = startOfDay(selectedDate);
-    const rangeEnd =
-      periodViewFilter === "day"
-        ? new Date(rangeStart.getTime() + 24 * 60 * 60 * 1000 - 1)
-        : periodViewFilter === "week"
-          ? endOfWeek(selectedDate, { weekStartsOn: 1 })
-          : endOfMonth(selectedDate);
+    const rangeStart = startOfDay(new Date(`${filterStartDate}T00:00:00`));
+    const rangeEnd = endOfDay(new Date(`${filterEndDate}T00:00:00`));
 
     return end >= rangeStart && start <= rangeEnd;
   };
@@ -460,7 +454,7 @@ const MinhaAgenda = () => {
           (periodStatusFilter === "all" || periodStatusFilter === "open") &&
           (dayTypeFilter === "all" || getDayType(new Date(period.start_at)) === dayTypeFilter)
       ),
-    [releasePeriods, periodViewFilter, selectedDate, periodStatusFilter, dayTypeFilter]
+    [releasePeriods, filterStartDate, filterEndDate, periodStatusFilter, dayTypeFilter]
   );
 
   const visibleBlockedPeriods = useMemo(
@@ -471,7 +465,7 @@ const MinhaAgenda = () => {
           (periodStatusFilter === "all" || periodStatusFilter === "blocked") &&
           (dayTypeFilter === "all" || getDayType(new Date(period.start_at)) === dayTypeFilter)
       ),
-    [periodBlocks, periodViewFilter, selectedDate, periodStatusFilter, dayTypeFilter]
+    [periodBlocks, filterStartDate, filterEndDate, periodStatusFilter, dayTypeFilter]
   );
 
   const visiblePendingPeriod = useMemo(() => {
@@ -481,7 +475,7 @@ const MinhaAgenda = () => {
     return isPeriodVisible(pendingPeriodPreview.start_at, pendingPeriodPreview.end_at)
       ? pendingPeriodPreview
       : null;
-  }, [pendingPeriodPreview, periodViewFilter, selectedDate, periodStatusFilter, dayTypeFilter]);
+  }, [pendingPeriodPreview, filterStartDate, filterEndDate, periodStatusFilter, dayTypeFilter]);
 
   const handleToggleBookings = async () => {
     if (!managedProfessionalId) return;
@@ -708,18 +702,23 @@ const MinhaAgenda = () => {
   };
 
   const applyPeriodFilters = () => {
-    setPeriodViewFilter(pendingPeriodViewFilter);
     setPeriodStatusFilter(pendingPeriodStatusFilter);
     setDayTypeFilter(pendingDayTypeFilter);
+    setFilterStartDate(pendingFilterStartDate);
+    setFilterEndDate(pendingFilterEndDate);
   };
 
   const resetPeriodFilters = () => {
-    setPendingPeriodViewFilter("week");
     setPendingPeriodStatusFilter("all");
     setPendingDayTypeFilter("all");
-    setPeriodViewFilter("week");
     setPeriodStatusFilter("all");
     setDayTypeFilter("all");
+    const today = format(new Date(), "yyyy-MM-dd");
+    const nextWeek = format(addDays(new Date(), 7), "yyyy-MM-dd");
+    setPendingFilterStartDate(today);
+    setPendingFilterEndDate(nextWeek);
+    setFilterStartDate(today);
+    setFilterEndDate(nextWeek);
   };
 
   return (
@@ -952,21 +951,24 @@ const MinhaAgenda = () => {
           <div className="mt-4 space-y-2">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <p className="text-xs font-semibold text-muted-foreground">Períodos da agenda</p>
-              <div className="grid gap-2 sm:grid-cols-3 lg:w-[640px]">
-                <Select value={pendingPeriodViewFilter} onValueChange={(value) => setPendingPeriodViewFilter(value as PeriodViewFilter)}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Visualizar período" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="day">Dia selecionado</SelectItem>
-                    <SelectItem value="week">Semana selecionada</SelectItem>
-                    <SelectItem value="month">Mês selecionado</SelectItem>
-                    <SelectItem value="all">Todos os períodos</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid gap-2 sm:grid-cols-4 lg:w-[860px]">
+                <Input
+                  type="date"
+                  value={pendingFilterStartDate}
+                  onChange={(e) => setPendingFilterStartDate(e.target.value)}
+                  max={pendingFilterEndDate || undefined}
+                  className="h-8 text-xs"
+                />
+                <Input
+                  type="date"
+                  value={pendingFilterEndDate}
+                  onChange={(e) => setPendingFilterEndDate(e.target.value)}
+                  min={pendingFilterStartDate || undefined}
+                  className="h-8 text-xs"
+                />
                 <Select value={pendingPeriodStatusFilter} onValueChange={(value) => setPendingPeriodStatusFilter(value as PeriodStatusFilter)}>
                   <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder="Tipo da pesquisa" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os status</SelectItem>
@@ -1001,6 +1003,9 @@ const MinhaAgenda = () => {
                 </Button>
               </div>
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              Primeiro selecione a data inicial e a data final. Depois escolha o tipo da pesquisa: bloqueado, liberado ou não analisado.
+            </p>
             {visiblePendingPeriod && (
               <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/50 dark:bg-amber-950/20">
                 <div className="flex items-center justify-between gap-3">
