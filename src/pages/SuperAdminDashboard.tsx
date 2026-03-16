@@ -756,163 +756,6 @@ const SuperAdminDashboard = () => {
           ))}
         </div>
 
-        <PlanCatalogManager
-          onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
-        />
-
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle className="text-base">Link publico de assinatura</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-6 lg:grid-cols-[1fr_220px]">
-            <div className="space-y-4">
-              <div className="rounded-xl border border-border bg-secondary/40 p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <Link2 className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold text-foreground">Divulgacao para clinicas e profissionais</p>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a pagina publica de planos.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
-                  readOnly
-                  value={subscriptionShareUrl}
-                  className="font-mono text-sm"
-                  onFocus={(e) => e.target.select()}
-                />
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(subscriptionShareUrl);
-                    setCopiedShareLink(true);
-                    toast.success("Link de assinatura copiado");
-                    window.setTimeout(() => setCopiedShareLink(false), 2000);
-                  }}
-                >
-                  {copiedShareLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  {copiedShareLink ? "Copiado" : "Copiar link"}
-                </Button>
-              </div>
-
-              <div className="grid gap-2 text-sm text-muted-foreground">
-                <p>Destino: <span className="font-medium text-foreground">/assinar</span></p>
-                <p>Uso recomendado: bio do Instagram, WhatsApp comercial, landing pages de campanha e materiais de vendas.</p>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <QrCode className="h-4 w-4 text-primary" />
-                QR Code
-              </div>
-              <div className="rounded-lg border border-border bg-card p-3">
-                <QRCodeSVG
-                  value={subscriptionShareUrl}
-                  size={160}
-                  level="M"
-                  includeMargin={false}
-                  bgColor="transparent"
-                  fgColor="currentColor"
-                  className="text-foreground"
-                />
-              </div>
-              <p className="text-center text-xs text-muted-foreground">
-                Escaneie para abrir a pagina publica de assinatura.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle className="text-base">Descricoes dos pacotes para divulgacao</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {planMarketingCatalog.map((plan) => {
-              const copy = getPlanCommercialCopy(plan);
-
-              return (
-                <div key={plan.key} className="rounded-xl border border-border p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{plan.name}</p>
-                      <p className="text-xs text-muted-foreground">{plan.description}</p>
-                    </div>
-                    {plan.marketing.highlight && <Badge variant="outline">{plan.marketing.highlight}</Badge>}
-                  </div>
-
-                  <div className="grid gap-3 lg:grid-cols-3">
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Redes sociais</p>
-                      <div className="min-h-28 rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.social}</div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(copy.social);
-                          setCopiedCopyKey(`${plan.key}-social`);
-                          toast.success(`Texto de redes sociais do pacote ${plan.name} copiado`);
-                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
-                        }}
-                      >
-                        {copiedCopyKey === `${plan.key}-social` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        Copiar
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">E-mail</p>
-                      <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.email}</div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(copy.email);
-                          setCopiedCopyKey(`${plan.key}-email`);
-                          toast.success(`Texto de e-mail do pacote ${plan.name} copiado`);
-                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
-                        }}
-                      >
-                        {copiedCopyKey === `${plan.key}-email` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        Copiar
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">WhatsApp</p>
-                      <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.whatsapp}</div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(copy.whatsapp);
-                          setCopiedCopyKey(`${plan.key}-whatsapp`);
-                          toast.success(`Texto de WhatsApp do pacote ${plan.name} copiado`);
-                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
-                        }}
-                      >
-                        {copiedCopyKey === `${plan.key}-whatsapp` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        Copiar
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Acima de 11 profissionais, divulgar como plataforma customizada, com solicitacao de orcamento.
-            </div>
-          </CardContent>
-        </Card>
-
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="shadow-soft">
             <CardHeader>
@@ -1098,6 +941,163 @@ const SuperAdminDashboard = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        <PlanCatalogManager
+          onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
+        />
+
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-base">Link publico de assinatura</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-6 lg:grid-cols-[1fr_220px]">
+            <div className="space-y-4">
+              <div className="rounded-xl border border-border bg-secondary/40 p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Link2 className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">Divulgacao para clinicas e profissionais</p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a pagina publica de planos.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  readOnly
+                  value={subscriptionShareUrl}
+                  className="font-mono text-sm"
+                  onFocus={(e) => e.target.select()}
+                />
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(subscriptionShareUrl);
+                    setCopiedShareLink(true);
+                    toast.success("Link de assinatura copiado");
+                    window.setTimeout(() => setCopiedShareLink(false), 2000);
+                  }}
+                >
+                  {copiedShareLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copiedShareLink ? "Copiado" : "Copiar link"}
+                </Button>
+              </div>
+
+              <div className="grid gap-2 text-sm text-muted-foreground">
+                <p>Destino: <span className="font-medium text-foreground">/assinar</span></p>
+                <p>Uso recomendado: bio do Instagram, WhatsApp comercial, landing pages de campanha e materiais de vendas.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <QrCode className="h-4 w-4 text-primary" />
+                QR Code
+              </div>
+              <div className="rounded-lg border border-border bg-card p-3">
+                <QRCodeSVG
+                  value={subscriptionShareUrl}
+                  size={160}
+                  level="M"
+                  includeMargin={false}
+                  bgColor="transparent"
+                  fgColor="currentColor"
+                  className="text-foreground"
+                />
+              </div>
+              <p className="text-center text-xs text-muted-foreground">
+                Escaneie para abrir a pagina publica de assinatura.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-base">Descricoes dos pacotes para divulgacao</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {planMarketingCatalog.map((plan) => {
+              const copy = getPlanCommercialCopy(plan);
+
+              return (
+                <div key={plan.key} className="rounded-xl border border-border p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{plan.name}</p>
+                      <p className="text-xs text-muted-foreground">{plan.description}</p>
+                    </div>
+                    {plan.marketing.highlight && <Badge variant="outline">{plan.marketing.highlight}</Badge>}
+                  </div>
+
+                  <div className="grid gap-3 lg:grid-cols-3">
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Redes sociais</p>
+                      <div className="min-h-28 rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.social}</div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(copy.social);
+                          setCopiedCopyKey(`${plan.key}-social`);
+                          toast.success(`Texto de redes sociais do pacote ${plan.name} copiado`);
+                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
+                        }}
+                      >
+                        {copiedCopyKey === `${plan.key}-social` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        Copiar
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">E-mail</p>
+                      <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.email}</div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(copy.email);
+                          setCopiedCopyKey(`${plan.key}-email`);
+                          toast.success(`Texto de e-mail do pacote ${plan.name} copiado`);
+                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
+                        }}
+                      >
+                        {copiedCopyKey === `${plan.key}-email` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        Copiar
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">WhatsApp</p>
+                      <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.whatsapp}</div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(copy.whatsapp);
+                          setCopiedCopyKey(`${plan.key}-whatsapp`);
+                          toast.success(`Texto de WhatsApp do pacote ${plan.name} copiado`);
+                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
+                        }}
+                      >
+                        {copiedCopyKey === `${plan.key}-whatsapp` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        Copiar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+              Acima de 11 profissionais, divulgar como plataforma customizada, com solicitacao de orcamento.
             </div>
           </CardContent>
         </Card>
