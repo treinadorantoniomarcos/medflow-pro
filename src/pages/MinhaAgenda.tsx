@@ -194,6 +194,25 @@ const MinhaAgenda = () => {
     },
   });
 
+  const { data: futureOpenSlots = [] } = useQuery({
+    queryKey: ["future-open-slots", profile?.tenant_id, managedProfessionalId],
+    enabled: !!profile?.tenant_id && !!managedProfessionalId,
+    queryFn: async () => {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const { data, error } = await supabase
+        .from("professional_slot_overrides")
+        .select("slot_date, slot_time")
+        .eq("tenant_id", profile!.tenant_id)
+        .eq("professional_user_id", managedProfessionalId!)
+        .eq("is_available", true)
+        .gte("slot_date", today)
+        .order("slot_date", { ascending: true })
+        .order("slot_time", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Array<{ slot_date: string; slot_time: string }>;
+    },
+  });
+
   const acceptingBookings = managedProfessional?.accepting_bookings ?? true;
 
   const toggleBulkProfessional = (professionalId: string, checked: boolean) => {
@@ -254,6 +273,76 @@ const MinhaAgenda = () => {
 
     return result;
   }, [periodBlocks, timeSlots, slotDate]);
+
+  const releasePeriods = useMemo(() => {
+    if (futureOpenSlots.length === 0) return [];
+
+    const grouped = new Map<string, Date[]>();
+    futureOpenSlots.forEach((slot) => {
+      const key = slot.slot_date;
+      const slotDateTime = new Date(`${slot.slot_date}T${String(slot.slot_time).slice(0, 5)}:00`);
+      const current = grouped.get(key) ?? [];
+      current.push(slotDateTime);
+      grouped.set(key, current);
+    });
+
+    return Array.from(grouped.entries()).flatMap(([dateKey, instants]) => {
+      const sorted = instants.sort((a, b) => a.getTime() - b.getTime());
+      const periods: Array<{ id: string; start_at: string; end_at: string; reason: string | null }> = [];
+
+      let rangeStart = sorted[0];
+      let previous = sorted[0];
+
+      for (let i = 1; i < sorted.length; i++) {
+        const current = sorted[i];
+        const diffMinutes = (current.getTime() - previous.getTime()) / (60 * 1000);
+        if (diffMinutes > slotDuration) {
+          periods.push({
+            id: `${dateKey}-${rangeStart.toISOString()}`,
+            start_at: rangeStart.toISOString(),
+            end_at: new Date(previous.getTime() + slotDuration * 60 * 1000).toISOString(),
+            reason: "Agenda liberada",
+          });
+          rangeStart = current;
+        }
+        previous = current;
+      }
+
+      periods.push({
+        id: `${dateKey}-${rangeStart.toISOString()}-last`,
+        start_at: rangeStart.toISOString(),
+        end_at: new Date(previous.getTime() + slotDuration * 60 * 1000).toISOString(),
+        reason: "Agenda liberada",
+      });
+
+      return periods;
+    });
+  }, [futureOpenSlots, slotDuration]);
+
+  const pendingPeriodPreview = useMemo(() => {
+    if (!blockStart) return null;
+
+    const start = new Date(blockStart);
+    const end = blockEnd
+      ? new Date(blockEnd)
+      : new Date(
+          bulkUnit === "hours"
+            ? start.getTime() + Math.max(1, Number(bulkAmount) || 1) * 60 * 60 * 1000
+            : bulkUnit === "days"
+              ? addDays(start, Math.max(1, Number(bulkAmount) || 1)).getTime()
+              : bulkUnit === "weeks"
+                ? addWeeks(start, Math.max(1, Number(bulkAmount) || 1)).getTime()
+                : addMonths(start, Math.max(1, Number(bulkAmount) || 1)).getTime()
+        );
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return null;
+
+    return {
+      start_at: start.toISOString(),
+      end_at: end.toISOString(),
+      label: bulkAction === "close" ? "Bloqueio em análise" : "Liberação em análise",
+    };
+  }, [blockStart, blockEnd, bulkAmount, bulkUnit, bulkAction]);
 
   const handleToggleBookings = async () => {
     if (!managedProfessionalId) return;
@@ -569,6 +658,11 @@ const MinhaAgenda = () => {
 
         <div className="rounded-xl border border-border bg-card p-4">
           <h2 className="mb-3 text-sm font-bold">Liberar ou bloquear por horário, dia, semana ou mês</h2>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">Liberado</Badge>
+            <Badge className="border-rose-200 bg-rose-100 text-rose-700">Bloqueado</Badge>
+            <Badge className="border-amber-200 bg-amber-100 text-amber-700">Não analisado</Badge>
+          </div>
           {isAdminScope && (
             <div className="mb-4 space-y-3 rounded-lg border border-border bg-secondary/20 p-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -702,23 +796,51 @@ const MinhaAgenda = () => {
           </div>
 
           <div className="mt-4 space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground">Bloqueios ativos/futuros</p>
-            {periodBlocks.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nenhum bloqueio cadastrado.</p>
-            ) : (
-              periodBlocks.map((block) => (
-                <div key={block.id} className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+            <p className="text-xs font-semibold text-muted-foreground">Períodos da agenda</p>
+            {pendingPeriodPreview && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/50 dark:bg-amber-950/20">
+                <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-medium">
-                      {format(new Date(block.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(block.end_at), "dd/MM HH:mm")}
+                    <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                      {format(new Date(pendingPeriodPreview.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(pendingPeriodPreview.end_at), "dd/MM HH:mm")}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">{block.reason || "Sem motivo informado"}</p>
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400">{pendingPeriodPreview.label}</p>
                   </div>
+                  <Badge className="border-amber-200 bg-amber-100 text-amber-700">Não analisado</Badge>
+                </div>
+              </div>
+            )}
+            {releasePeriods.map((period) => (
+              <div key={period.id} className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium text-emerald-800 dark:text-emerald-300">
+                      {format(new Date(period.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(period.end_at), "dd/MM HH:mm")}
+                    </p>
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400">{period.reason}</p>
+                  </div>
+                  <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">Liberado</Badge>
+                </div>
+              </div>
+            ))}
+            {periodBlocks.map((block) => (
+              <div key={block.id} className="flex items-center justify-between rounded-md border border-rose-200 bg-rose-50 px-3 py-2 dark:border-rose-900/50 dark:bg-rose-950/20">
+                <div>
+                  <p className="text-xs font-medium text-rose-800 dark:text-rose-300">
+                    {format(new Date(block.start_at), "dd/MM HH:mm")} {" -> "} {format(new Date(block.end_at), "dd/MM HH:mm")}
+                  </p>
+                  <p className="text-[11px] text-rose-700 dark:text-rose-400">{block.reason || "Sem motivo informado"}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className="border-rose-200 bg-rose-100 text-rose-700">Bloqueado</Badge>
                   <Button size="icon" variant="ghost" onClick={() => handleRemoveBlock(block.id)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
-              ))
+              </div>
+            ))}
+            {periodBlocks.length === 0 && releasePeriods.length === 0 && !pendingPeriodPreview && (
+              <p className="text-xs text-muted-foreground">Nenhum período cadastrado.</p>
             )}
           </div>
         </div>
