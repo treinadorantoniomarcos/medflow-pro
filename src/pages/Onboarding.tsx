@@ -114,7 +114,7 @@ const Onboarding = () => {
     setPaymentConfirmed(true);
     setProcessingPayment(false);
     toast.success("Pagamento confirmado", {
-      description: "Primeira mensalidade registrada. Sua assinatura sera ativada no cadastro final.",
+      description: "Primeira mensalidade registrada. Sua solicitacao seguira para validacao no cadastro final.",
     });
   };
 
@@ -269,7 +269,7 @@ const Onboarding = () => {
                   ))}
                 </div>
                 <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
-                  Acima de 11 profissionais, a contratacao passa para plataforma customizada e deve seguir por solicitacao de orcamento.
+                  Acima de 11 profissionais, a contratacao passa a ser customizada e deve seguir para solicitacao de orcamento.
                 </div>
                 <Button type="submit" className="w-full" disabled={!selectedPlan}>
                   Proximo
@@ -289,7 +289,7 @@ const Onboarding = () => {
                     Plano {selectedPlanData.name} - R$ {selectedPlanData.monthlyPrice.toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Apos o pagamento, voce informara os dados que o Super Admin usara para liberar o acesso.
+                    Apos o pagamento, voce informara os dados que o Super Admin usara para analisar e liberar o acesso.
                   </p>
                 </div>
 
@@ -363,7 +363,7 @@ const Onboarding = () => {
                   <Label htmlFor="adminFullName">Nome completo do administrador</Label>
                   <Input
                     id="adminFullName"
-                    placeholder="Nome do administrador responsavel"
+                    placeholder="Nome do administrador responsavel pelo sistema"
                     value={adminFullName}
                     onChange={(e) => setAdminFullName(e.target.value)}
                     required

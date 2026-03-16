@@ -772,7 +772,7 @@ const SuperAdminDashboard = () => {
                   <p className="text-sm font-semibold text-foreground">Divulgacao para clinicas e profissionais</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes direto para a pagina publica de planos.
+                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a pagina publica de planos.
                 </p>
               </div>
 
@@ -800,7 +800,7 @@ const SuperAdminDashboard = () => {
 
               <div className="grid gap-2 text-sm text-muted-foreground">
                 <p>Destino: <span className="font-medium text-foreground">/assinar</span></p>
-                <p>Uso recomendado: bio do Instagram, WhatsApp comercial, landing de campanha e materiais de vendas.</p>
+                <p>Uso recomendado: bio do Instagram, WhatsApp comercial, landing pages de campanha e materiais de vendas.</p>
               </div>
             </div>
 
@@ -908,7 +908,7 @@ const SuperAdminDashboard = () => {
             })}
 
             <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Acima de 11 profissionais, divulgar como plataforma customizada com solicitacao de orcamento.
+              Acima de 11 profissionais, divulgar como plataforma customizada, com solicitacao de orcamento.
             </div>
           </CardContent>
         </Card>

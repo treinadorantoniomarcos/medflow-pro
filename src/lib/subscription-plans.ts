@@ -30,7 +30,7 @@ export const SUBSCRIPTION_SHARE_PATH = "/assinar";
 export const planMarketingContent: Record<string, PlanMarketingContent> = {
   start: {
     summary: "Operacao essencial para um profissional iniciar a agenda online com organizacao e confirmacao basica.",
-    audience: "Ideal para um unico profissional de saude em atendimento autonomo ou consultorio enxuto.",
+    audience: "Ideal para um unico profissional de saude, em atendimento autonomo ou em um consultorio enxuto.",
     features: [
       "Licenca para 1 profissional",
       "Agenda diaria com cadastro de pacientes",
@@ -50,7 +50,7 @@ export const planMarketingContent: Record<string, PlanMarketingContent> = {
     highlight: "Mais escolhido",
   },
   signature: {
-    summary: "Camada executiva para operacao estruturada com governanca, indicadores e automacoes avancadas.",
+    summary: "Camada executiva para uma operacao estruturada, com governanca, indicadores e automacoes avancadas.",
     audience: "Ideal para clinicas com 4 a 10 profissionais.",
     features: [
       "Licenca para 4 a 10 profissionais",
@@ -135,7 +135,7 @@ export const getPlanCommercialCopy = (plan: PlanOption): PlanCommercialCopy => {
       `${plan.description}\n` +
       `${plan.marketing.summary}\n` +
       `${plan.marketing.audience}\n` +
-      `Inclui: ${featureLine}.`,
+      `Principais recursos: ${featureLine}.`,
   };
 };
 

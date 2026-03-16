@@ -78,7 +78,7 @@ const SubscriptionPlans = () => {
           </div>
 
           <p className="max-w-3xl text-sm text-muted-foreground">
-            Compare os planos do MedFlux Pro e escolha o pacote ideal para o porte da sua operacao.
+            Compare os planos do MedFlux Pro e escolha o pacote mais adequado ao porte da sua operacao.
           </p>
         </div>
 
@@ -143,9 +143,9 @@ const SubscriptionPlans = () => {
               <h2 className="mt-1 text-2xl font-extrabold text-foreground">Plataforma customizada</h2>
             </div>
             <p className="mx-auto max-w-2xl text-sm text-muted-foreground">
-              Operacoes com mais de 11 profissionais saem do pacote padrao e entram em projeto customizado, com escopo comercial e tecnico sob medida.
+              Operacoes com mais de 11 profissionais saem do pacote padrao e entram em um projeto customizado, com escopo comercial e tecnico sob medida.
             </p>
-            <p className="text-sm font-medium text-foreground">Solicite orcamento com o time comercial para definir implantacao, capacidade e governanca.</p>
+            <p className="text-sm font-medium text-foreground">Solicite um orcamento com o time comercial para definir implantacao, capacidade e governanca.</p>
           </CardContent>
         </Card>
 
