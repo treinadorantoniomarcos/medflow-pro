@@ -121,9 +121,9 @@ const getReadableDayTypeLabel = (dayType: DayTypeFilter) => {
 };
 
 const getDayTypeAccentClass = (dayType: DayTypeFilter) => {
-  if (dayType === "holiday") return "text-amber-800 dark:text-amber-300 font-semibold";
-  if (dayType === "saturday") return "text-sky-700 dark:text-sky-300 font-medium";
-  if (dayType === "sunday") return "text-violet-700 dark:text-violet-300 font-medium";
+  if (dayType === "holiday") return "text-red-700 dark:text-red-400 font-bold";
+  if (dayType === "saturday") return "text-blue-700 dark:text-blue-400 font-bold";
+  if (dayType === "sunday") return "text-blue-700 dark:text-blue-400 font-bold";
   return "";
 };
 
