@@ -49,6 +49,7 @@ interface TeamMember {
   full_name: string | null;
   avatar_url: string | null;
   phone: string | null;
+  service_address: string | null;
   accepting_bookings: boolean;
   is_active: boolean;
   role?: string;
@@ -72,6 +73,7 @@ const TeamManagement = () => {
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [invitePhone, setInvitePhone] = useState("");
+  const [inviteServiceAddress, setInviteServiceAddress] = useState("");
   const [inviteRole, setInviteRole] = useState<"professional" | "receptionist" | "admin">("professional");
   const [inviteAccepting, setInviteAccepting] = useState(true);
 
@@ -87,7 +89,7 @@ const TeamManagement = () => {
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, avatar_url, phone, accepting_bookings, is_active")
+        .select("id, user_id, full_name, avatar_url, phone, service_address, accepting_bookings, is_active")
         .eq("tenant_id", profile!.tenant_id);
 
       if (error) throw error;
@@ -121,6 +123,7 @@ const TeamManagement = () => {
         full_name: inviteName.trim(),
         email: inviteEmail.trim().toLowerCase(),
         phone: invitePhone.trim() || null,
+        service_address: inviteServiceAddress.trim() || null,
         role: inviteRole,
         accepting_bookings: inviteAccepting,
       },
@@ -153,6 +156,7 @@ const TeamManagement = () => {
     setInviteName("");
     setInviteEmail("");
     setInvitePhone("");
+    setInviteServiceAddress("");
     setInviteRole("professional");
     setInviteAccepting(true);
     setInviteOpen(false);
@@ -316,6 +320,14 @@ const TeamManagement = () => {
                     placeholder="(11) 99999-9999"
                   />
                 </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Endereço completo do local de atendimento</label>
+                  <Input
+                    value={inviteServiceAddress}
+                    onChange={(e) => setInviteServiceAddress(e.target.value)}
+                    placeholder="Rua, número, bairro, cidade, UF e CEP"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-sm font-medium">Papel</label>
@@ -427,6 +439,9 @@ const TeamManagement = () => {
                     </div>
                     {member.phone && (
                       <p className="text-xs text-muted-foreground truncate">{member.phone}</p>
+                    )}
+                    {member.service_address && (
+                      <p className="text-xs text-muted-foreground truncate">{member.service_address}</p>
                     )}
                   </div>
 

@@ -11,6 +11,7 @@ interface InvitePayload {
   full_name: string;
   email: string;
   phone?: string;
+  service_address?: string;
   role: InviteRole;
   accepting_bookings?: boolean;
 }
@@ -103,6 +104,7 @@ Deno.serve(async (req) => {
     const fullName = payload.full_name?.trim();
     const email = payload.email?.trim().toLowerCase();
     const phone = payload.phone?.trim() || null;
+    const serviceAddress = payload.service_address?.trim() || null;
     const role = payload.role;
     const acceptingBookings = payload.accepting_bookings ?? true;
 
@@ -180,6 +182,7 @@ Deno.serve(async (req) => {
           tenant_id: tenantId,
           full_name: fullName,
           phone,
+          service_address: serviceAddress,
           accepting_bookings: acceptingBookings,
         },
         { onConflict: "user_id" }
@@ -222,6 +225,7 @@ Deno.serve(async (req) => {
         invited_user_id: invitedUserId,
         full_name: fullName,
         email,
+        service_address: serviceAddress,
         role,
       },
     });
