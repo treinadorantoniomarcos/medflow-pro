@@ -55,6 +55,7 @@ const MinhaAgenda = () => {
   const [bulkAction, setBulkAction] = useState<BulkActionType>("close");
   const [blockReason, setBlockReason] = useState("");
   const [savingBlock, setSavingBlock] = useState(false);
+  const [blockSaved, setBlockSaved] = useState(false);
 
   const { data: role } = useQuery({
     queryKey: ["my-agenda-role", user?.id, profile?.tenant_id],
@@ -336,6 +337,8 @@ const MinhaAgenda = () => {
       return;
     }
 
+    setBlockSaved(false);
+    let actionSaved = false;
     setSavingBlock(true);
     if (bulkAction === "close") {
       const { error } = await supabase.from("professional_availability_blocks").insert(
@@ -358,6 +361,8 @@ const MinhaAgenda = () => {
         setBlockEnd("");
         setBulkAmount("1");
         setBlockReason("");
+        setBlockSaved(true);
+        actionSaved = true;
         queryClient.invalidateQueries({ queryKey: ["availability-blocks"] });
       }
     } else {
@@ -411,10 +416,15 @@ const MinhaAgenda = () => {
         setBlockEnd("");
         setBulkAmount("1");
         setBlockReason("");
+        setBlockSaved(true);
+        actionSaved = true;
         queryClient.invalidateQueries({ queryKey: ["slot-overrides"] });
       }
     }
     setSavingBlock(false);
+    if (actionSaved) {
+      window.setTimeout(() => setBlockSaved(false), 2500);
+    }
   };
 
   const handleRemoveBlock = async (id: string) => {
@@ -661,9 +671,19 @@ const MinhaAgenda = () => {
             />
           </div>
           <div className="mt-3">
-            <Button size="sm" onClick={handleCreateBlock} disabled={savingBlock || !managedProfessionalId}>
-              {savingBlock ? "Salvando..." : bulkAction === "close" ? "Aplicar bloqueio" : "Liberar agenda"}
+            <Button
+              size="sm"
+              variant={blockSaved ? "secondary" : "default"}
+              onClick={handleCreateBlock}
+              disabled={savingBlock || !managedProfessionalId}
+            >
+              {savingBlock ? "Salvando..." : blockSaved ? "Salvo" : bulkAction === "close" ? "Salvar bloqueio" : "Salvar liberação"}
             </Button>
+            {blockSaved && (
+              <p className="mt-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                Intervalo salvo com sucesso.
+              </p>
+            )}
           </div>
 
           <div className="mt-4 space-y-2">
