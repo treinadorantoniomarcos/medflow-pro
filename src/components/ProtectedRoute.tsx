@@ -74,13 +74,24 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   if (!user) return <Navigate to="/login" replace />;
   if (needsOnboarding) return <Navigate to="/onboarding" replace />;
   if (accessState?.blocked) {
+    const pendingRelease = accessState.status === "paused";
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-center shadow-sm">
-          <h2 className="text-xl font-bold text-foreground">Acesso temporariamente bloqueado</h2>
+          <h2 className="text-xl font-bold text-foreground">
+            {pendingRelease ? "Aguardando liberacao do Super Admin" : "Acesso temporariamente bloqueado"}
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Assinatura em status <span className="font-medium text-foreground">{accessState.status}</span>.
-            Regularize a cobranca para reativar o uso da plataforma.
+            {pendingRelease ? (
+              <>
+                Seu cadastro e pagamento foram registrados. O acesso sera liberado apos validacao do Super Admin.
+              </>
+            ) : (
+              <>
+                Assinatura em status <span className="font-medium text-foreground">{accessState.status}</span>.
+                Regularize a cobranca para reativar o uso da plataforma.
+              </>
+            )}
           </p>
           <Button className="mt-4 w-full" variant="outline" onClick={() => signOut()}>
             Sair

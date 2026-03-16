@@ -176,6 +176,20 @@ const readSubscription = (settings: Record<string, any> | null | undefined) => {
   };
 };
 
+const readAccessRequest = (settings: Record<string, any> | null | undefined) => {
+  const raw = (settings?.onboarding ?? {}) as Record<string, any>;
+  const request = (raw.access_request ?? {}) as Record<string, any>;
+
+  return {
+    status: typeof request.status === "string" ? request.status : null,
+    contractor_name: typeof request.contractor_name === "string" ? request.contractor_name : null,
+    admin_full_name: typeof request.admin_full_name === "string" ? request.admin_full_name : null,
+    admin_email: typeof request.admin_email === "string" ? request.admin_email : null,
+    admin_whatsapp: typeof request.admin_whatsapp === "string" ? request.admin_whatsapp : null,
+    submitted_at: typeof request.submitted_at === "string" ? request.submitted_at : null,
+  };
+};
+
 const SuperAdminDashboard = () => {
   const queryClient = useQueryClient();
 
@@ -263,6 +277,7 @@ const SuperAdminDashboard = () => {
         slug: clinic.slug ?? "sem-slug",
         settings: clinic.settings ?? {},
         subscription,
+        access_request: readAccessRequest(clinic.settings),
         owners: roles.filter((r) => r.role === "owner").length,
         admins: roles.filter((r) => r.role === "admin").length,
         professionals: roles.filter((r) => r.role === "professional").length,
@@ -422,6 +437,14 @@ const SuperAdminDashboard = () => {
 
     const updatedSettings = {
       ...(row.settings ?? {}),
+      onboarding: {
+        ...((row.settings ?? {}).onboarding ?? {}),
+        access_request: {
+          ...(((row.settings ?? {}).onboarding ?? {}).access_request ?? {}),
+          status: draft.status === "active" ? "released" : row.access_request.status,
+          released_at: draft.status === "active" ? nowIso : (((row.settings ?? {}).onboarding ?? {}).access_request ?? {}).released_at ?? null,
+        },
+      },
       subscription: {
         ...row.subscription,
         plan: draft.plan,
@@ -429,6 +452,7 @@ const SuperAdminDashboard = () => {
         updated_by_super_admin_at: nowIso,
         current_period_start: row.subscription.current_period_start ?? nowIso,
         current_period_end: row.subscription.current_period_end ?? nextPeriod.toISOString(),
+        pending_release: draft.status === "active" ? false : row.subscription.status === "paused",
       },
     };
 
@@ -857,6 +881,35 @@ const SuperAdminDashboard = () => {
                         <td className="py-2 pr-4">
                           <p className="font-medium">{row.clinic_name}</p>
                           <p className="text-xs text-muted-foreground">{row.slug}</p>
+                          {row.access_request.status && (
+                            <div className="mt-2 space-y-1 rounded-md border border-border bg-secondary/30 p-2 text-xs">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">
+                                  {row.access_request.status === "pending_super_admin_release" ? "Aguardando liberacao" : row.access_request.status}
+                                </Badge>
+                              </div>
+                              {row.access_request.contractor_name && (
+                                <p className="text-muted-foreground">
+                                  Contratante: <span className="font-medium text-foreground">{row.access_request.contractor_name}</span>
+                                </p>
+                              )}
+                              {row.access_request.admin_full_name && (
+                                <p className="text-muted-foreground">
+                                  Admin: <span className="font-medium text-foreground">{row.access_request.admin_full_name}</span>
+                                </p>
+                              )}
+                              {row.access_request.admin_email && (
+                                <p className="text-muted-foreground">
+                                  E-mail: <span className="font-medium text-foreground">{row.access_request.admin_email}</span>
+                                </p>
+                              )}
+                              {row.access_request.admin_whatsapp && (
+                                <p className="text-muted-foreground">
+                                  WhatsApp: <span className="font-medium text-foreground">{row.access_request.admin_whatsapp}</span>
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="py-2 pr-4">
                           <Select

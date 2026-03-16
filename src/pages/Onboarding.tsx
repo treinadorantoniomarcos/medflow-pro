@@ -50,9 +50,10 @@ const Onboarding = () => {
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>(() => readPreferredPlan() ?? "pro");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
-  const [clinicName, setClinicName] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [contractorName, setContractorName] = useState("");
+  const [adminFullName, setAdminFullName] = useState("");
+  const [adminEmail, setAdminEmail] = useState(user?.email ?? "");
+  const [adminWhatsapp, setAdminWhatsapp] = useState("");
 
   const { data: catalogPlans = [] } = useQuery({
     queryKey: ["onboarding-active-plans"],
@@ -96,6 +97,12 @@ const Onboarding = () => {
     storePreferredPlan(selectedPlan);
   }, [selectedPlan]);
 
+  useEffect(() => {
+    if (user?.email) {
+      setAdminEmail((current) => current || user.email || "");
+    }
+  }, [user?.email]);
+
   const selectedPlanData = useMemo(
     () => availablePlans.find((plan) => plan.key === selectedPlan) ?? availablePlans[0] ?? fallbackPlanOptions[1],
     [availablePlans, selectedPlan]
@@ -129,9 +136,9 @@ const Onboarding = () => {
 
       const { error } = await supabase.rpc("complete_onboarding", {
         _clinic_id: clinicId,
-        _clinic_name: clinicName.trim(),
-        _full_name: fullName.trim(),
-        _phone: phone.trim() || null,
+        _clinic_name: contractorName.trim(),
+        _full_name: adminFullName.trim(),
+        _phone: adminWhatsapp.trim() || null,
       });
 
       if (error) throw error;
@@ -146,16 +153,28 @@ const Onboarding = () => {
           settings: {
             onboarding: {
               completed_at: billingNow.toISOString(),
-              owner_name: fullName.trim(),
+              owner_name: adminFullName.trim(),
+              contractor_name: contractorName.trim(),
+              access_request: {
+                status: "pending_super_admin_release",
+                submitted_at: billingNow.toISOString(),
+                contractor_name: contractorName.trim(),
+                admin_full_name: adminFullName.trim(),
+                admin_email: adminEmail.trim().toLowerCase(),
+                admin_whatsapp: adminWhatsapp.trim() || null,
+                selected_plan: selectedPlan,
+                payment_method: paymentMethod,
+              },
             },
             subscription: {
               plan: selectedPlan,
-              status: "active",
+              status: "paused",
               payment_method: paymentMethod,
               first_payment_at: billingNow.toISOString(),
               current_period_start: billingNow.toISOString(),
               current_period_end: nextPeriod.toISOString(),
               grace_until: null,
+              pending_release: true,
             },
           },
         })
@@ -164,7 +183,9 @@ const Onboarding = () => {
       if (settingsError) throw settingsError;
 
       await refreshProfile();
-      toast.success("Tudo pronto!", { description: "Sua clinica foi configurada e ativada." });
+      toast.success("Solicitacao enviada", {
+        description: "Os dados foram enviados ao Super Admin. O acesso sera liberado apos validacao.",
+      });
       navigate("/");
     } catch (err: any) {
       toast.error("Erro no cadastro", { description: err.message });
@@ -187,7 +208,7 @@ const Onboarding = () => {
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            {step === 1 ? "Escolha seu pacote" : step === 2 ? "Pagamento da primeira mensalidade" : "Dados da clinica"}
+            {step === 1 ? "Escolha seu pacote" : step === 2 ? "Pagamento da primeira mensalidade" : "Dados do contratante e administrador"}
           </p>
 
           <div className="flex items-center justify-center gap-2 mt-4">
@@ -265,7 +286,7 @@ const Onboarding = () => {
                     Plano {selectedPlanData.name} - R$ {selectedPlanData.monthlyPrice.toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    O acesso da clinica so sera liberado apos confirmacao deste pagamento.
+                    Apos o pagamento, voce informara os dados que o Super Admin usara para liberar o acesso.
                   </p>
                 </div>
 
@@ -319,38 +340,54 @@ const Onboarding = () => {
               <div className="space-y-4 animate-fade-in">
                 <div className="flex items-center gap-2 text-primary mb-2">
                   <User className="h-5 w-5" />
-                  <span className="text-sm font-semibold">Dados da clinica e responsavel</span>
+                  <span className="text-sm font-semibold">Dados para liberacao do acesso</span>
+                </div>
+                <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+                  Esses dados serao enviados ao Super Admin para validacao e liberacao do sistema.
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="clinicName">Nome da Clinica</Label>
+                  <Label htmlFor="contractorName">Nome do Contratante</Label>
                   <Input
-                    id="clinicName"
-                    placeholder="Ex: Clinica Saude Viva"
-                    value={clinicName}
-                    onChange={(e) => setClinicName(e.target.value)}
+                    id="contractorName"
+                    placeholder="Ex: Clinica Saude Viva LTDA"
+                    value={contractorName}
+                    onChange={(e) => setContractorName(e.target.value)}
                     required
                     maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Nome completo</Label>
+                  <Label htmlFor="adminFullName">Nome completo do administrador</Label>
                   <Input
-                    id="fullName"
-                    placeholder="Seu nome completo"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    id="adminFullName"
+                    placeholder="Nome do administrador responsavel"
+                    value={adminFullName}
+                    onChange={(e) => setAdminFullName(e.target.value)}
                     required
                     maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone (opcional)</Label>
+                  <Label htmlFor="adminEmail">E-mail</Label>
                   <Input
-                    id="phone"
+                    id="adminEmail"
+                    type="email"
+                    placeholder="admin@clinica.com"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    required
+                    maxLength={120}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="adminWhatsapp">WhatsApp</Label>
+                  <Input
+                    id="adminWhatsapp"
                     type="tel"
                     placeholder="(11) 99999-9999"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    value={adminWhatsapp}
+                    onChange={(e) => setAdminWhatsapp(e.target.value)}
+                    required
                     maxLength={20}
                   />
                 </div>
@@ -366,9 +403,16 @@ const Onboarding = () => {
                   <Button
                     type="submit"
                     className="flex-1 gap-2"
-                    disabled={loading || !fullName.trim() || !clinicName.trim() || !paymentConfirmed}
+                    disabled={
+                      loading ||
+                      !adminFullName.trim() ||
+                      !contractorName.trim() ||
+                      !adminEmail.trim() ||
+                      !adminWhatsapp.trim() ||
+                      !paymentConfirmed
+                    }
                   >
-                    {loading ? "Criando..." : "Finalizar"}
+                    {loading ? "Enviando..." : "Enviar para liberacao"}
                     <Sparkles className="h-4 w-4" />
                   </Button>
                 </div>
