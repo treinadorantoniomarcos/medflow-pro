@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
-import { addDays, format, isToday, subDays } from "date-fns";
+import { addDays, addMonths, addWeeks, format, isToday, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,9 @@ type TeamProfessional = {
   accepting_bookings: boolean;
 };
 
+type BulkActionType = "open" | "close";
+type BulkUnit = "hours" | "days" | "weeks" | "months";
+
 const statusActions: { from: AppointmentStatus; to: AppointmentStatus; label: string }[] = [
   { from: "scheduled", to: "confirmed", label: "Confirmar" },
   { from: "confirmed", to: "in_progress", label: "Iniciar" },
@@ -44,7 +47,9 @@ const MinhaAgenda = () => {
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
   const [blockStart, setBlockStart] = useState("");
-  const [blockEnd, setBlockEnd] = useState("");
+  const [bulkAmount, setBulkAmount] = useState("1");
+  const [bulkUnit, setBulkUnit] = useState<BulkUnit>("days");
+  const [bulkAction, setBulkAction] = useState<BulkActionType>("close");
   const [blockReason, setBlockReason] = useState("");
   const [savingBlock, setSavingBlock] = useState(false);
 
@@ -258,37 +263,101 @@ const MinhaAgenda = () => {
 
   const handleCreateBlock = async () => {
     if (!managedProfessionalId || !managedProfessionalName || !profile?.tenant_id || !user?.id) return;
-    if (!blockStart || !blockEnd) {
-      toast.error("Informe inicio e fim do bloqueio.");
+    if (!blockStart) {
+      toast.error("Informe o inicio da acao.");
       return;
     }
 
+    const amount = Math.max(1, Number(bulkAmount) || 1);
     const startIso = new Date(blockStart).toISOString();
-    const endIso = new Date(blockEnd).toISOString();
+    const startDate = new Date(startIso);
+    const endDate = new Date(
+      bulkUnit === "hours"
+        ? startDate.getTime() + amount * 60 * 60 * 1000
+        : bulkUnit === "days"
+          ? addDays(startDate, amount).getTime()
+          : bulkUnit === "weeks"
+            ? addWeeks(startDate, amount).getTime()
+            : addMonths(startDate, amount).getTime()
+    );
+    const endIso = endDate.toISOString();
+
     if (new Date(endIso) <= new Date(startIso)) {
       toast.error("O fim deve ser maior que o inicio.");
       return;
     }
 
     setSavingBlock(true);
-    const { error } = await supabase.from("professional_availability_blocks").insert({
-      tenant_id: profile.tenant_id,
-      professional_user_id: managedProfessionalId,
-      professional_name: managedProfessionalName,
-      start_at: startIso,
-      end_at: endIso,
-      reason: blockReason.trim() || null,
-      created_by: user.id,
-    });
+    if (bulkAction === "close") {
+      const { error } = await supabase.from("professional_availability_blocks").insert({
+        tenant_id: profile.tenant_id,
+        professional_user_id: managedProfessionalId,
+        professional_name: managedProfessionalName,
+        start_at: startIso,
+        end_at: endIso,
+        reason: blockReason.trim() || null,
+        created_by: user.id,
+      });
 
-    if (error) {
-      toast.error("Erro ao criar bloqueio", { description: error.message });
+      if (error) {
+        toast.error("Erro ao criar bloqueio", { description: error.message });
+      } else {
+        toast.success("Bloqueio aplicado com sucesso.");
+        setBlockStart("");
+        setBulkAmount("1");
+        setBlockReason("");
+        queryClient.invalidateQueries({ queryKey: ["availability-blocks"] });
+      }
     } else {
-      toast.success("Bloqueio por periodo criado.");
-      setBlockStart("");
-      setBlockEnd("");
-      setBlockReason("");
-      queryClient.invalidateQueries({ queryKey: ["availability-blocks"] });
+      const slotsToOpen: Array<{
+        tenant_id: string;
+        professional_user_id: string;
+        professional_name: string;
+        slot_date: string;
+        slot_time: string;
+        is_available: boolean;
+        created_by: string;
+      }> = [];
+
+      let cursor = new Date(startDate);
+      while (cursor < endDate) {
+        const dateKey = format(cursor, "yyyy-MM-dd");
+        timeSlots.forEach((time) => {
+          const slotInstant = new Date(`${dateKey}T${time}:00`);
+          if (slotInstant >= startDate && slotInstant < endDate) {
+            slotsToOpen.push({
+              tenant_id: profile.tenant_id,
+              professional_user_id: managedProfessionalId,
+              professional_name: managedProfessionalName,
+              slot_date: dateKey,
+              slot_time: `${time}:00`,
+              is_available: true,
+              created_by: user.id,
+            });
+          }
+        });
+        cursor = addDays(cursor, 1);
+      }
+
+      if (slotsToOpen.length === 0) {
+        toast.error("Nenhum horario encontrado para liberar neste intervalo.");
+        setSavingBlock(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("professional_slot_overrides")
+        .upsert(slotsToOpen, { onConflict: "tenant_id,professional_user_id,slot_date,slot_time" });
+
+      if (error) {
+        toast.error("Erro ao liberar agenda", { description: error.message });
+      } else {
+        toast.success("Agenda liberada para o intervalo selecionado.");
+        setBlockStart("");
+        setBulkAmount("1");
+        setBlockReason("");
+        queryClient.invalidateQueries({ queryKey: ["slot-overrides"] });
+      }
     }
     setSavingBlock(false);
   };
@@ -427,8 +496,20 @@ const MinhaAgenda = () => {
         </div>
 
         <div className="rounded-xl border border-border bg-card p-4">
-          <h2 className="mb-3 text-sm font-bold">Bloqueio em massa por periodo</h2>
+          <h2 className="mb-3 text-sm font-bold">Liberar ou bloquear por horario, dia, semana ou mes</h2>
           <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="bulk-action">Acao</Label>
+              <Select value={bulkAction} onValueChange={(value) => setBulkAction(value as BulkActionType)}>
+                <SelectTrigger id="bulk-action">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="close">Bloquear agenda</SelectItem>
+                  <SelectItem value="open">Liberar agenda</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="block-start">Inicio</Label>
               <Input
@@ -438,14 +519,31 @@ const MinhaAgenda = () => {
                 onChange={(e) => setBlockStart(e.target.value)}
               />
             </div>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="block-end">Fim</Label>
+              <Label htmlFor="bulk-amount">Quantidade</Label>
               <Input
-                id="block-end"
-                type="datetime-local"
-                value={blockEnd}
-                onChange={(e) => setBlockEnd(e.target.value)}
+                id="bulk-amount"
+                type="number"
+                min={1}
+                value={bulkAmount}
+                onChange={(e) => setBulkAmount(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bulk-unit">Periodo</Label>
+              <Select value={bulkUnit} onValueChange={(value) => setBulkUnit(value as BulkUnit)}>
+                <SelectTrigger id="bulk-unit">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hours">Hora(s)</SelectItem>
+                  <SelectItem value="days">Dia(s)</SelectItem>
+                  <SelectItem value="weeks">Semana(s)</SelectItem>
+                  <SelectItem value="months">Mes(es)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="mt-3 space-y-2">
@@ -460,7 +558,7 @@ const MinhaAgenda = () => {
           </div>
           <div className="mt-3">
             <Button size="sm" onClick={handleCreateBlock} disabled={savingBlock || !managedProfessionalId}>
-              {savingBlock ? "Salvando..." : "Adicionar bloqueio"}
+              {savingBlock ? "Salvando..." : bulkAction === "close" ? "Aplicar bloqueio" : "Liberar agenda"}
             </Button>
           </div>
 
