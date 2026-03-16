@@ -33,7 +33,7 @@ const Pacientes = () => {
           <div className="flex items-center gap-3">
             <Users className="h-6 w-6 text-primary" />
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Pacientes</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Pacientes Cadastrados</h1>
               <p className="text-sm text-muted-foreground">
                 {patients.length} paciente{patients.length !== 1 ? "s" : ""} cadastrado{patients.length !== 1 ? "s" : ""}
               </p>

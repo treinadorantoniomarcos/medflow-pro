@@ -202,7 +202,7 @@ const Agenda = () => {
           <div className="flex items-center gap-3">
             <CalendarDays className="h-6 w-6 text-primary" />
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Agenda</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Visualizacao da Agenda</h1>
               <p className="text-sm text-muted-foreground">
                 {isGridView
                   ? `${format(weekStart, "dd MMM", { locale: ptBR })} - ${format(weekEnd, "dd MMM yyyy", { locale: ptBR })}`

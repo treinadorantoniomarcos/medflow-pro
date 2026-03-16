@@ -468,7 +468,7 @@ const MinhaAgenda = () => {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight">Agenda Profissional</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight">Gestao da Agenda</h1>
               <p className="text-sm text-muted-foreground">
                 {managedProfessionalName ?? "Profissional"} | {isToday(selectedDate) ? "Hoje" : format(selectedDate, "dd/MM/yyyy")}
               </p>

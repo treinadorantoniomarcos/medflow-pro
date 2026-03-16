@@ -35,9 +35,9 @@ interface AdminLayoutProps {
 const navItems: Array<{ icon: any; label: string; path: string; roles: AppRole[] }> = [
   { icon: LayoutDashboard, label: "Super Admin", path: "/super-admin", roles: ["super_admin"] },
   { icon: LayoutDashboard, label: "Inicio", path: "/", roles: ["owner", "admin", "professional", "receptionist"] },
-  { icon: Calendar, label: "Agenda", path: "/agenda", roles: ["owner", "admin", "receptionist"] },
-  { icon: Stethoscope, label: "Minha Agenda", path: "/minha-agenda", roles: ["owner", "admin", "professional"] },
-  { icon: Users, label: "Pacientes", path: "/pacientes", roles: ["owner", "admin", "receptionist"] },
+  { icon: Calendar, label: "Visualizacao da Agenda", path: "/agenda", roles: ["owner", "admin", "receptionist"] },
+  { icon: Stethoscope, label: "Gestao da Agenda", path: "/minha-agenda", roles: ["owner", "admin", "professional"] },
+  { icon: Users, label: "Pacientes Cadastrados", path: "/pacientes", roles: ["owner", "admin", "receptionist"] },
   { icon: MessageSquare, label: "Mensagens", path: "/mensagens", roles: ["owner", "admin", "receptionist"] },
   { icon: BarChart3, label: "Relatorios", path: "/relatorios", roles: ["owner", "admin"] },
   { icon: Settings, label: "Configuracoes", path: "/configuracoes", roles: ["owner", "admin"] },
