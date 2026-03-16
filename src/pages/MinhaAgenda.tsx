@@ -38,6 +38,9 @@ type BulkUnit = "hours" | "days" | "weeks" | "months";
 type PeriodStatusFilter = "all" | "open" | "blocked" | "pending";
 type DayTypeFilter = "all" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday" | "holiday";
 
+const AGENDA_PERIOD_MIN_DATE = "2026-01-01";
+const AGENDA_PERIOD_MAX_DATE = "2030-12-31";
+
 const statusActions: { from: AppointmentStatus; to: AppointmentStatus; label: string }[] = [
   { from: "scheduled", to: "confirmed", label: "Confirmar" },
   { from: "confirmed", to: "in_progress", label: "Iniciar" },
@@ -151,6 +154,8 @@ const MinhaAgenda = () => {
   const [filterEndDate, setFilterEndDate] = useState(() => format(addDays(new Date(), 7), "yyyy-MM-dd"));
   const [pendingFilterStartDate, setPendingFilterStartDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [pendingFilterEndDate, setPendingFilterEndDate] = useState(() => format(addDays(new Date(), 7), "yyyy-MM-dd"));
+  const queryPeriodStartDate = filterStartDate || AGENDA_PERIOD_MIN_DATE;
+  const queryPeriodEndDate = filterEndDate || AGENDA_PERIOD_MAX_DATE;
 
   const { data: role } = useQuery({
     queryKey: ["my-agenda-role", user?.id, profile?.tenant_id],
@@ -294,7 +299,7 @@ const MinhaAgenda = () => {
   }, [slotOverrides]);
 
   const { data: periodBlocks = [] } = useQuery({
-    queryKey: ["availability-blocks", profile?.tenant_id, managedProfessionalId],
+    queryKey: ["availability-blocks", profile?.tenant_id, managedProfessionalId, queryPeriodStartDate, queryPeriodEndDate],
     enabled: !!profile?.tenant_id && !!managedProfessionalId,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -302,26 +307,26 @@ const MinhaAgenda = () => {
         .select("id, start_at, end_at, reason")
         .eq("tenant_id", profile!.tenant_id)
         .eq("professional_user_id", managedProfessionalId!)
-        .gte("end_at", new Date().toISOString())
-        .order("start_at", { ascending: true })
-        .limit(20);
+        .gte("end_at", `${queryPeriodStartDate}T00:00:00`)
+        .lte("start_at", `${queryPeriodEndDate}T23:59:59`)
+        .order("start_at", { ascending: true });
       if (error) throw error;
       return (data ?? []) as Array<{ id: string; start_at: string; end_at: string; reason: string | null }>;
     },
   });
 
   const { data: futureOpenSlots = [] } = useQuery({
-    queryKey: ["future-open-slots", profile?.tenant_id, managedProfessionalId],
+    queryKey: ["future-open-slots", profile?.tenant_id, managedProfessionalId, queryPeriodStartDate, queryPeriodEndDate],
     enabled: !!profile?.tenant_id && !!managedProfessionalId,
     queryFn: async () => {
-      const today = format(new Date(), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("professional_slot_overrides")
         .select("slot_date, slot_time")
         .eq("tenant_id", profile!.tenant_id)
         .eq("professional_user_id", managedProfessionalId!)
         .eq("is_available", true)
-        .gte("slot_date", today)
+        .gte("slot_date", queryPeriodStartDate)
+        .lte("slot_date", queryPeriodEndDate)
         .order("slot_date", { ascending: true })
         .order("slot_time", { ascending: true });
       if (error) throw error;
@@ -995,14 +1000,16 @@ const MinhaAgenda = () => {
                   type="date"
                   value={pendingFilterStartDate}
                   onChange={(e) => setPendingFilterStartDate(e.target.value)}
-                  max={pendingFilterEndDate || undefined}
+                  min={AGENDA_PERIOD_MIN_DATE}
+                  max={pendingFilterEndDate || AGENDA_PERIOD_MAX_DATE}
                   className="h-8 text-xs"
                 />
                 <Input
                   type="date"
                   value={pendingFilterEndDate}
                   onChange={(e) => setPendingFilterEndDate(e.target.value)}
-                  min={pendingFilterStartDate || undefined}
+                  min={pendingFilterStartDate || AGENDA_PERIOD_MIN_DATE}
+                  max={AGENDA_PERIOD_MAX_DATE}
                   className="h-8 text-xs"
                 />
                 <Select value={pendingPeriodStatusFilter} onValueChange={(value) => setPendingPeriodStatusFilter(value as PeriodStatusFilter)}>
