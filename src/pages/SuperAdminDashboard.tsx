@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
   CalendarCheck2,
+  Check,
+  Copy,
   Download,
   FileText,
   FileSpreadsheet,
@@ -16,6 +18,7 @@ import {
   UserPlus,
   Save,
   UserX,
+  QrCode,
 } from "lucide-react";
 import {
   Bar,
@@ -42,6 +45,7 @@ import {
   exportSuperAdminPDF,
   exportSuperAdminXLS,
 } from "@/lib/export-super-admin";
+import { getSubscriptionShareUrl } from "@/lib/subscription-plans";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -59,6 +63,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import PlanCatalogManager from "@/components/superadmin/PlanCatalogManager";
+import { QRCodeSVG } from "qrcode.react";
 
 type ClinicRow = {
   id: string;
@@ -181,9 +186,11 @@ const SuperAdminDashboard = () => {
   const [invitePhone, setInvitePhone] = useState("");
   const [inviteRole, setInviteRole] = useState<"admin" | "super_admin">("admin");
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
 
   const [billingDraft, setBillingDraft] = useState<Record<string, { plan: SubscriptionPlan; status: SubscriptionStatus }>>({});
   const [savingTenantId, setSavingTenantId] = useState<string | null>(null);
+  const subscriptionShareUrl = getSubscriptionShareUrl(window.location.origin);
 
   const { data, isLoading } = useQuery({
     queryKey: ["super-admin-dataset-v3"],
@@ -698,6 +705,73 @@ const SuperAdminDashboard = () => {
         <PlanCatalogManager
           onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
         />
+
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-base">Link publico de assinatura</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-6 lg:grid-cols-[1fr_220px]">
+            <div className="space-y-4">
+              <div className="rounded-xl border border-border bg-secondary/40 p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Link2 className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">Divulgacao para clinicas e profissionais</p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes direto para a pagina publica de planos.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  readOnly
+                  value={subscriptionShareUrl}
+                  className="font-mono text-sm"
+                  onFocus={(e) => e.target.select()}
+                />
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(subscriptionShareUrl);
+                    setCopiedShareLink(true);
+                    toast.success("Link de assinatura copiado");
+                    window.setTimeout(() => setCopiedShareLink(false), 2000);
+                  }}
+                >
+                  {copiedShareLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copiedShareLink ? "Copiado" : "Copiar link"}
+                </Button>
+              </div>
+
+              <div className="grid gap-2 text-sm text-muted-foreground">
+                <p>Destino: <span className="font-medium text-foreground">/assinar</span></p>
+                <p>Uso recomendado: bio do Instagram, WhatsApp comercial, landing de campanha e materiais de vendas.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <QrCode className="h-4 w-4 text-primary" />
+                QR Code
+              </div>
+              <div className="rounded-lg border border-border bg-card p-3">
+                <QRCodeSVG
+                  value={subscriptionShareUrl}
+                  size={160}
+                  level="M"
+                  includeMargin={false}
+                  bgColor="transparent"
+                  fgColor="currentColor"
+                  className="text-foreground"
+                />
+              </div>
+              <p className="text-center text-xs text-muted-foreground">
+                Escaneie para abrir a pagina publica de assinatura.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="shadow-soft">

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Building2, CreditCard, Sparkles, User } from "lucide-react";
+import { Building2, Check, CreditCard, Sparkles, User } from "lucide-react";
 import medfluxLogo from "@/assets/medflux-logo.png";
 import {
   Select,
@@ -18,20 +18,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
-
-type PlanKey = string;
+import {
+  fallbackPlanOptions,
+  getPlanMarketingContent,
+  readPreferredPlan,
+  storePreferredPlan,
+  type PlanKey,
+  type PlanOption,
+} from "@/lib/subscription-plans";
 type PaymentMethod = "pix" | "card" | "boleto";
-
-const planOptions: Array<{
-  key: PlanKey;
-  name: string;
-  monthlyPrice: number;
-  description: string;
-}> = [
-  { key: "start", name: "Start", monthlyPrice: 199, description: "Agenda e operacao essencial" },
-  { key: "pro", name: "Pro", monthlyPrice: 399, description: "Agenda + automacoes + financeiro" },
-  { key: "signature", name: "Signature", monthlyPrice: 799, description: "Operacao completa com controle premium" },
-];
 
 type CatalogPlan = {
   id: string;
@@ -52,7 +47,7 @@ const Onboarding = () => {
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
 
-  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("pro");
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>(() => readPreferredPlan() ?? "pro");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [clinicName, setClinicName] = useState("");
@@ -73,7 +68,7 @@ const Onboarding = () => {
     },
   });
 
-  const availablePlans = useMemo(() => {
+  const availablePlans = useMemo<PlanOption[]>(() => {
     if (catalogPlans.length > 0) {
       return catalogPlans.map((plan) => ({
         key: plan.code,
@@ -82,9 +77,13 @@ const Onboarding = () => {
         description:
           plan.description ??
           `Periodo ${plan.period_days} dias${plan.trial_days > 0 ? ` | cortesia ${plan.trial_days} dias` : ""}`,
+        periodDays: plan.period_days,
+        trialDays: plan.trial_days,
+        isCourtesy: plan.is_courtesy,
+        marketing: getPlanMarketingContent(plan.code),
       }));
     }
-    return planOptions;
+    return fallbackPlanOptions;
   }, [catalogPlans]);
 
   useEffect(() => {
@@ -93,8 +92,12 @@ const Onboarding = () => {
     }
   }, [availablePlans, selectedPlan]);
 
+  useEffect(() => {
+    storePreferredPlan(selectedPlan);
+  }, [selectedPlan]);
+
   const selectedPlanData = useMemo(
-    () => availablePlans.find((plan) => plan.key === selectedPlan) ?? availablePlans[0] ?? planOptions[1],
+    () => availablePlans.find((plan) => plan.key === selectedPlan) ?? availablePlans[0] ?? fallbackPlanOptions[1],
     [availablePlans, selectedPlan]
   );
 
@@ -217,12 +220,30 @@ const Onboarding = () => {
                           : "border-border hover:bg-muted/40"
                       }`}
                     >
-                      <div className="mb-1 flex items-center justify-between">
-                        <p className="text-sm font-semibold">{plan.name}</p>
-                        {selectedPlan === plan.key && <Badge variant="secondary">Selecionado</Badge>}
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold">{plan.name}</p>
+                          <p className="text-xs text-muted-foreground">{plan.marketing.audience}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {plan.marketing.highlight && <Badge variant="outline">{plan.marketing.highlight}</Badge>}
+                          {selectedPlan === plan.key && <Badge variant="secondary">Selecionado</Badge>}
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">{plan.description}</p>
+                      <p className="text-xs text-muted-foreground">{plan.marketing.summary}</p>
+                      <div className="mt-3 space-y-1">
+                        {plan.marketing.features.map((feature) => (
+                          <div key={feature} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                            <span>{feature}</span>
+                          </div>
+                        ))}
+                      </div>
                       <p className="mt-2 text-sm font-medium">R$ {plan.monthlyPrice.toFixed(2)}/mes</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {plan.description}
+                        {plan.trialDays ? ` | ${plan.trialDays} dias de cortesia` : ""}
+                      </p>
                     </button>
                   ))}
                 </div>

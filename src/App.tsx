@@ -22,6 +22,7 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import PatientHome from "./pages/PatientHome";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import SubscriptionPlans from "./pages/SubscriptionPlans";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/assinar" element={<SubscriptionPlans />} />
               <Route path="/agendar/:slug" element={<PublicBooking />} />
 
               {/* Protected routes */}
