@@ -208,6 +208,11 @@ const MinhaAgenda = () => {
     return managedProfessionalId ? [managedProfessionalId] : [];
   }, [bulkProfessionalIds, isAdminScope, managedProfessionalId]);
 
+  const resolvedBulkProfessionals = useMemo(() => {
+    if (bulkProfessionals.length > 0) return bulkProfessionals;
+    return professionals.filter((professional) => effectiveBulkProfessionalIds.includes(professional.user_id));
+  }, [bulkProfessionals, professionals, effectiveBulkProfessionalIds]);
+
   const { data: appointments = [], isLoading } = useProfessionalAgenda(selectedDate, {
     professionalUserId: managedProfessionalId,
     professionalName: managedProfessionalName,
@@ -531,7 +536,7 @@ const MinhaAgenda = () => {
   };
 
   const handleCreateBlock = async () => {
-    if (!profile?.tenant_id || !user?.id || bulkProfessionals.length === 0) {
+    if (!profile?.tenant_id || !user?.id || resolvedBulkProfessionals.length === 0) {
       toast.error("Selecione ao menos um profissional para aplicar a ação.");
       return;
     }
@@ -540,7 +545,13 @@ const MinhaAgenda = () => {
       return;
     }
 
-    const startIso = new Date(blockStart).toISOString();
+    const startRaw = new Date(blockStart);
+    if (Number.isNaN(startRaw.getTime())) {
+      toast.error("Informe uma data inicial válida.");
+      return;
+    }
+
+    const startIso = startRaw.toISOString();
     const startDate = new Date(startIso);
     const amount = Math.max(1, Number(bulkAmount) || 1);
     const endDate = blockEnd
@@ -566,7 +577,7 @@ const MinhaAgenda = () => {
     setSavingBlock(true);
     if (bulkAction === "close") {
       const { error } = await supabase.from("professional_availability_blocks").insert(
-        bulkProfessionals.map((professional) => ({
+        resolvedBulkProfessionals.map((professional) => ({
           tenant_id: profile.tenant_id,
           professional_user_id: professional.user_id,
           professional_name: professional.full_name,
@@ -603,7 +614,7 @@ const MinhaAgenda = () => {
       let cursor = new Date(startDate);
       while (cursor < endDate) {
         const dateKey = format(cursor, "yyyy-MM-dd");
-        bulkProfessionals.forEach((professional) => {
+        resolvedBulkProfessionals.forEach((professional) => {
           timeSlots.forEach((time) => {
             const slotInstant = new Date(`${dateKey}T${time}:00`);
             if (slotInstant >= startDate && slotInstant < endDate) {
