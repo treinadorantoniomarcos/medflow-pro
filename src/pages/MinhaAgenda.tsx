@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,6 +45,7 @@ const MinhaAgenda = () => {
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>(user?.id ?? "");
+  const [bulkProfessionalIds, setBulkProfessionalIds] = useState<string[]>([]);
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
   const [blockStart, setBlockStart] = useState("");
@@ -95,6 +97,18 @@ const MinhaAgenda = () => {
 
   const managedProfessionalId = managedProfessional?.user_id ?? null;
   const managedProfessionalName = managedProfessional?.full_name ?? null;
+  const bulkProfessionals = useMemo(() => {
+    if (!isAdminScope) {
+      return managedProfessional ? [managedProfessional] : [];
+    }
+    return professionals.filter((professional) => bulkProfessionalIds.includes(professional.user_id));
+  }, [bulkProfessionalIds, isAdminScope, managedProfessional, professionals]);
+
+  const effectiveBulkProfessionalIds = useMemo(() => {
+    if (!isAdminScope) return managedProfessionalId ? [managedProfessionalId] : [];
+    if (bulkProfessionalIds.length > 0) return bulkProfessionalIds;
+    return managedProfessionalId ? [managedProfessionalId] : [];
+  }, [bulkProfessionalIds, isAdminScope, managedProfessionalId]);
 
   const { data: appointments = [], isLoading } = useProfessionalAgenda(selectedDate, {
     professionalUserId: managedProfessionalId,
@@ -176,6 +190,23 @@ const MinhaAgenda = () => {
   });
 
   const acceptingBookings = managedProfessional?.accepting_bookings ?? true;
+
+  const toggleBulkProfessional = (professionalId: string, checked: boolean) => {
+    setBulkProfessionalIds((current) => {
+      if (checked) {
+        return current.includes(professionalId) ? current : [...current, professionalId];
+      }
+      return current.filter((id) => id !== professionalId);
+    });
+  };
+
+  const selectAllProfessionals = () => {
+    setBulkProfessionalIds(professionals.map((professional) => professional.user_id));
+  };
+
+  const clearBulkProfessionals = () => {
+    setBulkProfessionalIds([]);
+  };
 
   const bookedTimes = useMemo(() => {
     const set = new Set<string>();
@@ -262,7 +293,10 @@ const MinhaAgenda = () => {
   };
 
   const handleCreateBlock = async () => {
-    if (!managedProfessionalId || !managedProfessionalName || !profile?.tenant_id || !user?.id) return;
+    if (!profile?.tenant_id || !user?.id || bulkProfessionals.length === 0) {
+      toast.error("Selecione ao menos um profissional para aplicar a acao.");
+      return;
+    }
     if (!blockStart) {
       toast.error("Informe o inicio da acao.");
       return;
@@ -289,15 +323,17 @@ const MinhaAgenda = () => {
 
     setSavingBlock(true);
     if (bulkAction === "close") {
-      const { error } = await supabase.from("professional_availability_blocks").insert({
-        tenant_id: profile.tenant_id,
-        professional_user_id: managedProfessionalId,
-        professional_name: managedProfessionalName,
-        start_at: startIso,
-        end_at: endIso,
-        reason: blockReason.trim() || null,
-        created_by: user.id,
-      });
+      const { error } = await supabase.from("professional_availability_blocks").insert(
+        bulkProfessionals.map((professional) => ({
+          tenant_id: profile.tenant_id,
+          professional_user_id: professional.user_id,
+          professional_name: professional.full_name,
+          start_at: startIso,
+          end_at: endIso,
+          reason: blockReason.trim() || null,
+          created_by: user.id,
+        }))
+      );
 
       if (error) {
         toast.error("Erro ao criar bloqueio", { description: error.message });
@@ -322,19 +358,21 @@ const MinhaAgenda = () => {
       let cursor = new Date(startDate);
       while (cursor < endDate) {
         const dateKey = format(cursor, "yyyy-MM-dd");
-        timeSlots.forEach((time) => {
-          const slotInstant = new Date(`${dateKey}T${time}:00`);
-          if (slotInstant >= startDate && slotInstant < endDate) {
-            slotsToOpen.push({
-              tenant_id: profile.tenant_id,
-              professional_user_id: managedProfessionalId,
-              professional_name: managedProfessionalName,
-              slot_date: dateKey,
-              slot_time: `${time}:00`,
-              is_available: true,
-              created_by: user.id,
-            });
-          }
+        bulkProfessionals.forEach((professional) => {
+          timeSlots.forEach((time) => {
+            const slotInstant = new Date(`${dateKey}T${time}:00`);
+            if (slotInstant >= startDate && slotInstant < endDate) {
+              slotsToOpen.push({
+                tenant_id: profile.tenant_id,
+                professional_user_id: professional.user_id,
+                professional_name: professional.full_name,
+                slot_date: dateKey,
+                slot_time: `${time}:00`,
+                is_available: true,
+                created_by: user.id,
+              });
+            }
+          });
         });
         cursor = addDays(cursor, 1);
       }
@@ -497,6 +535,41 @@ const MinhaAgenda = () => {
 
         <div className="rounded-xl border border-border bg-card p-4">
           <h2 className="mb-3 text-sm font-bold">Liberar ou bloquear por horario, dia, semana ou mes</h2>
+          {isAdminScope && (
+            <div className="mb-4 space-y-3 rounded-lg border border-border bg-secondary/20 p-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Profissionais da acao em massa</p>
+                  <p className="text-xs text-muted-foreground">Selecione um ou mais profissionais para liberar ou bloquear a agenda.</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={selectAllProfessionals}>
+                    Marcar todos
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={clearBulkProfessionals}>
+                    Limpar
+                  </Button>
+                </div>
+              </div>
+              <div className="grid gap-2 md:grid-cols-2">
+                {professionals.map((professional) => {
+                  const checked = effectiveBulkProfessionalIds.includes(professional.user_id);
+                  return (
+                    <label
+                      key={professional.user_id}
+                      className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(value) => toggleBulkProfessional(professional.user_id, value === true)}
+                      />
+                      <span>{professional.full_name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="bulk-action">Acao</Label>
