@@ -184,23 +184,41 @@ const MinhaAgenda = () => {
     },
   });
 
+  const selfProfessionalFallback = useMemo<TeamProfessional | null>(() => {
+    if (!user?.id || !profile) return null;
+    return {
+      user_id: user.id,
+      full_name: profile.full_name ?? user.email ?? "Profissional",
+      phone: profile.phone ?? null,
+      email: profile.email ?? user.email ?? null,
+      accepting_bookings: profile.accepting_bookings ?? true,
+    };
+  }, [profile, user?.email, user?.id]);
+
   const managedProfessional = useMemo(() => {
-    if (!professionals.length) return null;
     if (isAdminScope) {
+      if (!professionals.length) return null;
       return professionals.find((p) => p.user_id === selectedProfessionalId) ?? professionals[0];
     }
-    return professionals.find((p) => p.user_id === user?.id) ?? professionals[0];
-  }, [professionals, isAdminScope, selectedProfessionalId, user?.id]);
+    if (!professionals.length) return selfProfessionalFallback;
+    return professionals.find((p) => p.user_id === user?.id) ?? selfProfessionalFallback ?? professionals[0];
+  }, [professionals, isAdminScope, selectedProfessionalId, selfProfessionalFallback, user?.id]);
 
-  const managedProfessionalId = managedProfessional?.user_id ?? null;
-  const managedProfessionalName = managedProfessional?.full_name ?? null;
+  const effectiveManagedProfessional = useMemo(() => {
+    if (managedProfessional) return managedProfessional;
+    if (!isAdminScope) return selfProfessionalFallback;
+    return null;
+  }, [isAdminScope, managedProfessional, selfProfessionalFallback]);
+
+  const managedProfessionalId = effectiveManagedProfessional?.user_id ?? null;
+  const managedProfessionalName = effectiveManagedProfessional?.full_name ?? null;
 
   const bulkProfessionals = useMemo(() => {
     if (!isAdminScope) {
-      return managedProfessional ? [managedProfessional] : [];
+      return effectiveManagedProfessional ? [effectiveManagedProfessional] : [];
     }
     return professionals.filter((professional) => bulkProfessionalIds.includes(professional.user_id));
-  }, [bulkProfessionalIds, isAdminScope, managedProfessional, professionals]);
+  }, [bulkProfessionalIds, effectiveManagedProfessional, isAdminScope, professionals]);
 
   const effectiveBulkProfessionalIds = useMemo(() => {
     if (!isAdminScope) return managedProfessionalId ? [managedProfessionalId] : [];
@@ -311,7 +329,7 @@ const MinhaAgenda = () => {
     },
   });
 
-  const acceptingBookings = managedProfessional?.accepting_bookings ?? true;
+  const acceptingBookings = effectiveManagedProfessional?.accepting_bookings ?? true;
 
   const toggleBulkProfessional = (professionalId: string, checked: boolean) => {
     setBulkProfessionalIds((current) => {
@@ -776,7 +794,7 @@ const MinhaAgenda = () => {
               Pesquisa e gestÃ£o aplicadas automaticamente Ã  agenda de <span className="font-medium text-foreground">{managedProfessionalName}</span>.
             </div>
           )}
-          {!isAdminScope && resolvedBulkProfessionals.length === 0 && (
+          {!isAdminScope && !effectiveManagedProfessional && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
               Seu perfil profissional ainda não foi vinculado corretamente à agenda. Atualize a equipe ou o cadastro para liberar bloqueios e liberações.
             </div>
