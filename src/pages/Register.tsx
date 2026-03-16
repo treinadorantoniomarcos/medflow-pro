@@ -25,14 +25,14 @@ const Register = () => {
 
     const passwordValidation = validateStrongPassword(password, email.trim());
     if (!passwordValidation.valid) {
-      toast.error("Senha fora da politica de seguranca", {
+      toast.error("Senha fora da política de segurança", {
         description: passwordValidation.errors[0],
       });
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error("As senhas nao coincidem");
+      toast.error("As senhas não coincidem");
       return;
     }
 
@@ -51,8 +51,8 @@ const Register = () => {
     } else {
       toast.success("Conta criada com sucesso!", {
         description: data.session
-          ? "Sua degustacao do pacote Start sera iniciada agora."
-          : "Verifique seu e-mail. Apos a confirmacao, voce seguira para a degustacao do pacote Start.",
+          ? "Sua degustação do pacote Start será iniciada agora."
+          : "Verifique seu e-mail. Após a confirmação, você seguirá para a degustação do pacote Start.",
       });
       navigate(data.session ? "/onboarding" : "/login");
     }
@@ -75,7 +75,7 @@ const Register = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-5 rounded-xl border border-primary/20 bg-primary/5 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Degustacao inicial</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Degustação inicial</p>
             <div className="mt-2 flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-bold text-foreground">Pacote Start</p>
@@ -113,7 +113,7 @@ const Register = () => {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Minimo 12 caracteres"
+                  placeholder="Mínimo 12 caracteres"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -154,7 +154,7 @@ const Register = () => {
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Ja tem conta?{" "}
+            Já tem conta?{" "}
             <Link to="/login" className="font-semibold text-primary hover:underline">
               Fazer login
             </Link>

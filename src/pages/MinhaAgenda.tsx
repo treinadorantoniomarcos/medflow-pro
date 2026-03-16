@@ -295,9 +295,9 @@ const MinhaAgenda = () => {
       );
 
     if (error) {
-      toast.error("Erro ao salvar horario");
+      toast.error("Erro ao salvar horário");
     } else {
-      toast.success(nextValue ? `Horario ${time} liberado` : `Horario ${time} fechado`);
+      toast.success(nextValue ? `Horário ${time} liberado` : `Horário ${time} fechado`);
       queryClient.invalidateQueries({ queryKey: ["slot-overrides"] });
     }
 
@@ -306,11 +306,11 @@ const MinhaAgenda = () => {
 
   const handleCreateBlock = async () => {
     if (!profile?.tenant_id || !user?.id || bulkProfessionals.length === 0) {
-      toast.error("Selecione ao menos um profissional para aplicar a acao.");
+      toast.error("Selecione ao menos um profissional para aplicar a ação.");
       return;
     }
     if (!blockStart) {
-      toast.error("Informe o inicio da acao.");
+      toast.error("Informe o início da ação.");
       return;
     }
 
@@ -329,7 +329,7 @@ const MinhaAgenda = () => {
     const endIso = endDate.toISOString();
 
     if (new Date(endIso) <= new Date(startIso)) {
-      toast.error("O fim deve ser maior que o inicio.");
+      toast.error("O fim deve ser maior que o início.");
       return;
     }
 
@@ -390,7 +390,7 @@ const MinhaAgenda = () => {
       }
 
       if (slotsToOpen.length === 0) {
-        toast.error("Nenhum horario encontrado para liberar neste intervalo.");
+        toast.error("Nenhum horário encontrado para liberar neste intervalo.");
         setSavingBlock(false);
         return;
       }
@@ -468,7 +468,7 @@ const MinhaAgenda = () => {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight">Gestao da Agenda</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight">Gestão da Agenda</h1>
               <p className="text-sm text-muted-foreground">
                 {managedProfessionalName ?? "Profissional"} | {isToday(selectedDate) ? "Hoje" : format(selectedDate, "dd/MM/yyyy")}
               </p>
@@ -500,7 +500,7 @@ const MinhaAgenda = () => {
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard label="Atendimentos" value={stats?.total ?? 0} loading={isLoading} />
-          <StatCard label="Disponiveis" value={stats?.available ?? 0} loading={isLoading} />
+          <StatCard label="Disponíveis" value={stats?.available ?? 0} loading={isLoading} />
           <StatCard label="Agendadas" value={stats?.pending ?? 0} loading={isLoading} />
           <StatCard label="Confirmadas" value={stats?.confirmed ?? 0} loading={isLoading} />
         </div>
@@ -519,7 +519,7 @@ const MinhaAgenda = () => {
 
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-bold">Liberar/fechar dias e horarios</h2>
+            <h2 className="text-sm font-bold">Liberar/fechar dias e horários</h2>
             <p className="text-xs text-muted-foreground">{format(selectedDate, "dd/MM/yyyy")}</p>
           </div>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -542,16 +542,16 @@ const MinhaAgenda = () => {
               );
             })}
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">* horario com consulta registrada | ! bloqueado por periodo.</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">* horário com consulta registrada | ! bloqueado por período.</p>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-4">
-          <h2 className="mb-3 text-sm font-bold">Liberar ou bloquear por horario, dia, semana ou mes</h2>
+          <h2 className="mb-3 text-sm font-bold">Liberar ou bloquear por horário, dia, semana ou mês</h2>
           {isAdminScope && (
             <div className="mb-4 space-y-3 rounded-lg border border-border bg-secondary/20 p-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Profissionais da acao em massa</p>
+                  <p className="text-sm font-semibold text-foreground">Profissionais da ação em massa</p>
                   <p className="text-xs text-muted-foreground">Selecione um ou mais profissionais para liberar ou bloquear a agenda.</p>
                 </div>
                 <div className="flex gap-2">
@@ -584,7 +584,7 @@ const MinhaAgenda = () => {
           )}
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="bulk-action">Acao</Label>
+              <Label htmlFor="bulk-action">Ação</Label>
               <Select value={bulkAction} onValueChange={(value) => setBulkAction(value as BulkActionType)}>
                 <SelectTrigger id="bulk-action">
                   <SelectValue />
@@ -596,7 +596,7 @@ const MinhaAgenda = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="block-start">Inicio</Label>
+              <Label htmlFor="block-start">Início</Label>
               <Input
                 id="block-start"
                 type="datetime-local"
@@ -617,7 +617,7 @@ const MinhaAgenda = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bulk-unit">Periodo</Label>
+              <Label htmlFor="bulk-unit">Período</Label>
               <Select value={bulkUnit} onValueChange={(value) => setBulkUnit(value as BulkUnit)}>
                 <SelectTrigger id="bulk-unit">
                   <SelectValue />
@@ -626,7 +626,7 @@ const MinhaAgenda = () => {
                   <SelectItem value="hours">Hora(s)</SelectItem>
                   <SelectItem value="days">Dia(s)</SelectItem>
                   <SelectItem value="weeks">Semana(s)</SelectItem>
-                  <SelectItem value="months">Mes(es)</SelectItem>
+                  <SelectItem value="months">Mês(es)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -638,7 +638,7 @@ const MinhaAgenda = () => {
               rows={2}
               value={blockReason}
               onChange={(e) => setBlockReason(e.target.value)}
-              placeholder="Ferias, almoco, evento, indisponivel..."
+              placeholder="Férias, almoço, evento, indisponível..."
             />
           </div>
           <div className="mt-3">

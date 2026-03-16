@@ -54,8 +54,8 @@ const statusFilters: { value: AppointmentStatus | "all"; label: string }[] = [
   { value: "confirmed", label: "Confirmadas" },
   { value: "scheduled", label: "Agendadas" },
   { value: "in_progress", label: "Em atendimento" },
-  { value: "available", label: "Disponiveis" },
-  { value: "completed", label: "Concluidas" },
+  { value: "available", label: "Disponíveis" },
+  { value: "completed", label: "Concluídas" },
   { value: "cancelled", label: "Canceladas" },
   { value: "no_show", label: "No-show" },
 ];
@@ -202,11 +202,11 @@ const Agenda = () => {
           <div className="flex items-center gap-3">
             <CalendarDays className="h-6 w-6 text-primary" />
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Visualizacao da Agenda</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Visualização da Agenda</h1>
               <p className="text-sm text-muted-foreground">
                 {isGridView
                   ? `${format(weekStart, "dd MMM", { locale: ptBR })} - ${format(weekEnd, "dd MMM yyyy", { locale: ptBR })}`
-                  : `Periodo ${periodOptions.find((item) => item.value === selectedPeriod)?.label ?? ""}`}
+                  : `Período ${periodOptions.find((item) => item.value === selectedPeriod)?.label ?? ""}`}
               </p>
             </div>
           </div>
@@ -241,7 +241,7 @@ const Agenda = () => {
           >
             <SelectTrigger className="w-[150px] h-9 text-xs">
               <List className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-              <SelectValue placeholder="Periodo" />
+              <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
               {periodOptions.map((option) => (
@@ -258,7 +258,7 @@ const Agenda = () => {
               <SelectValue placeholder="Profissional" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos profissionais</SelectItem>
+              <SelectItem value="all">Todos os profissionais</SelectItem>
               {professionals.map((prof) => (
                 <SelectItem key={prof.name} value={prof.name}>
                   <span className="flex items-center gap-2">
@@ -388,7 +388,7 @@ const Agenda = () => {
               </div>
             ) : filteredAppointments.length === 0 ? (
               <div className="text-sm text-muted-foreground text-center py-8">
-                Nenhuma consulta para o periodo selecionado.
+                Nenhuma consulta para o período selecionado.
               </div>
             ) : (
               filteredAppointments.map((appointment) => (
@@ -406,7 +406,7 @@ const Agenda = () => {
                   )}
                   {appointment.audio_note_path && (
                     <div className="mt-2">
-                      <p className="text-[11px] text-muted-foreground mb-1">Audio anexado</p>
+                      <p className="text-[11px] text-muted-foreground mb-1">Áudio anexado</p>
                       <AppointmentAudioPlayer audioPath={appointment.audio_note_path} />
                     </div>
                   )}

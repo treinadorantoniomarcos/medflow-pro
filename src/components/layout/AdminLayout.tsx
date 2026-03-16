@@ -34,20 +34,20 @@ interface AdminLayoutProps {
 
 const navItems: Array<{ icon: any; label: string; path: string; roles: AppRole[] }> = [
   { icon: LayoutDashboard, label: "Super Admin", path: "/super-admin", roles: ["super_admin"] },
-  { icon: LayoutDashboard, label: "Inicio", path: "/", roles: ["owner", "admin", "professional", "receptionist"] },
-  { icon: Calendar, label: "Visualizacao da Agenda", path: "/agenda", roles: ["owner", "admin", "receptionist"] },
-  { icon: Stethoscope, label: "Gestao da Agenda", path: "/minha-agenda", roles: ["owner", "admin", "professional"] },
+  { icon: LayoutDashboard, label: "Início", path: "/", roles: ["owner", "admin", "professional", "receptionist"] },
+  { icon: Calendar, label: "Visualização da Agenda", path: "/agenda", roles: ["owner", "admin", "receptionist"] },
+  { icon: Stethoscope, label: "Gestão da Agenda", path: "/minha-agenda", roles: ["owner", "admin", "professional"] },
   { icon: Users, label: "Pacientes Cadastrados", path: "/pacientes", roles: ["owner", "admin", "receptionist"] },
   { icon: MessageSquare, label: "Mensagens", path: "/mensagens", roles: ["owner", "admin", "receptionist"] },
-  { icon: BarChart3, label: "Relatorios", path: "/relatorios", roles: ["owner", "admin"] },
-  { icon: Settings, label: "Configuracoes", path: "/configuracoes", roles: ["owner", "admin"] },
+  { icon: BarChart3, label: "Relatórios", path: "/relatorios", roles: ["owner", "admin"] },
+  { icon: Settings, label: "Configurações", path: "/configuracoes", roles: ["owner", "admin"] },
 ];
 
 const roleLabelMap: Record<AppRole, string> = {
   owner: "Owner",
   admin: "Admin",
   professional: "Profissional",
-  receptionist: "Recepcao",
+  receptionist: "Recepção",
   patient: "Paciente",
   super_admin: "Super Admin",
 };
@@ -82,7 +82,7 @@ const roleStyleMap: Record<AppRole, { badgeClass: string; cardClass: string }> =
 const roleGuideMap: Record<AppRole, { info: string; actions: string }> = {
   super_admin: {
     info: "Métricas globais de assinantes, equipe e uso da plataforma.",
-    actions: "Gerir acessos administrativos, acompanhar operação e exportar relatórios.",
+    actions: "Gerir acessos administrativos, acompanhar a operação e exportar relatórios.",
   },
   owner: {
     info: "Visão completa da clínica: agenda, pacientes, relatórios e equipe.",
@@ -98,7 +98,7 @@ const roleGuideMap: Record<AppRole, { info: string; actions: string }> = {
   },
   receptionist: {
     info: "Fila diária de agendamentos e dados de pacientes da clínica.",
-    actions: "Agendar/remarcar consultas, atualizar dados e apoiar comunicação.",
+    actions: "Agendar/remarcar consultas, atualizar dados e apoiar a comunicação.",
   },
   patient: {
     info: "Próximas consultas e histórico básico de agendamentos.",
@@ -187,7 +187,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
               {profile?.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "?"}
             </div>
             <div className="flex-1 truncate">
-              <p className="text-sm font-semibold text-foreground">{profile?.full_name || "Usuario"}</p>
+              <p className="text-sm font-semibold text-foreground">{profile?.full_name || "Usuário"}</p>
               {userRole ? (
                 <Badge variant="outline" className={cn("mt-1 text-[10px] font-semibold", roleStyle?.badgeClass)}>
                   {roleLabelMap[userRole]}

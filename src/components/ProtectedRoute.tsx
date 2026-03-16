@@ -85,17 +85,17 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-center shadow-sm">
           <h2 className="text-xl font-bold text-foreground">
-            {pendingRelease ? "Aguardando liberacao do Super Admin" : "Acesso temporariamente bloqueado"}
+            {pendingRelease ? "Aguardando liberação do Super Admin" : "Acesso temporariamente bloqueado"}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {pendingRelease ? (
               <>
-                Seu cadastro e pagamento foram registrados. O acesso sera liberado apos validacao do Super Admin.
+                Seu cadastro e pagamento foram registrados. O acesso será liberado após a validação do Super Admin.
               </>
             ) : (
               <>
                 Assinatura em status <span className="font-medium text-foreground">{accessState.status}</span>.
-                Regularize a cobranca para reativar o uso da plataforma.
+                Regularize a cobrança para reativar o uso da plataforma.
               </>
             )}
           </p>

@@ -39,12 +39,12 @@ const ForgotPassword = () => {
             <img src={medfluxLogo} alt="MedFlux Pro" className="h-14 w-14" />
           </div>
           <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
-            Recuperar Senha
+            Recuperar senha
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {sent
               ? "Verifique seu e-mail para redefinir a senha"
-              : "Digite seu e-mail para receber o link de recuperacao"}
+              : "Digite seu e-mail para receber o link de recuperação"}
           </p>
         </CardHeader>
         <CardContent>

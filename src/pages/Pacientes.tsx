@@ -72,7 +72,7 @@ const Pacientes = () => {
             >
               <Users className="mx-auto h-10 w-10 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground mt-2">
-                {search ? "Nenhum paciente encontrado." : "Nenhum paciente cadastrado ainda."}
+                {search ? "Nenhum paciente encontrado." : "Nenhum paciente cadastrado até o momento."}
               </p>
             </motion.div>
           ) : (

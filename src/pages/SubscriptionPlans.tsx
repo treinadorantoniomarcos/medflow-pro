@@ -52,7 +52,7 @@ const SubscriptionPlans = () => {
       monthlyPrice: plan.monthly_price_cents / 100,
       description:
         plan.description ??
-        `Periodo ${plan.period_days} dias${plan.trial_days > 0 ? ` | cortesia ${plan.trial_days} dias` : ""}`,
+        `Período de ${plan.period_days} dias${plan.trial_days > 0 ? ` | cortesia de ${plan.trial_days} dias` : ""}`,
       periodDays: plan.period_days,
       trialDays: plan.trial_days,
       isCourtesy: plan.is_courtesy,
@@ -73,13 +73,13 @@ const SubscriptionPlans = () => {
           <div className="flex items-center gap-3">
             <img src={medfluxLogo} alt="MedFlux Pro" className="h-14 w-14 rounded-2xl" />
             <div>
-              <p className="text-sm font-semibold text-primary">Assinatura para clinicas e profissionais</p>
-              <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Escolha o pacote ideal para sua operacao</h1>
+              <p className="text-sm font-semibold text-primary">Assinatura para clínicas e profissionais</p>
+              <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Escolha o pacote ideal para sua operação</h1>
             </div>
           </div>
 
           <p className="max-w-3xl text-sm text-muted-foreground">
-            Compare os planos do MedFlux Pro e escolha o pacote mais adequado ao porte da sua operacao.
+            Compare os planos do MedFlux Pro e escolha o pacote mais adequado ao porte da sua operação.
           </p>
         </div>
 
@@ -97,13 +97,13 @@ const SubscriptionPlans = () => {
                 <div>
                   <p className="text-3xl font-extrabold text-foreground">R$ {plan.monthlyPrice.toFixed(2)}</p>
                   <p className="text-xs text-muted-foreground">
-                    por mes | vigencia de {SUBSCRIPTION_TERM_LABEL}{plan.trialDays ? ` | ${plan.trialDays} dias de cortesia` : ""}{plan.isCourtesy ? " | pacote cortesia" : ""}
+                    por mês | vigência de {SUBSCRIPTION_TERM_LABEL}{plan.trialDays ? ` | ${plan.trialDays} dias de cortesia` : ""}{plan.isCourtesy ? " | pacote cortesia" : ""}
                   </p>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-5">
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-foreground">Para quem e</p>
+                  <p className="text-sm font-semibold text-foreground">Para quem é</p>
                   <p className="text-sm text-muted-foreground">{plan.marketing.audience}</p>
                 </div>
 
@@ -144,14 +144,14 @@ const SubscriptionPlans = () => {
               <h2 className="mt-1 text-2xl font-extrabold text-foreground">Plataforma customizada</h2>
             </div>
             <p className="mx-auto max-w-2xl text-sm text-muted-foreground">
-              Operacoes com mais de 11 profissionais saem do pacote padrao e entram em um projeto customizado, com escopo comercial e tecnico sob medida.
+              Operações com mais de 11 profissionais saem do pacote padrão e entram em um projeto customizado, com escopo comercial e técnico sob medida.
             </p>
-            <p className="text-sm font-medium text-foreground">Solicite um orcamento com o time comercial para definir implantacao, capacidade e governanca.</p>
+            <p className="text-sm font-medium text-foreground">Solicite um orçamento com o time comercial para definir implantação, capacidade e governança.</p>
           </CardContent>
         </Card>
 
         <div className="text-center text-sm text-muted-foreground">
-          Ja tem conta? <Link to="/login" className="font-semibold text-primary hover:underline">Entre para concluir a assinatura</Link>
+          Já tem conta? <Link to="/login" className="font-semibold text-primary hover:underline">Entre para concluir a assinatura</Link>
         </div>
       </div>
     </div>

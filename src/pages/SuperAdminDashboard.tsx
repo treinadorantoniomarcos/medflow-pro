@@ -119,19 +119,19 @@ const appIntegrations = [
   {
     name: "WhatsApp Business",
     status: "conectado",
-    description: "Confirmacoes, lembretes e recuperacao de no-show por mensageria.",
+    description: "Confirmações, lembretes e recuperação de no-show por mensageria.",
     href: "https://business.facebook.com",
   },
   {
     name: "Google Calendar",
     status: "pendente",
-    description: "Sincronizacao de agenda externa para equipe clinica.",
+    description: "Sincronização de agenda externa para a equipe clínica.",
     href: "https://calendar.google.com",
   },
   {
     name: "Stripe Billing",
     status: "pendente",
-    description: "Cobranca recorrente e conciliacao de assinaturas.",
+    description: "Cobrança recorrente e conciliação de assinaturas.",
     href: "https://dashboard.stripe.com",
   },
 ];
@@ -165,7 +165,7 @@ const statusBadgeClass: Record<SubscriptionStatus, string> = {
 
 const planCapacityLabel = (planCode: string) => {
   if (planCode === "start") return "1 profissional";
-  if (planCode === "pro") return "Ate 3 profissionais";
+  if (planCode === "pro") return "Até 3 profissionais";
   if (planCode === "signature") return "4 a 10 profissionais";
   return "Plano ativo";
 };
@@ -527,7 +527,7 @@ const SuperAdminDashboard = () => {
     setInviteLoading(false);
 
     if (error || !result?.ok) {
-      toast.error("Falha na liberacao de acesso", {
+      toast.error("Falha na liberação de acesso", {
         description: result?.detail || error?.message || result?.error || "Edge Function indisponivel.",
       });
       return;
@@ -589,7 +589,7 @@ const SuperAdminDashboard = () => {
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Super Admin</h1>
             <p className="text-sm text-muted-foreground">
-              Link dedicado: <span className="font-medium text-foreground">/super-admin</span> | Gestao completa de assinantes.
+              Link dedicado: <span className="font-medium text-foreground">/super-admin</span> | Gestão completa de assinantes.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -601,7 +601,7 @@ const SuperAdminDashboard = () => {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[640px]">
                 <DialogHeader>
-                  <DialogTitle>Gestao de acesso dos assinantes</DialogTitle>
+                  <DialogTitle>Gestão de acesso dos assinantes</DialogTitle>
                   <DialogDescription>
                     Libere novos admins por assinante e novos super admins da plataforma.
                   </DialogDescription>
@@ -738,7 +738,7 @@ const SuperAdminDashboard = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-          <MetricCard value={totals.clinics} label="Assinantes (clinicas)" icon={Building2} />
+          <MetricCard value={totals.clinics} label="Assinantes (clínicas)" icon={Building2} />
           <MetricCard value={totals.professionals} label="Profissionais" icon={Stethoscope} variant="accent" />
           <MetricCard value={totals.patients} label="Pacientes" icon={UserRound} variant="success" />
           <MetricCard value={totals.appointmentsMonth} label="Consultas no mes" icon={CalendarCheck2} />
@@ -844,7 +844,7 @@ const SuperAdminDashboard = () => {
                             <div className="mt-2 space-y-1 rounded-md border border-border bg-secondary/30 p-2 text-xs">
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline">
-                                  {row.access_request.status === "pending_super_admin_release" ? "Aguardando liberacao" : row.access_request.status}
+                                  {row.access_request.status === "pending_super_admin_release" ? "Aguardando liberação" : row.access_request.status}
                                 </Badge>
                               </div>
                               {row.access_request.contractor_name && (
@@ -958,7 +958,7 @@ const SuperAdminDashboard = () => {
               <div className="rounded-xl border border-border bg-secondary/40 p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <Link2 className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold text-foreground">Divulgacao para clinicas e profissionais</p>
+                  <p className="text-sm font-semibold text-foreground">Divulgação para clínicas e profissionais</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a pagina publica de planos.
@@ -1018,7 +1018,7 @@ const SuperAdminDashboard = () => {
 
         <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle className="text-base">Descricoes dos pacotes para divulgacao</CardTitle>
+            <CardTitle className="text-base">Descrições dos pacotes para divulgação</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {planMarketingCatalog.map((plan) => {
@@ -1097,14 +1097,14 @@ const SuperAdminDashboard = () => {
             })}
 
             <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Acima de 11 profissionais, divulgar como plataforma customizada, com solicitacao de orcamento.
+              Acima de 11 profissionais, divulgar como plataforma customizada, com solicitação de orçamento.
             </div>
           </CardContent>
         </Card>
 
         <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle className="text-base">Aplicativos para gestao</CardTitle>
+            <CardTitle className="text-base">Aplicativos para gestão</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-3">
             {appIntegrations.map((app) => (

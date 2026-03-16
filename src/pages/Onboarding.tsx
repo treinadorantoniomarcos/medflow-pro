@@ -87,7 +87,7 @@ const Onboarding = () => {
             key: plan.code,
             name: plan.name,
             monthlyPrice: plan.monthly_price_cents / 100,
-            description: plan.description ?? `Vigencia de ${SUBSCRIPTION_TERM_LABEL}`,
+            description: plan.description ?? `Vigência de ${SUBSCRIPTION_TERM_LABEL}`,
             periodDays: plan.period_days,
             trialDays: plan.trial_days,
             isCourtesy: plan.is_courtesy,
@@ -121,7 +121,7 @@ const Onboarding = () => {
     setPaymentConfirmed(true);
     setProcessingPayment(false);
     toast.success("Pagamento confirmado", {
-      description: `Pagamento registrado para assinatura com vigencia de ${SUBSCRIPTION_TERM_LABEL}.`,
+      description: `Pagamento registrado para assinatura com vigência de ${SUBSCRIPTION_TERM_LABEL}.`,
     });
   };
 
@@ -182,8 +182,8 @@ const Onboarding = () => {
       if (settingsError) throw settingsError;
 
       await refreshProfile();
-      toast.success("Degustacao Start liberada", {
-        description: `Voce recebeu ${START_TRIAL_DAYS} dias de cortesia para testar o pacote Start.`,
+      toast.success("Degustação Start liberada", {
+        description: `Você recebeu ${START_TRIAL_DAYS} dias de cortesia para testar o pacote Start.`,
       });
       navigate("/");
     } catch (err: any) {
@@ -266,12 +266,12 @@ const Onboarding = () => {
           <div className="flex items-center justify-center gap-2 mb-2">
             <Sparkles className="h-5 w-5 text-accent" />
             <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
-              {isUpgradeFlow ? "Escolha seu plano pago" : "Degustacao Start"}
+              {isUpgradeFlow ? "Escolha seu plano pago" : "Degustação Start"}
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
             {isUpgradeFlow
-              ? `Assinatura por ${SUBSCRIPTION_TERM_LABEL} apos o encerramento da cortesia`
+              ? `Assinatura por ${SUBSCRIPTION_TERM_LABEL} após o encerramento da cortesia`
               : `${START_TRIAL_DAYS} dias de cortesia para 1 profissional`}
           </p>
         </CardHeader>
@@ -282,10 +282,10 @@ const Onboarding = () => {
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                 <div className="flex items-center gap-2 text-primary">
                   <Building2 className="h-5 w-5" />
-                  <span className="text-sm font-semibold">Pacote Start em degustacao</span>
+                  <span className="text-sm font-semibold">Pacote Start em degustação</span>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  1 profissional | Agenda e operacao essencial com cortesia de {START_TRIAL_DAYS} dias.
+                  1 profissional | Agenda e operação essencial com cortesia de {START_TRIAL_DAYS} dias.
                 </p>
                 <div className="mt-3 space-y-1">
                   {getPlanMarketingContent("start").features.map((feature) => (
@@ -298,12 +298,12 @@ const Onboarding = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="professionalOrClinicName">Nome do profissional ou da clinica</Label>
+                <Label htmlFor="professionalOrClinicName">Nome do profissional ou da clínica</Label>
                 <Input
                   id="professionalOrClinicName"
                   value={professionalOrClinicName}
                   onChange={(e) => setProfessionalOrClinicName(e.target.value)}
-                  placeholder="Ex: Dra. Ana Souza ou Clinica Saude Viva"
+                  placeholder="Ex: Dra. Ana Souza ou Clínica Saúde Viva"
                   required
                 />
               </div>
@@ -320,12 +320,12 @@ const Onboarding = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fullAddress">Endereco completo</Label>
+                <Label htmlFor="fullAddress">Endereço completo</Label>
                 <Input
                   id="fullAddress"
                   value={fullAddress}
                   onChange={(e) => setFullAddress(e.target.value)}
-                  placeholder="Rua, numero, bairro, cidade, UF e CEP"
+                  placeholder="Rua, número, bairro, cidade, UF e CEP"
                   required
                 />
               </div>
@@ -380,7 +380,7 @@ const Onboarding = () => {
                   !adminFullName.trim()
                 }
               >
-                {loading ? "Liberando..." : `Iniciar degustacao de ${START_TRIAL_DAYS} dias`}
+                {loading ? "Liberando..." : `Iniciar degustação de ${START_TRIAL_DAYS} dias`}
                 <Sparkles className="h-4 w-4" />
               </Button>
             </form>
@@ -391,7 +391,7 @@ const Onboarding = () => {
               {step === 1 && (
                 <div className="space-y-4 animate-fade-in">
                   <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-foreground">
-                    Sua degustacao do pacote Start foi encerrada. Para continuar usando a plataforma, escolha um plano com vigencia de {SUBSCRIPTION_TERM_LABEL}.
+                    Sua degustação do pacote Start foi encerrada. Para continuar usando a plataforma, escolha um plano com vigência de {SUBSCRIPTION_TERM_LABEL}.
                   </div>
 
                   <div className="grid gap-3">
@@ -423,7 +423,7 @@ const Onboarding = () => {
                             </div>
                           ))}
                         </div>
-                        <p className="mt-2 text-sm font-medium">R$ {plan.monthlyPrice.toFixed(2)}/mes</p>
+                        <p className="mt-2 text-sm font-medium">R$ {plan.monthlyPrice.toFixed(2)}/mês</p>
                         <p className="mt-1 text-[11px] text-muted-foreground">Contrato de {SUBSCRIPTION_TERM_LABEL}</p>
                       </button>
                     ))}
@@ -444,10 +444,10 @@ const Onboarding = () => {
 
                   <div className="rounded-lg border border-border bg-muted/30 p-3">
                     <p className="text-sm font-medium">
-                      Plano {selectedPlanData.name} - R$ {selectedPlanData.monthlyPrice.toFixed(2)}/mes
+                      Plano {selectedPlanData.name} - R$ {selectedPlanData.monthlyPrice.toFixed(2)}/mês
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Contrato de {SUBSCRIPTION_TERM_LABEL} para continuidade da operacao.
+                      Contrato de {SUBSCRIPTION_TERM_LABEL} para continuidade da operação.
                     </p>
                   </div>
 
@@ -459,7 +459,7 @@ const Onboarding = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="pix">PIX</SelectItem>
-                        <SelectItem value="card">Cartao</SelectItem>
+                        <SelectItem value="card">Cartão</SelectItem>
                         <SelectItem value="boleto">Boleto</SelectItem>
                       </SelectContent>
                     </Select>
