@@ -746,7 +746,7 @@ const MinhaAgenda = () => {
             <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
               <span className="text-xs text-muted-foreground">Agenda geral</span>
               <Badge variant={acceptingBookings ? "default" : "outline"}>{acceptingBookings ? "Aberta" : "Fechada"}</Badge>
-              <Switch checked={acceptingBookings} onCheckedChange={handleToggleBookings} disabled={toggling || !managedProfessionalId} />
+              <Switch checked={acceptingBookings} onCheckedChange={handleToggleBookings} disabled={toggling || resolvedBulkProfessionals.length === 0} />
             </div>
           </div>
 
@@ -774,6 +774,11 @@ const MinhaAgenda = () => {
           {!isAdminScope && managedProfessionalName && (
             <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2 text-sm text-muted-foreground">
               Pesquisa e gestÃ£o aplicadas automaticamente Ã  agenda de <span className="font-medium text-foreground">{managedProfessionalName}</span>.
+            </div>
+          )}
+          {!isAdminScope && resolvedBulkProfessionals.length === 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+              Seu perfil profissional ainda não foi vinculado corretamente à agenda. Atualize a equipe ou o cadastro para liberar bloqueios e liberações.
             </div>
           )}
         </motion.div>
@@ -953,7 +958,7 @@ const MinhaAgenda = () => {
               size="sm"
               variant={blockSaved ? "secondary" : "default"}
               onClick={handleCreateBlock}
-              disabled={savingBlock || !managedProfessionalId}
+              disabled={savingBlock || resolvedBulkProfessionals.length === 0}
             >
               {savingBlock ? "Salvando..." : blockSaved ? "Salvo" : bulkAction === "close" ? "Salvar bloqueio" : "Salvar liberação"}
             </Button>
