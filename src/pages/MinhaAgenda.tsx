@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
@@ -97,6 +97,7 @@ const MinhaAgenda = () => {
 
   const managedProfessionalId = managedProfessional?.user_id ?? null;
   const managedProfessionalName = managedProfessional?.full_name ?? null;
+
   const bulkProfessionals = useMemo(() => {
     if (!isAdminScope) {
       return managedProfessional ? [managedProfessional] : [];
@@ -207,6 +208,17 @@ const MinhaAgenda = () => {
   const clearBulkProfessionals = () => {
     setBulkProfessionalIds([]);
   };
+
+  useEffect(() => {
+    if (!isAdminScope) {
+      setBulkProfessionalIds(managedProfessionalId ? [managedProfessionalId] : []);
+      return;
+    }
+
+    if (bulkProfessionalIds.length === 0 && managedProfessionalId) {
+      setBulkProfessionalIds([managedProfessionalId]);
+    }
+  }, [isAdminScope, managedProfessionalId, bulkProfessionalIds.length]);
 
   const bookedTimes = useMemo(() => {
     const set = new Set<string>();
