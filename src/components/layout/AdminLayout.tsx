@@ -37,7 +37,7 @@ const navItems: Array<{ icon: any; label: string; path: string; roles: AppRole[]
   { icon: LayoutDashboard, label: "Início", path: "/", roles: ["owner", "admin", "professional", "receptionist"] },
   { icon: Calendar, label: "Visualização da Agenda", path: "/agenda", roles: ["owner", "admin", "receptionist"] },
   { icon: Stethoscope, label: "Gestão da Agenda", path: "/minha-agenda", roles: ["owner", "admin", "professional"] },
-  { icon: Users, label: "Pacientes Cadastrados", path: "/pacientes", roles: ["owner", "admin", "receptionist"] },
+  { icon: Users, label: "Pacientes Cadastrados", path: "/pacientes", roles: ["owner", "admin", "receptionist", "professional"] },
   { icon: MessageSquare, label: "Mensagens", path: "/mensagens", roles: ["owner", "admin", "receptionist"] },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios", roles: ["owner", "admin"] },
   { icon: Settings, label: "Configurações", path: "/configuracoes", roles: ["owner", "admin"] },

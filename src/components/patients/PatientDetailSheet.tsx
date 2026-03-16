@@ -23,10 +23,20 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Patient } from "@/hooks/use-patients";
-import { useUpdatePatient } from "@/hooks/use-patients";
+import { useDeletePatient, useUpdatePatient } from "@/hooks/use-patients";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PatientDetailSheetProps {
   patient: Patient | null;
@@ -43,6 +53,8 @@ const genderLabel: Record<string, string> = {
 const PatientDetailSheet = ({ patient, open, onOpenChange }: PatientDetailSheetProps) => {
   const [editing, setEditing] = useState(false);
   const updatePatient = useUpdatePatient();
+  const deletePatient = useDeletePatient();
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   // Edit form state
   const [fullName, setFullName] = useState("");
@@ -120,6 +132,17 @@ const PatientDetailSheet = ({ patient, open, onOpenChange }: PatientDetailSheetP
       setEditing(false);
     } catch (err: any) {
       toast.error("Erro ao salvar", { description: err.message });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deletePatient.mutateAsync(patient.id);
+      toast.success("Paciente excluído com sucesso!");
+      setConfirmDeleteOpen(false);
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error("Erro ao excluir paciente", { description: err.message });
     }
   };
 
@@ -303,9 +326,37 @@ const PatientDetailSheet = ({ patient, open, onOpenChange }: PatientDetailSheetP
             <p className="text-[10px] text-muted-foreground pt-2">
               Cadastrado em {format(new Date(patient.created_at), "dd/MM/yyyy", { locale: ptBR })}
             </p>
+            <Button
+              variant="destructive"
+              className="mt-4 w-full"
+              onClick={() => setConfirmDeleteOpen(true)}
+              disabled={deletePatient.isPending}
+            >
+              {deletePatient.isPending ? "Excluindo..." : "Excluir paciente"}
+            </Button>
           </>
         )}
       </SheetContent>
+      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir paciente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação removerá o cadastro de {patient.full_name}. Use somente quando tiver certeza.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePatient.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deletePatient.isPending}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 };

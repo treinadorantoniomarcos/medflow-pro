@@ -128,3 +128,27 @@ export const useUpdatePatient = () => {
     },
   });
 };
+
+export const useDeletePatient = () => {
+  const { profile } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!profile?.tenant_id) throw new Error("Tenant não encontrado");
+
+      const { error } = await supabase
+        .from("patients")
+        .delete()
+        .eq("id", id)
+        .eq("tenant_id", profile.tenant_id);
+
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: (id) => {
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+      queryClient.invalidateQueries({ queryKey: ["patient", id] });
+    },
+  });
+};

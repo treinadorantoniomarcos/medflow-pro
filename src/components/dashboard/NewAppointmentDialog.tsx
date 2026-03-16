@@ -44,6 +44,8 @@ interface NewAppointmentDialogProps {
   defaultDate?: string;
   defaultTime?: string;
   hideTrigger?: boolean;
+  lockedProfessionalUserId?: string;
+  lockedProfessionalName?: string;
 }
 
 const NewAppointmentDialog = ({
@@ -52,6 +54,8 @@ const NewAppointmentDialog = ({
   defaultDate,
   defaultTime,
   hideTrigger = false,
+  lockedProfessionalUserId,
+  lockedProfessionalName,
 }: NewAppointmentDialogProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -97,13 +101,13 @@ const NewAppointmentDialog = ({
       setTime(defaultTime ?? "");
       setPatientId("");
       setPatientName("");
-      setProfessionalUserId("");
-      setProfessionalName("");
+      setProfessionalUserId(lockedProfessionalUserId ?? "");
+      setProfessionalName(lockedProfessionalName ?? "");
       setType("");
       setNotes("");
       setAudioFile(null);
     }
-  }, [open, defaultDate, defaultTime]);
+  }, [open, defaultDate, defaultTime, lockedProfessionalName, lockedProfessionalUserId]);
 
   const handleSelectPatient = (id: string) => {
     const patient = patients.find((p) => p.id === id);
@@ -242,6 +246,7 @@ const NewAppointmentDialog = ({
               const prof = professionals.find((item) => item.user_id === value);
               setProfessionalName(prof?.full_name ?? "");
             }}
+            disabled={!!lockedProfessionalUserId}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o profissional" />

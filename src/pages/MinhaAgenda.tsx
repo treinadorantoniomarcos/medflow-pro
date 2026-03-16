@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppointmentAudioPlayer from "@/components/agenda/AppointmentAudioPlayer";
+import NewAppointmentDialog from "@/components/dashboard/NewAppointmentDialog";
 import { buildAppointmentReminder, buildWhatsAppUrl } from "@/lib/whatsapp";
 import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
 import { useProfessionalAgenda, useProfessionalStats } from "@/hooks/use-professional-agenda";
@@ -154,6 +155,7 @@ const MinhaAgenda = () => {
   const [filterEndDate, setFilterEndDate] = useState(() => format(addDays(new Date(), 7), "yyyy-MM-dd"));
   const [pendingFilterStartDate, setPendingFilterStartDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [pendingFilterEndDate, setPendingFilterEndDate] = useState(() => format(addDays(new Date(), 7), "yyyy-MM-dd"));
+  const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const queryPeriodStartDate = filterStartDate || AGENDA_PERIOD_MIN_DATE;
   const queryPeriodEndDate = filterEndDate || AGENDA_PERIOD_MAX_DATE;
 
@@ -710,6 +712,24 @@ const MinhaAgenda = () => {
     }
   };
 
+  const handleRemoveAppointment = async (id: string) => {
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "cancelled" })
+      .eq("id", id)
+      .eq("tenant_id", profile!.tenant_id);
+
+    if (error) {
+      toast.error("Erro ao retirar paciente da agenda", { description: error.message });
+    } else {
+      toast.success("Paciente retirado da agenda.");
+      queryClient.invalidateQueries({ queryKey: ["professional-agenda"] });
+      queryClient.invalidateQueries({ queryKey: ["professional-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+    }
+  };
+
   const handleWhatsAppReminder = async (apt: (typeof appointments)[number]) => {
     const { data: patient } = await supabase
       .from("patients")
@@ -766,10 +786,19 @@ const MinhaAgenda = () => {
                 {managedProfessionalName ?? "Profissional"} | {isToday(selectedDate) ? "Hoje" : format(selectedDate, "dd/MM/yyyy")}
               </p>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
-              <span className="text-xs text-muted-foreground">Agenda geral</span>
-              <Badge variant={acceptingBookings ? "default" : "outline"}>{acceptingBookings ? "Aberta" : "Fechada"}</Badge>
-              <Switch checked={acceptingBookings} onCheckedChange={handleToggleBookings} disabled={toggling || resolvedBulkProfessionals.length === 0} />
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <NewAppointmentDialog
+                open={appointmentDialogOpen}
+                onOpenChange={setAppointmentDialogOpen}
+                defaultDate={format(selectedDate, "yyyy-MM-dd")}
+                lockedProfessionalUserId={!isAdminScope ? managedProfessionalId ?? undefined : undefined}
+                lockedProfessionalName={!isAdminScope ? managedProfessionalName ?? undefined : undefined}
+              />
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+                <span className="text-xs text-muted-foreground">Agenda geral</span>
+                <Badge variant={acceptingBookings ? "default" : "outline"}>{acceptingBookings ? "Aberta" : "Fechada"}</Badge>
+                <Switch checked={acceptingBookings} onCheckedChange={handleToggleBookings} disabled={toggling || resolvedBulkProfessionals.length === 0} />
+              </div>
             </div>
           </div>
 
@@ -1134,6 +1163,11 @@ const MinhaAgenda = () => {
                     <Button size="sm" variant="outline" onClick={() => handleWhatsAppReminder(apt)}>
                       <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> WhatsApp
                     </Button>
+                    {apt.status !== "cancelled" && apt.status !== "completed" && (
+                      <Button size="sm" variant="destructive" onClick={() => handleRemoveAppointment(apt.id)}>
+                        Excluir da agenda
+                      </Button>
+                    )}
                   </div>
                   {apt.notes && <p className="mt-2 text-xs text-muted-foreground">{apt.notes}</p>}
                   {apt.audio_note_path && (

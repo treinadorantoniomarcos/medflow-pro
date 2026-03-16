@@ -50,7 +50,7 @@ const App = () => (
               <Route path="/paciente/home" element={<ProtectedRoute allowedRoles={["patient"]}><PatientHome /></ProtectedRoute>} />
               <Route path="/super-admin" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminDashboard /></ProtectedRoute>} />
               <Route path="/minha-agenda" element={<ProtectedRoute allowedRoles={["owner", "admin", "professional"]}><MinhaAgenda /></ProtectedRoute>} />
-              <Route path="/pacientes" element={<ProtectedRoute allowedRoles={["owner", "admin", "receptionist"]}><Pacientes /></ProtectedRoute>} />
+              <Route path="/pacientes" element={<ProtectedRoute allowedRoles={["owner", "admin", "receptionist", "professional"]}><Pacientes /></ProtectedRoute>} />
               <Route path="/mensagens" element={<ProtectedRoute allowedRoles={["owner", "admin", "receptionist", "patient"]}><Mensagens /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute allowedRoles={["owner", "admin"]}><Relatorios /></ProtectedRoute>} />
               <Route path="/configuracoes" element={<ProtectedRoute allowedRoles={["owner", "admin"]}><Configuracoes /></ProtectedRoute>} />
