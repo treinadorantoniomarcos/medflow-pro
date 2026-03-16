@@ -7,6 +7,12 @@ export type PlanMarketingContent = {
   highlight?: string;
 };
 
+export type PlanCommercialCopy = {
+  social: string;
+  email: string;
+  whatsapp: string;
+};
+
 export type PlanOption = {
   key: PlanKey;
   name: string;
@@ -110,6 +116,27 @@ export const getPlanMarketingContent = (planKey: string): PlanMarketingContent =
       ],
     }
   );
+};
+
+export const getPlanCommercialCopy = (plan: PlanOption): PlanCommercialCopy => {
+  const headline = `${plan.name}: ${plan.description}`;
+  const featureLine = plan.marketing.features.slice(0, 3).join(" | ");
+
+  return {
+    social: `${headline}. ${plan.marketing.summary} ${plan.marketing.audience} Destaques: ${featureLine}.`,
+    email:
+      `Pacote ${plan.name}\n` +
+      `${plan.description}\n\n` +
+      `${plan.marketing.summary}\n` +
+      `${plan.marketing.audience}\n\n` +
+      `Inclui:\n- ${plan.marketing.features.join("\n- ")}`,
+    whatsapp:
+      `*Pacote ${plan.name}*\n` +
+      `${plan.description}\n` +
+      `${plan.marketing.summary}\n` +
+      `${plan.marketing.audience}\n` +
+      `Inclui: ${featureLine}.`,
+  };
 };
 
 export const getSubscriptionShareUrl = (origin: string) => `${origin}${SUBSCRIPTION_SHARE_PATH}`;

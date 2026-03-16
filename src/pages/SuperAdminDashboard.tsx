@@ -45,7 +45,13 @@ import {
   exportSuperAdminPDF,
   exportSuperAdminXLS,
 } from "@/lib/export-super-admin";
-import { getSubscriptionShareUrl } from "@/lib/subscription-plans";
+import {
+  fallbackPlanOptions,
+  getPlanCommercialCopy,
+  getPlanMarketingContent,
+  getSubscriptionShareUrl,
+  type PlanOption,
+} from "@/lib/subscription-plans";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -101,6 +107,7 @@ type PlanRow = {
   id: string;
   code: string;
   name: string;
+  description: string | null;
   monthly_price_cents: number;
   period_days: number;
   trial_days: number;
@@ -156,6 +163,13 @@ const statusBadgeClass: Record<SubscriptionStatus, string> = {
   canceled: "bg-rose-100 text-rose-700",
 };
 
+const planCapacityLabel = (planCode: string) => {
+  if (planCode === "start") return "1 profissional";
+  if (planCode === "pro") return "Ate 3 profissionais";
+  if (planCode === "signature") return "4 a 10 profissionais";
+  return "Plano ativo";
+};
+
 const monthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
 const readSubscription = (settings: Record<string, any> | null | undefined) => {
@@ -201,6 +215,7 @@ const SuperAdminDashboard = () => {
   const [inviteRole, setInviteRole] = useState<"admin" | "super_admin">("admin");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
+  const [copiedCopyKey, setCopiedCopyKey] = useState<string | null>(null);
 
   const [billingDraft, setBillingDraft] = useState<Record<string, { plan: SubscriptionPlan; status: SubscriptionStatus }>>({});
   const [savingTenantId, setSavingTenantId] = useState<string | null>(null);
@@ -226,7 +241,7 @@ const SuperAdminDashboard = () => {
           .limit(20000),
         supabase
           .from("subscription_plans")
-          .select("id, code, name, monthly_price_cents, period_days, trial_days, is_courtesy, is_active")
+          .select("id, code, name, description, monthly_price_cents, period_days, trial_days, is_courtesy, is_active")
           .order("monthly_price_cents", { ascending: true }),
       ]);
 
@@ -352,6 +367,21 @@ const SuperAdminDashboard = () => {
     if (!data?.plans?.length) return [];
     return data.plans.filter((plan) => plan.is_active);
   }, [data?.plans]);
+
+  const planMarketingCatalog = useMemo<PlanOption[]>(() => {
+    if (!availablePlans.length) return fallbackPlanOptions;
+
+    return availablePlans.map((plan) => ({
+      key: plan.code,
+      name: plan.name,
+      monthlyPrice: plan.monthly_price_cents / 100,
+      description: `${planCapacityLabel(plan.code)} | ${plan.description ?? "Pacote ativo para assinatura"}`,
+      periodDays: plan.period_days,
+      trialDays: plan.trial_days,
+      isCourtesy: plan.is_courtesy,
+      marketing: getPlanMarketingContent(plan.code),
+    }));
+  }, [availablePlans]);
 
   const tenantAccessRows = useMemo(() => {
     if (!data || !selectedTenantIdSafe) return [];
@@ -793,6 +823,92 @@ const SuperAdminDashboard = () => {
               <p className="text-center text-xs text-muted-foreground">
                 Escaneie para abrir a pagina publica de assinatura.
               </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-base">Descricoes dos pacotes para divulgacao</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {planMarketingCatalog.map((plan) => {
+              const copy = getPlanCommercialCopy(plan);
+
+              return (
+                <div key={plan.key} className="rounded-xl border border-border p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{plan.name}</p>
+                      <p className="text-xs text-muted-foreground">{plan.description}</p>
+                    </div>
+                    {plan.marketing.highlight && <Badge variant="outline">{plan.marketing.highlight}</Badge>}
+                  </div>
+
+                  <div className="grid gap-3 lg:grid-cols-3">
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Redes sociais</p>
+                      <div className="min-h-28 rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.social}</div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(copy.social);
+                          setCopiedCopyKey(`${plan.key}-social`);
+                          toast.success(`Texto de redes sociais do pacote ${plan.name} copiado`);
+                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
+                        }}
+                      >
+                        {copiedCopyKey === `${plan.key}-social` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        Copiar
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">E-mail</p>
+                      <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.email}</div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(copy.email);
+                          setCopiedCopyKey(`${plan.key}-email`);
+                          toast.success(`Texto de e-mail do pacote ${plan.name} copiado`);
+                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
+                        }}
+                      >
+                        {copiedCopyKey === `${plan.key}-email` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        Copiar
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">WhatsApp</p>
+                      <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.whatsapp}</div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(copy.whatsapp);
+                          setCopiedCopyKey(`${plan.key}-whatsapp`);
+                          toast.success(`Texto de WhatsApp do pacote ${plan.name} copiado`);
+                          window.setTimeout(() => setCopiedCopyKey(null), 2000);
+                        }}
+                      >
+                        {copiedCopyKey === `${plan.key}-whatsapp` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        Copiar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+              Acima de 11 profissionais, divulgar como plataforma customizada com solicitacao de orcamento.
             </div>
           </CardContent>
         </Card>
