@@ -268,6 +268,9 @@ const Onboarding = () => {
                     </button>
                   ))}
                 </div>
+                <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+                  Acima de 11 profissionais, a contratacao passa para plataforma customizada e deve seguir por solicitacao de orcamento.
+                </div>
                 <Button type="submit" className="w-full" disabled={!selectedPlan}>
                   Proximo
                 </Button>

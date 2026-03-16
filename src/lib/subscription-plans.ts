@@ -23,18 +23,20 @@ export const SUBSCRIPTION_SHARE_PATH = "/assinar";
 
 export const planMarketingContent: Record<string, PlanMarketingContent> = {
   start: {
-    summary: "Operacao essencial para iniciar a agenda online com organizacao e confirmacao basica.",
-    audience: "Ideal para profissionais autonomos e consultorios em inicio de operacao digital.",
+    summary: "Operacao essencial para um profissional iniciar a agenda online com organizacao e confirmacao basica.",
+    audience: "Ideal para um unico profissional de saude em atendimento autonomo ou consultorio enxuto.",
     features: [
+      "Licenca para 1 profissional",
       "Agenda diaria com cadastro de pacientes",
       "Confirmacao simples e status da consulta",
       "Link de agendamento para divulgar em redes sociais",
     ],
   },
   pro: {
-    summary: "Fluxo completo para reduzir faltas, controlar retornos e organizar a rotina financeira.",
-    audience: "Ideal para clinicas em crescimento e equipes com recepcao, profissionais e repasses.",
+    summary: "Fluxo completo para equipes pequenas que precisam reduzir faltas e organizar a rotina financeira.",
+    audience: "Ideal para clinicas e consultorios com ate 3 profissionais.",
     features: [
+      "Licenca para ate 3 profissionais",
       "Tudo do plano Start",
       "Automacoes de lembrete D-2 e D-1",
       "Controle de retorno, financeiro e repasse por profissional",
@@ -42,9 +44,10 @@ export const planMarketingContent: Record<string, PlanMarketingContent> = {
     highlight: "Mais escolhido",
   },
   signature: {
-    summary: "Camada executiva para operacao multiequipe com indicadores, alertas e governanca premium.",
-    audience: "Ideal para clinicas com varias especialidades, unidades ou meta forte de escala.",
+    summary: "Camada executiva para operacao estruturada com governanca, indicadores e automacoes avancadas.",
+    audience: "Ideal para clinicas com 4 a 10 profissionais.",
     features: [
+      "Licenca para 4 a 10 profissionais",
       "Tudo do plano Pro",
       "Dashboard executivo com KPIs e fila operacional",
       "Automacoes avancadas e alertas preditivos",
@@ -67,7 +70,7 @@ export const fallbackPlanOptions: PlanOption[] = [
     key: "start",
     name: "Start",
     monthlyPrice: 199,
-    description: "Agenda e operacao essencial",
+    description: "1 profissional | agenda e operacao essencial",
     periodDays: 30,
     trialDays: 0,
     isCourtesy: false,
@@ -77,7 +80,7 @@ export const fallbackPlanOptions: PlanOption[] = [
     key: "pro",
     name: "Pro",
     monthlyPrice: 399,
-    description: "Agenda + automacoes + financeiro",
+    description: "Ate 3 profissionais | agenda + automacoes + financeiro",
     periodDays: 30,
     trialDays: 0,
     isCourtesy: false,
@@ -87,7 +90,7 @@ export const fallbackPlanOptions: PlanOption[] = [
     key: "signature",
     name: "Signature",
     monthlyPrice: 799,
-    description: "Operacao completa com controle premium",
+    description: "4 a 10 profissionais | operacao completa com controle premium",
     periodDays: 30,
     trialDays: 0,
     isCourtesy: false,

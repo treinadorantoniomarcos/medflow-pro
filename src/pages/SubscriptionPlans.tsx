@@ -136,6 +136,19 @@ const SubscriptionPlans = () => {
           ))}
         </div>
 
+        <Card className="border-dashed border-border shadow-soft">
+          <CardContent className="flex flex-col gap-3 p-6 text-center">
+            <div>
+              <p className="text-sm font-semibold text-primary">Acima de 11 profissionais</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-foreground">Plataforma customizada</h2>
+            </div>
+            <p className="mx-auto max-w-2xl text-sm text-muted-foreground">
+              Operacoes com mais de 11 profissionais saem do pacote padrao e entram em projeto customizado, com escopo comercial e tecnico sob medida.
+            </p>
+            <p className="text-sm font-medium text-foreground">Solicite orcamento com o time comercial para definir implantacao, capacidade e governanca.</p>
+          </CardContent>
+        </Card>
+
         <div className="text-center text-sm text-muted-foreground">
           Ja tem conta? <Link to="/login" className="font-semibold text-primary hover:underline">Entre para concluir a assinatura</Link>
         </div>
