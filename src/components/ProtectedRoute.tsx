@@ -51,13 +51,16 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
         ? subscription.status
         : "trialing") as SubscriptionStatus;
       const graceUntil = subscription.grace_until ? new Date(subscription.grace_until) : null;
+      const currentPeriodEnd = subscription.current_period_end ? new Date(subscription.current_period_end) : null;
       const now = new Date();
 
       const blockedByStatus = status === "paused" || status === "canceled";
       const blockedByGrace = status === "past_due" && graceUntil ? graceUntil < now : false;
+      const expiredTrial = status === "trialing" && currentPeriodEnd ? currentPeriodEnd < now : false;
 
       return {
         status,
+        expiredTrial,
         blocked: blockedByStatus || blockedByGrace,
       };
     },
@@ -73,6 +76,9 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 
   if (!user) return <Navigate to="/login" replace />;
   if (needsOnboarding) return <Navigate to="/onboarding" replace />;
+  if (accessState?.expiredTrial) {
+    return <Navigate to="/onboarding?mode=upgrade" replace />;
+  }
   if (accessState?.blocked) {
     const pendingRelease = accessState.status === "paused";
     return (

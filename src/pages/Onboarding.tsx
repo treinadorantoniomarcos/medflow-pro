@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Building2, Check, CreditCard, Sparkles, User } from "lucide-react";
+import { toast } from "sonner";
+import medfluxLogo from "@/assets/medflux-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,9 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { Building2, Check, CreditCard, Sparkles, User } from "lucide-react";
-import medfluxLogo from "@/assets/medflux-logo.png";
 import {
   Select,
   SelectContent,
@@ -17,16 +18,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useQuery } from "@tanstack/react-query";
 import {
+  START_TRIAL_DAYS,
+  SUBSCRIPTION_TERM_DAYS,
   SUBSCRIPTION_TERM_LABEL,
   fallbackPlanOptions,
   getPlanMarketingContent,
-  readPreferredPlan,
-  storePreferredPlan,
+  paidPlanOptions,
   type PlanKey,
   type PlanOption,
 } from "@/lib/subscription-plans";
+
 type PaymentMethod = "pix" | "card" | "boleto";
 
 type CatalogPlan = {
@@ -43,18 +45,25 @@ type CatalogPlan = {
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
-  const [step, setStep] = useState(1);
+  const [searchParams] = useSearchParams();
+  const { user, profile, refreshProfile } = useAuth();
+
+  const isUpgradeFlow = !!profile?.tenant_id || searchParams.get("mode") === "upgrade";
+
+  const [step, setStep] = useState(isUpgradeFlow ? 1 : 2);
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
 
-  const [selectedPlan, setSelectedPlan] = useState<PlanKey>(() => readPreferredPlan() ?? "pro");
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("start");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
-  const [contractorName, setContractorName] = useState("");
+
+  const [professionalOrClinicName, setProfessionalOrClinicName] = useState("");
+  const [documentNumber, setDocumentNumber] = useState("");
+  const [fullAddress, setFullAddress] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [adminFullName, setAdminFullName] = useState("");
-  const [adminEmail, setAdminEmail] = useState(user?.email ?? "");
-  const [adminWhatsapp, setAdminWhatsapp] = useState("");
 
   const { data: catalogPlans = [] } = useQuery({
     queryKey: ["onboarding-active-plans"],
@@ -70,44 +79,41 @@ const Onboarding = () => {
     },
   });
 
-  const availablePlans = useMemo<PlanOption[]>(() => {
-    if (catalogPlans.length > 0) {
-      return catalogPlans.map((plan) => ({
-        key: plan.code,
-        name: plan.name,
-        monthlyPrice: plan.monthly_price_cents / 100,
-        description:
-          plan.description ??
-          `Vigencia de ${SUBSCRIPTION_TERM_LABEL}${plan.trial_days > 0 ? ` | cortesia de ${plan.trial_days} dias` : ""}`,
-        periodDays: plan.period_days,
-        trialDays: plan.trial_days,
-        isCourtesy: plan.is_courtesy,
-        marketing: getPlanMarketingContent(plan.code),
-      }));
-    }
-    return fallbackPlanOptions;
+  const paidPlans = useMemo<PlanOption[]>(() => {
+    const source = catalogPlans.length > 0
+      ? catalogPlans
+          .filter((plan) => !plan.is_courtesy)
+          .map((plan) => ({
+            key: plan.code,
+            name: plan.name,
+            monthlyPrice: plan.monthly_price_cents / 100,
+            description: plan.description ?? `Vigencia de ${SUBSCRIPTION_TERM_LABEL}`,
+            periodDays: plan.period_days,
+            trialDays: plan.trial_days,
+            isCourtesy: plan.is_courtesy,
+            marketing: getPlanMarketingContent(plan.code),
+          }))
+      : paidPlanOptions;
+
+    return source.filter((plan) => plan.key !== "courtesy");
   }, [catalogPlans]);
 
-  useEffect(() => {
-    if (!availablePlans.find((plan) => plan.key === selectedPlan)) {
-      setSelectedPlan(availablePlans[0]?.key ?? "pro");
-    }
-  }, [availablePlans, selectedPlan]);
+  const selectedPlanData = useMemo(
+    () => paidPlans.find((plan) => plan.key === selectedPlan) ?? paidPlans[0] ?? fallbackPlanOptions[0],
+    [paidPlans, selectedPlan]
+  );
 
   useEffect(() => {
-    storePreferredPlan(selectedPlan);
-  }, [selectedPlan]);
+    setStep(isUpgradeFlow ? 1 : 2);
+    setSelectedPlan(isUpgradeFlow ? "pro" : "start");
+    setPaymentConfirmed(false);
+  }, [isUpgradeFlow]);
 
   useEffect(() => {
     if (user?.email) {
-      setAdminEmail((current) => current || user.email || "");
+      setContactEmail((current) => current || user.email || "");
     }
   }, [user?.email]);
-
-  const selectedPlanData = useMemo(
-    () => availablePlans.find((plan) => plan.key === selectedPlan) ?? availablePlans[0] ?? fallbackPlanOptions[1],
-    [availablePlans, selectedPlan]
-  );
 
   const handlePayment = async () => {
     setProcessingPayment(true);
@@ -115,67 +121,59 @@ const Onboarding = () => {
     setPaymentConfirmed(true);
     setProcessingPayment(false);
     toast.success("Pagamento confirmado", {
-      description: "Primeira mensalidade registrada. Sua solicitacao seguira para validacao no cadastro final.",
+      description: `Pagamento registrado para assinatura com vigencia de ${SUBSCRIPTION_TERM_LABEL}.`,
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const finishTrialSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-
-    if (!paymentConfirmed) {
-      toast.error("Pagamento inicial pendente", {
-        description: "Confirme a primeira mensalidade para ativar o acesso.",
-      });
-      return;
-    }
 
     setLoading(true);
 
     try {
       const clinicId = crypto.randomUUID();
+      const now = new Date();
+      const trialEnd = new Date(now);
+      trialEnd.setDate(trialEnd.getDate() + START_TRIAL_DAYS);
 
       const { error } = await supabase.rpc("complete_onboarding", {
         _clinic_id: clinicId,
-        _clinic_name: contractorName.trim(),
+        _clinic_name: professionalOrClinicName.trim(),
         _full_name: adminFullName.trim(),
-        _phone: adminWhatsapp.trim() || null,
+        _phone: whatsapp.trim() || null,
       });
 
       if (error) throw error;
-
-      const billingNow = new Date();
-      const nextPeriod = new Date(billingNow);
-      nextPeriod.setMonth(nextPeriod.getMonth() + 1);
 
       const { error: settingsError } = await supabase
         .from("clinics")
         .update({
           settings: {
             onboarding: {
-              completed_at: billingNow.toISOString(),
+              completed_at: now.toISOString(),
               owner_name: adminFullName.trim(),
-              contractor_name: contractorName.trim(),
-              access_request: {
-                status: "pending_super_admin_release",
-                submitted_at: billingNow.toISOString(),
-                contractor_name: contractorName.trim(),
+              registration: {
+                professional_or_clinic_name: professionalOrClinicName.trim(),
+                document_number: documentNumber.trim(),
+                full_address: fullAddress.trim(),
+                whatsapp: whatsapp.trim(),
+                email: contactEmail.trim().toLowerCase(),
                 admin_full_name: adminFullName.trim(),
-                admin_email: adminEmail.trim().toLowerCase(),
-                admin_whatsapp: adminWhatsapp.trim() || null,
-                selected_plan: selectedPlan,
-                payment_method: paymentMethod,
               },
             },
             subscription: {
-              plan: selectedPlan,
-              status: "paused",
-              payment_method: paymentMethod,
-              first_payment_at: billingNow.toISOString(),
-              current_period_start: billingNow.toISOString(),
-              current_period_end: nextPeriod.toISOString(),
+              plan: "start",
+              status: "trialing",
+              payment_method: null,
+              trial_days: START_TRIAL_DAYS,
+              trial_started_at: now.toISOString(),
+              first_payment_at: null,
+              current_period_start: now.toISOString(),
+              current_period_end: trialEnd.toISOString(),
               grace_until: null,
-              pending_release: true,
+              pending_release: false,
+              contract_term_days: SUBSCRIPTION_TERM_DAYS,
             },
           },
         })
@@ -184,8 +182,8 @@ const Onboarding = () => {
       if (settingsError) throw settingsError;
 
       await refreshProfile();
-      toast.success("Solicitacao enviada", {
-        description: "Os dados foram enviados ao Super Admin. O acesso sera liberado apos validacao.",
+      toast.success("Degustacao Start liberada", {
+        description: `Voce recebeu ${START_TRIAL_DAYS} dias de cortesia para testar o pacote Start.`,
       });
       navigate("/");
     } catch (err: any) {
@@ -195,9 +193,72 @@ const Onboarding = () => {
     setLoading(false);
   };
 
+  const finishUpgrade = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile?.tenant_id || !paymentConfirmed) return;
+
+    setLoading(true);
+
+    try {
+      const now = new Date();
+      const contractEnd = new Date(now.getTime() + SUBSCRIPTION_TERM_DAYS * 24 * 60 * 60 * 1000);
+
+      const { data: clinic, error: loadError } = await supabase
+        .from("clinics")
+        .select("settings")
+        .eq("id", profile.tenant_id)
+        .single();
+
+      if (loadError) throw loadError;
+
+      const currentSettings = (clinic?.settings ?? {}) as Record<string, any>;
+      const onboarding = (currentSettings.onboarding ?? {}) as Record<string, any>;
+
+      const { error: updateError } = await supabase
+        .from("clinics")
+        .update({
+          settings: {
+            ...currentSettings,
+            onboarding: {
+              ...onboarding,
+              upgrade: {
+                selected_plan: selectedPlan,
+                paid_at: now.toISOString(),
+                payment_method: paymentMethod,
+              },
+            },
+            subscription: {
+              ...(currentSettings.subscription ?? {}),
+              plan: selectedPlan,
+              status: "active",
+              payment_method: paymentMethod,
+              first_payment_at: now.toISOString(),
+              current_period_start: now.toISOString(),
+              current_period_end: contractEnd.toISOString(),
+              grace_until: null,
+              pending_release: false,
+              contract_term_days: SUBSCRIPTION_TERM_DAYS,
+            },
+          },
+        })
+        .eq("id", profile.tenant_id);
+
+      if (updateError) throw updateError;
+
+      toast.success("Plano ativado", {
+        description: `Assinatura ${selectedPlanData.name} contratada por ${SUBSCRIPTION_TERM_LABEL}.`,
+      });
+      navigate("/");
+    } catch (err: any) {
+      toast.error("Erro ao ativar assinatura", { description: err.message });
+    }
+
+    setLoading(false);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-[520px] shadow-medium border-border">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-6">
+      <Card className="w-full max-w-[560px] shadow-medium border-border">
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center mb-4">
             <img src={medfluxLogo} alt="MedFlux Pro" className="h-14 w-14" />
@@ -205,224 +266,227 @@ const Onboarding = () => {
           <div className="flex items-center justify-center gap-2 mb-2">
             <Sparkles className="h-5 w-5 text-accent" />
             <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
-              Bem-vindo ao MedFlux Pro
+              {isUpgradeFlow ? "Escolha seu plano pago" : "Degustacao Start"}
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            {step === 1 ? "Escolha seu pacote" : step === 2 ? "Pagamento da primeira mensalidade" : "Dados do contratante e administrador"}
+            {isUpgradeFlow
+              ? `Assinatura por ${SUBSCRIPTION_TERM_LABEL} apos o encerramento da cortesia`
+              : `${START_TRIAL_DAYS} dias de cortesia para 1 profissional`}
           </p>
-
-          <div className="flex items-center justify-center gap-2 mt-4">
-            <div className={`h-2 w-16 rounded-full ${step >= 1 ? "bg-primary" : "bg-muted"}`} />
-            <div className={`h-2 w-16 rounded-full ${step >= 2 ? "bg-primary" : "bg-muted"}`} />
-            <div className={`h-2 w-16 rounded-full ${step >= 3 ? "bg-primary" : "bg-muted"}`} />
-          </div>
         </CardHeader>
 
         <CardContent>
-          <form
-            onSubmit={step < 3 ? (e) => { e.preventDefault(); setStep((current) => current + 1); } : handleSubmit}
-            className="space-y-5"
-          >
-            {step === 1 && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="flex items-center gap-2 text-primary mb-2">
+          {!isUpgradeFlow && (
+            <form onSubmit={finishTrialSignup} className="space-y-5">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <div className="flex items-center gap-2 text-primary">
                   <Building2 className="h-5 w-5" />
-                  <span className="text-sm font-semibold">Escolha seu pacote</span>
+                  <span className="text-sm font-semibold">Pacote Start em degustacao</span>
                 </div>
-                <div className="grid gap-3">
-                  {availablePlans.map((plan) => (
-                    <button
-                      key={plan.key}
-                      type="button"
-                      onClick={() => setSelectedPlan(plan.key)}
-                      className={`rounded-lg border p-3 text-left transition-colors ${
-                        selectedPlan === plan.key
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:bg-muted/40"
-                      }`}
-                    >
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold">{plan.name}</p>
-                          <p className="text-xs text-muted-foreground">{plan.marketing.audience}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {plan.marketing.highlight && <Badge variant="outline">{plan.marketing.highlight}</Badge>}
-                          {selectedPlan === plan.key && <Badge variant="secondary">Selecionado</Badge>}
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{plan.marketing.summary}</p>
-                      <div className="mt-3 space-y-1">
-                        {plan.marketing.features.map((feature) => (
-                          <div key={feature} className="flex items-start gap-2 text-xs text-muted-foreground">
-                            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                            <span>{feature}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="mt-2 text-sm font-medium">R$ {plan.monthlyPrice.toFixed(2)}/mes</p>
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        {plan.description}
-                        {plan.trialDays ? ` | ${plan.trialDays} dias de cortesia` : ""}
-                      </p>
-                    </button>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  1 profissional | Agenda e operacao essencial com cortesia de {START_TRIAL_DAYS} dias.
+                </p>
+                <div className="mt-3 space-y-1">
+                  {getPlanMarketingContent("start").features.map((feature) => (
+                    <div key={feature} className="flex items-start gap-2 text-xs text-muted-foreground">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                      <span>{feature}</span>
+                    </div>
                   ))}
                 </div>
-                <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
-                  Acima de 11 profissionais, a contratacao passa a ser customizada e deve seguir para solicitacao de orcamento.
-                </div>
-                <Button type="submit" className="w-full" disabled={!selectedPlan}>
-                  Proximo
-                </Button>
               </div>
-            )}
 
-            {step === 2 && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="flex items-center gap-2 text-primary mb-2">
-                  <CreditCard className="h-5 w-5" />
-                  <span className="text-sm font-semibold">Primeira mensalidade</span>
-                </div>
-
-                <div className="rounded-lg border border-border bg-muted/30 p-3">
-                  <p className="text-sm font-medium">
-                    Plano {selectedPlanData.name} - R$ {selectedPlanData.monthlyPrice.toFixed(2)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Assinatura com vigencia de {SUBSCRIPTION_TERM_LABEL}. Apos o pagamento, voce informara os dados que o Super Admin usara para analisar e liberar o acesso.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Forma de pagamento</Label>
-                  <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pix">PIX</SelectItem>
-                      <SelectItem value="card">Cartao</SelectItem>
-                      <SelectItem value="boleto">Boleto</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={paymentConfirmed ? "secondary" : "default"}
-                    className="flex-1"
-                    onClick={handlePayment}
-                    disabled={processingPayment || paymentConfirmed}
-                  >
-                    {paymentConfirmed ? "Pagamento confirmado" : processingPayment ? "Processando..." : "Confirmar pagamento"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    disabled={!paymentConfirmed}
-                    onClick={() => setStep(3)}
-                  >
-                    Continuar
-                  </Button>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => setStep(1)}
-                >
-                  Voltar
-                </Button>
+              <div className="space-y-2">
+                <Label htmlFor="professionalOrClinicName">Nome do profissional ou da clinica</Label>
+                <Input
+                  id="professionalOrClinicName"
+                  value={professionalOrClinicName}
+                  onChange={(e) => setProfessionalOrClinicName(e.target.value)}
+                  placeholder="Ex: Dra. Ana Souza ou Clinica Saude Viva"
+                  required
+                />
               </div>
-            )}
 
-            {step === 3 && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="flex items-center gap-2 text-primary mb-2">
-                  <User className="h-5 w-5" />
-                  <span className="text-sm font-semibold">Dados para liberacao do acesso</span>
-                </div>
-                <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-                  Esses dados serao enviados ao Super Admin para validacao e liberacao do sistema.
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="documentNumber">CNPJ ou CPF</Label>
+                <Input
+                  id="documentNumber"
+                  value={documentNumber}
+                  onChange={(e) => setDocumentNumber(e.target.value)}
+                  placeholder="Informe o CNPJ ou CPF"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fullAddress">Endereco completo</Label>
+                <Input
+                  id="fullAddress"
+                  value={fullAddress}
+                  onChange={(e) => setFullAddress(e.target.value)}
+                  placeholder="Rua, numero, bairro, cidade, UF e CEP"
+                  required
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="contractorName">Nome do Contratante</Label>
+                  <Label htmlFor="whatsapp">WhatsApp</Label>
                   <Input
-                    id="contractorName"
-                    placeholder="Ex: Clinica Saude Viva LTDA"
-                    value={contractorName}
-                    onChange={(e) => setContractorName(e.target.value)}
-                    required
-                    maxLength={100}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="adminFullName">Nome completo do administrador</Label>
-                  <Input
-                    id="adminFullName"
-                    placeholder="Nome do administrador responsavel pelo sistema"
-                    value={adminFullName}
-                    onChange={(e) => setAdminFullName(e.target.value)}
-                    required
-                    maxLength={100}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="adminEmail">E-mail</Label>
-                  <Input
-                    id="adminEmail"
-                    type="email"
-                    placeholder="admin@clinica.com"
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                    required
-                    maxLength={120}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="adminWhatsapp">WhatsApp</Label>
-                  <Input
-                    id="adminWhatsapp"
+                    id="whatsapp"
                     type="tel"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
                     placeholder="(11) 99999-9999"
-                    value={adminWhatsapp}
-                    onChange={(e) => setAdminWhatsapp(e.target.value)}
                     required
-                    maxLength={20}
                   />
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setStep(2)}
-                  >
+
+                <div className="space-y-2">
+                  <Label htmlFor="contactEmail">E-mail</Label>
+                  <Input
+                    id="contactEmail"
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="contato@clinica.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="adminFullName">Nome completo do administrador/contato</Label>
+                <Input
+                  id="adminFullName"
+                  value={adminFullName}
+                  onChange={(e) => setAdminFullName(e.target.value)}
+                  placeholder="Nome completo do administrador"
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full gap-2"
+                disabled={
+                  loading ||
+                  !professionalOrClinicName.trim() ||
+                  !documentNumber.trim() ||
+                  !fullAddress.trim() ||
+                  !whatsapp.trim() ||
+                  !contactEmail.trim() ||
+                  !adminFullName.trim()
+                }
+              >
+                {loading ? "Liberando..." : `Iniciar degustacao de ${START_TRIAL_DAYS} dias`}
+                <Sparkles className="h-4 w-4" />
+              </Button>
+            </form>
+          )}
+
+          {isUpgradeFlow && (
+            <form onSubmit={step === 1 ? (e) => { e.preventDefault(); setStep(2); } : finishUpgrade} className="space-y-5">
+              {step === 1 && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-foreground">
+                    Sua degustacao do pacote Start foi encerrada. Para continuar usando a plataforma, escolha um plano com vigencia de {SUBSCRIPTION_TERM_LABEL}.
+                  </div>
+
+                  <div className="grid gap-3">
+                    {paidPlans.map((plan) => (
+                      <button
+                        key={plan.key}
+                        type="button"
+                        onClick={() => setSelectedPlan(plan.key)}
+                        className={`rounded-lg border p-3 text-left transition-colors ${
+                          selectedPlan === plan.key ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
+                        }`}
+                      >
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold">{plan.name}</p>
+                            <p className="text-xs text-muted-foreground">{plan.marketing.audience}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {plan.marketing.highlight && <Badge variant="outline">{plan.marketing.highlight}</Badge>}
+                            {selectedPlan === plan.key && <Badge variant="secondary">Selecionado</Badge>}
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{plan.marketing.summary}</p>
+                        <div className="mt-3 space-y-1">
+                          {plan.marketing.features.map((feature) => (
+                            <div key={feature} className="flex items-start gap-2 text-xs text-muted-foreground">
+                              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                              <span>{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="mt-2 text-sm font-medium">R$ {plan.monthlyPrice.toFixed(2)}/mes</p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">Contrato de {SUBSCRIPTION_TERM_LABEL}</p>
+                      </button>
+                    ))}
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={!selectedPlan}>
+                    Continuar para pagamento
+                  </Button>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="flex items-center gap-2 text-primary mb-2">
+                    <CreditCard className="h-5 w-5" />
+                    <span className="text-sm font-semibold">Pagamento do plano</span>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-muted/30 p-3">
+                    <p className="text-sm font-medium">
+                      Plano {selectedPlanData.name} - R$ {selectedPlanData.monthlyPrice.toFixed(2)}/mes
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Contrato de {SUBSCRIPTION_TERM_LABEL} para continuidade da operacao.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Forma de pagamento</Label>
+                    <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pix">PIX</SelectItem>
+                        <SelectItem value="card">Cartao</SelectItem>
+                        <SelectItem value="boleto">Boleto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={paymentConfirmed ? "secondary" : "default"}
+                      className="flex-1"
+                      onClick={handlePayment}
+                      disabled={processingPayment || paymentConfirmed}
+                    >
+                      {paymentConfirmed ? "Pagamento confirmado" : processingPayment ? "Processando..." : "Confirmar pagamento"}
+                    </Button>
+                    <Button type="submit" variant="outline" className="flex-1" disabled={!paymentConfirmed || loading}>
+                      {loading ? "Ativando..." : "Ativar plano"}
+                    </Button>
+                  </div>
+
+                  <Button type="button" variant="ghost" className="w-full" onClick={() => setStep(1)}>
                     Voltar
                   </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1 gap-2"
-                    disabled={
-                      loading ||
-                      !adminFullName.trim() ||
-                      !contractorName.trim() ||
-                      !adminEmail.trim() ||
-                      !adminWhatsapp.trim() ||
-                      !paymentConfirmed
-                    }
-                  >
-                    {loading ? "Enviando..." : "Enviar para liberacao"}
-                    <Sparkles className="h-4 w-4" />
-                  </Button>
                 </div>
-              </div>
-            )}
-          </form>
+              )}
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>

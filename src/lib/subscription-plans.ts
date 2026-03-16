@@ -29,6 +29,7 @@ export const SUBSCRIPTION_SHARE_PATH = "/assinar";
 export const SUBSCRIPTION_TERM_DAYS = 365;
 export const SUBSCRIPTION_TERM_LABEL = "12 meses";
 export const ALLOWED_TRIAL_DAYS = [7, 15, 30] as const;
+export const START_TRIAL_DAYS = 7;
 
 export const planMarketingContent: Record<string, PlanMarketingContent> = {
   start: {
@@ -109,6 +110,8 @@ export const fallbackPlanOptions: PlanOption[] = [
     marketing: planMarketingContent.signature,
   },
 ];
+
+export const paidPlanOptions = fallbackPlanOptions.filter((plan) => !plan.isCourtesy);
 
 export const getPlanMarketingContent = (planKey: string): PlanMarketingContent => {
   return (
