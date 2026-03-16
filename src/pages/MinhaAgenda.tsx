@@ -49,6 +49,7 @@ const MinhaAgenda = () => {
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
   const [blockStart, setBlockStart] = useState("");
+  const [blockEnd, setBlockEnd] = useState("");
   const [bulkAmount, setBulkAmount] = useState("1");
   const [bulkUnit, setBulkUnit] = useState<BulkUnit>("days");
   const [bulkAction, setBulkAction] = useState<BulkActionType>("close");
@@ -314,18 +315,20 @@ const MinhaAgenda = () => {
       return;
     }
 
-    const amount = Math.max(1, Number(bulkAmount) || 1);
     const startIso = new Date(blockStart).toISOString();
     const startDate = new Date(startIso);
-    const endDate = new Date(
-      bulkUnit === "hours"
-        ? startDate.getTime() + amount * 60 * 60 * 1000
-        : bulkUnit === "days"
-          ? addDays(startDate, amount).getTime()
-          : bulkUnit === "weeks"
-            ? addWeeks(startDate, amount).getTime()
-            : addMonths(startDate, amount).getTime()
-    );
+    const amount = Math.max(1, Number(bulkAmount) || 1);
+    const endDate = blockEnd
+      ? new Date(new Date(blockEnd).toISOString())
+      : new Date(
+          bulkUnit === "hours"
+            ? startDate.getTime() + amount * 60 * 60 * 1000
+            : bulkUnit === "days"
+              ? addDays(startDate, amount).getTime()
+              : bulkUnit === "weeks"
+                ? addWeeks(startDate, amount).getTime()
+                : addMonths(startDate, amount).getTime()
+        );
     const endIso = endDate.toISOString();
 
     if (new Date(endIso) <= new Date(startIso)) {
@@ -352,6 +355,7 @@ const MinhaAgenda = () => {
       } else {
         toast.success("Bloqueio aplicado com sucesso.");
         setBlockStart("");
+        setBlockEnd("");
         setBulkAmount("1");
         setBlockReason("");
         queryClient.invalidateQueries({ queryKey: ["availability-blocks"] });
@@ -404,6 +408,7 @@ const MinhaAgenda = () => {
       } else {
         toast.success("Agenda liberada para o intervalo selecionado.");
         setBlockStart("");
+        setBlockEnd("");
         setBulkAmount("1");
         setBlockReason("");
         queryClient.invalidateQueries({ queryKey: ["slot-overrides"] });
@@ -607,6 +612,16 @@ const MinhaAgenda = () => {
           </div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div className="space-y-2">
+              <Label htmlFor="block-end">Fim</Label>
+              <Input
+                id="block-end"
+                type="datetime-local"
+                value={blockEnd}
+                min={blockStart || undefined}
+                onChange={(e) => setBlockEnd(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="bulk-amount">Quantidade</Label>
               <Input
                 id="bulk-amount"
@@ -614,12 +629,13 @@ const MinhaAgenda = () => {
                 min={1}
                 value={bulkAmount}
                 onChange={(e) => setBulkAmount(e.target.value)}
+                disabled={!!blockEnd}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="bulk-unit">Período</Label>
               <Select value={bulkUnit} onValueChange={(value) => setBulkUnit(value as BulkUnit)}>
-                <SelectTrigger id="bulk-unit">
+                <SelectTrigger id="bulk-unit" disabled={!!blockEnd}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -631,6 +647,9 @@ const MinhaAgenda = () => {
               </Select>
             </div>
           </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Informe o fim para definir a data e o horário exatos. Se deixar em branco, o sistema calculará o intervalo pela quantidade e pelo período.
+          </p>
           <div className="mt-3 space-y-2">
             <Label htmlFor="block-reason">Motivo (opcional)</Label>
             <Textarea
