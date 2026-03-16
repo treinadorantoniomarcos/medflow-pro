@@ -216,6 +216,19 @@ const SuperAdminDashboard = () => {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [copiedCopyKey, setCopiedCopyKey] = useState<string | null>(null);
+  const [subscriberDetailOpen, setSubscriberDetailOpen] = useState(false);
+  const [selectedSubscriberId, setSelectedSubscriberId] = useState<string | null>(null);
+  const [subscriberDraft, setSubscriberDraft] = useState({
+    clinicName: "",
+    slug: "",
+    contractorName: "",
+    adminFullName: "",
+    adminEmail: "",
+    adminWhatsapp: "",
+    accessStatus: "",
+    plan: "start" as SubscriptionPlan,
+    subscriptionStatus: "trialing" as SubscriptionStatus,
+  });
 
   const [billingDraft, setBillingDraft] = useState<Record<string, { plan: SubscriptionPlan; status: SubscriptionStatus }>>({});
   const [savingTenantId, setSavingTenantId] = useState<string | null>(null);
@@ -450,6 +463,75 @@ const SuperAdminDashboard = () => {
         },
       };
     });
+  };
+
+  const openSubscriberDetail = (tenantId: string) => {
+    const row = subscriberRows.find((item) => item.clinic_id === tenantId);
+    if (!row) return;
+
+    setSelectedSubscriberId(tenantId);
+    setSubscriberDraft({
+      clinicName: row.clinic_name,
+      slug: row.slug ?? "",
+      contractorName: row.access_request.contractor_name ?? "",
+      adminFullName: row.access_request.admin_full_name ?? "",
+      adminEmail: row.access_request.admin_email ?? "",
+      adminWhatsapp: row.access_request.admin_whatsapp ?? "",
+      accessStatus: row.access_request.status ?? "",
+      plan: row.subscription.plan,
+      subscriptionStatus: row.subscription.status,
+    });
+    setSubscriberDetailOpen(true);
+  };
+
+  const saveSubscriberDetails = async () => {
+    if (!selectedSubscriberId) return;
+
+    const row = subscriberRows.find((item) => item.clinic_id === selectedSubscriberId);
+    if (!row) return;
+
+    const nowIso = new Date().toISOString();
+    const updatedSettings = {
+      ...(row.settings ?? {}),
+      onboarding: {
+        ...((row.settings ?? {}).onboarding ?? {}),
+        access_request: {
+          ...(((row.settings ?? {}).onboarding ?? {}).access_request ?? {}),
+          status: subscriberDraft.accessStatus || null,
+          contractor_name: subscriberDraft.contractorName.trim() || null,
+          admin_full_name: subscriberDraft.adminFullName.trim() || null,
+          admin_email: subscriberDraft.adminEmail.trim() || null,
+          admin_whatsapp: subscriberDraft.adminWhatsapp.trim() || null,
+          updated_by_super_admin_at: nowIso,
+        },
+      },
+      subscription: {
+        ...row.subscription,
+        plan: subscriberDraft.plan,
+        status: subscriberDraft.subscriptionStatus,
+        updated_by_super_admin_at: nowIso,
+      },
+    };
+
+    setSavingTenantId(selectedSubscriberId);
+    const { error } = await supabase
+      .from("clinics")
+      .update({
+        name: subscriberDraft.clinicName.trim() || row.clinic_name,
+        slug: subscriberDraft.slug.trim() || null,
+        settings: updatedSettings,
+      })
+      .eq("id", selectedSubscriberId);
+    setSavingTenantId(null);
+
+    if (error) {
+      toast.error("Falha ao salvar dados do assinante", { description: error.message });
+      return;
+    }
+
+    toast.success("Dados do assinante atualizados.");
+    setSubscriberDetailOpen(false);
+    queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] });
   };
 
   const saveSubscriptionState = async (tenantId: string) => {
@@ -925,6 +1007,13 @@ const SuperAdminDashboard = () => {
                               <Save className="mr-1 h-3.5 w-3.5" /> {savingTenantId === row.clinic_id ? "Salvando..." : "Salvar assinatura"}
                             </Button>
                             <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openSubscriberDetail(row.clinic_id)}
+                            >
+                              Ver/editar
+                            </Button>
+                            <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => {
@@ -944,6 +1033,131 @@ const SuperAdminDashboard = () => {
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={subscriberDetailOpen} onOpenChange={setSubscriberDetailOpen}>
+          <DialogContent className="sm:max-w-[720px]">
+            <DialogHeader>
+              <DialogTitle>Dados do assinante</DialogTitle>
+              <DialogDescription>
+                Visualize e altere os dados principais do assinante selecionado.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Nome da clínica ou contratante</Label>
+                <Input
+                  value={subscriberDraft.clinicName}
+                  onChange={(e) => setSubscriberDraft((prev) => ({ ...prev, clinicName: e.target.value }))}
+                  placeholder="Nome do assinante"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Slug</Label>
+                <Input
+                  value={subscriberDraft.slug}
+                  onChange={(e) => setSubscriberDraft((prev) => ({ ...prev, slug: e.target.value }))}
+                  placeholder="slug-publico"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Nome do contratante</Label>
+                <Input
+                  value={subscriberDraft.contractorName}
+                  onChange={(e) => setSubscriberDraft((prev) => ({ ...prev, contractorName: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Administrador responsável</Label>
+                <Input
+                  value={subscriberDraft.adminFullName}
+                  onChange={(e) => setSubscriberDraft((prev) => ({ ...prev, adminFullName: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>E-mail do administrador</Label>
+                <Input
+                  type="email"
+                  value={subscriberDraft.adminEmail}
+                  onChange={(e) => setSubscriberDraft((prev) => ({ ...prev, adminEmail: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>WhatsApp do administrador</Label>
+                <Input
+                  value={subscriberDraft.adminWhatsapp}
+                  onChange={(e) => setSubscriberDraft((prev) => ({ ...prev, adminWhatsapp: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Status do acesso</Label>
+                <Input
+                  value={subscriberDraft.accessStatus}
+                  onChange={(e) => setSubscriberDraft((prev) => ({ ...prev, accessStatus: e.target.value }))}
+                  placeholder="pending_super_admin_release, released..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Plano</Label>
+                <Select
+                  value={subscriberDraft.plan}
+                  onValueChange={(value) => setSubscriberDraft((prev) => ({ ...prev, plan: value as SubscriptionPlan }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availablePlans.map((plan) => (
+                      <SelectItem key={plan.id} value={plan.code}>
+                        {plan.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Status da assinatura</Label>
+                <Select
+                  value={subscriberDraft.subscriptionStatus}
+                  onValueChange={(value) => setSubscriberDraft((prev) => ({ ...prev, subscriptionStatus: value as SubscriptionStatus }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="trialing">Trialing</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="past_due">Past due</SelectItem>
+                    <SelectItem value="paused">Paused</SelectItem>
+                    <SelectItem value="canceled">Canceled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {selectedSubscriberId && (
+              <div className="rounded-lg border border-border bg-secondary/20 p-3 text-sm">
+                {(() => {
+                  const row = subscriberRows.find((item) => item.clinic_id === selectedSubscriberId);
+                  if (!row) return null;
+                  return (
+                    <div className="grid gap-2 md:grid-cols-2">
+                      <p>Profissionais: <span className="font-medium text-foreground">{row.professionals}</span></p>
+                      <p>Pacientes: <span className="font-medium text-foreground">{row.patients}</span></p>
+                      <p>Consultas no mês: <span className="font-medium text-foreground">{row.month_appointments}</span></p>
+                      <p>No-show no mês: <span className="font-medium text-foreground">{row.month_no_show}</span></p>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            <Button onClick={saveSubscriberDetails} disabled={!selectedSubscriberId || savingTenantId === selectedSubscriberId}>
+              <Save className="mr-1.5 h-4 w-4" />
+              {savingTenantId === selectedSubscriberId ? "Salvando..." : "Salvar alterações"}
+            </Button>
+          </DialogContent>
+        </Dialog>
 
         <PlanCatalogManager
           onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
