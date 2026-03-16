@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  SUBSCRIPTION_TERM_LABEL,
   fallbackPlanOptions,
   getPlanMarketingContent,
   storePreferredPlan,
@@ -96,7 +97,7 @@ const SubscriptionPlans = () => {
                 <div>
                   <p className="text-3xl font-extrabold text-foreground">R$ {plan.monthlyPrice.toFixed(2)}</p>
                   <p className="text-xs text-muted-foreground">
-                    por mes{plan.trialDays ? ` | ${plan.trialDays} dias de cortesia` : ""}{plan.isCourtesy ? " | pacote cortesia" : ""}
+                    por mes | vigencia de {SUBSCRIPTION_TERM_LABEL}{plan.trialDays ? ` | ${plan.trialDays} dias de cortesia` : ""}{plan.isCourtesy ? " | pacote cortesia" : ""}
                   </p>
                 </div>
               </CardHeader>

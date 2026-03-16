@@ -26,6 +26,9 @@ export type PlanOption = {
 
 export const PLAN_PREFERENCE_KEY = "medflow-preferred-plan";
 export const SUBSCRIPTION_SHARE_PATH = "/assinar";
+export const SUBSCRIPTION_TERM_DAYS = 365;
+export const SUBSCRIPTION_TERM_LABEL = "12 meses";
+export const ALLOWED_TRIAL_DAYS = [7, 15, 30] as const;
 
 export const planMarketingContent: Record<string, PlanMarketingContent> = {
   start: {
@@ -33,6 +36,7 @@ export const planMarketingContent: Record<string, PlanMarketingContent> = {
     audience: "Ideal para um unico profissional de saude, em atendimento autonomo ou em um consultorio enxuto.",
     features: [
       "Licenca para 1 profissional",
+      "Contrato com vigencia de 12 meses",
       "Agenda diaria com cadastro de pacientes",
       "Confirmacao simples e status da consulta",
       "Link de agendamento para divulgar em redes sociais",
@@ -43,6 +47,7 @@ export const planMarketingContent: Record<string, PlanMarketingContent> = {
     audience: "Ideal para clinicas e consultorios com ate 3 profissionais.",
     features: [
       "Licenca para ate 3 profissionais",
+      "Contrato com vigencia de 12 meses",
       "Tudo do plano Start",
       "Automacoes de lembrete D-2 e D-1",
       "Controle de retorno, financeiro e repasse por profissional",
@@ -54,6 +59,7 @@ export const planMarketingContent: Record<string, PlanMarketingContent> = {
     audience: "Ideal para clinicas com 4 a 10 profissionais.",
     features: [
       "Licenca para 4 a 10 profissionais",
+      "Contrato com vigencia de 12 meses",
       "Tudo do plano Pro",
       "Dashboard executivo com KPIs e fila operacional",
       "Automacoes avancadas e alertas preditivos",
@@ -77,7 +83,7 @@ export const fallbackPlanOptions: PlanOption[] = [
     name: "Start",
     monthlyPrice: 199,
     description: "1 profissional | agenda e operacao essencial",
-    periodDays: 30,
+    periodDays: SUBSCRIPTION_TERM_DAYS,
     trialDays: 0,
     isCourtesy: false,
     marketing: planMarketingContent.start,
@@ -87,7 +93,7 @@ export const fallbackPlanOptions: PlanOption[] = [
     name: "Pro",
     monthlyPrice: 399,
     description: "Ate 3 profissionais | agenda + automacoes + financeiro",
-    periodDays: 30,
+    periodDays: SUBSCRIPTION_TERM_DAYS,
     trialDays: 0,
     isCourtesy: false,
     marketing: planMarketingContent.pro,
@@ -97,7 +103,7 @@ export const fallbackPlanOptions: PlanOption[] = [
     name: "Signature",
     monthlyPrice: 799,
     description: "4 a 10 profissionais | operacao completa com controle premium",
-    periodDays: 30,
+    periodDays: SUBSCRIPTION_TERM_DAYS,
     trialDays: 0,
     isCourtesy: false,
     marketing: planMarketingContent.signature,
@@ -127,12 +133,14 @@ export const getPlanCommercialCopy = (plan: PlanOption): PlanCommercialCopy => {
     email:
       `Pacote ${plan.name}\n` +
       `${plan.description}\n\n` +
+      `Vigencia contratual: ${SUBSCRIPTION_TERM_LABEL}\n` +
       `${plan.marketing.summary}\n` +
       `${plan.marketing.audience}\n\n` +
       `Inclui:\n- ${plan.marketing.features.join("\n- ")}`,
     whatsapp:
       `*Pacote ${plan.name}*\n` +
       `${plan.description}\n` +
+      `Vigencia contratual: ${SUBSCRIPTION_TERM_LABEL}\n` +
       `${plan.marketing.summary}\n` +
       `${plan.marketing.audience}\n` +
       `Principais recursos: ${featureLine}.`,

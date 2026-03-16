@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { ALLOWED_TRIAL_DAYS, SUBSCRIPTION_TERM_DAYS, SUBSCRIPTION_TERM_LABEL } from "@/lib/subscription-plans";
 
 type PlanRow = {
   id: string;
@@ -39,7 +40,7 @@ const emptyForm: PlanFormState = {
   name: "",
   description: "",
   monthly_price_brl: "0,00",
-  period_days: "30",
+  period_days: String(SUBSCRIPTION_TERM_DAYS),
   trial_days: "0",
   is_courtesy: false,
   is_active: true,
@@ -107,6 +108,12 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
       return;
     }
 
+    const parsedTrialDays = Math.max(0, Number(form.trial_days) || 0);
+    if (parsedTrialDays !== 0 && !ALLOWED_TRIAL_DAYS.includes(parsedTrialDays as 7 | 15 | 30)) {
+      toast.error("A cortesia deve ser de 7, 15 ou 30 dias.");
+      return;
+    }
+
     setSaving(true);
 
     const payload = {
@@ -114,8 +121,8 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
       name: form.name.trim(),
       description: form.description.trim() || null,
       monthly_price_cents: parseBrlToCents(form.monthly_price_brl),
-      period_days: Math.max(1, Number(form.period_days) || 30),
-      trial_days: Math.max(0, Number(form.trial_days) || 0),
+      period_days: SUBSCRIPTION_TERM_DAYS,
+      trial_days: parsedTrialDays,
       is_courtesy: form.is_courtesy,
       is_active: form.is_active,
     };
@@ -200,22 +207,23 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
 
         <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-1">
-            <Label>Periodo (dias)</Label>
+            <Label>Vigencia</Label>
             <Input
-              type="number"
-              min={1}
+              readOnly
               value={form.period_days}
-              onChange={(e) => setForm((prev) => ({ ...prev, period_days: e.target.value }))}
             />
+            <p className="text-xs text-muted-foreground">Assinaturas padronizadas em {SUBSCRIPTION_TERM_LABEL}.</p>
           </div>
           <div className="space-y-1">
             <Label>Cortesia (dias)</Label>
             <Input
               type="number"
               min={0}
+              step={1}
               value={form.trial_days}
               onChange={(e) => setForm((prev) => ({ ...prev, trial_days: e.target.value }))}
             />
+            <p className="text-xs text-muted-foreground">Valores permitidos: 7, 15 ou 30 dias. Use 0 para sem cortesia.</p>
           </div>
           <div className="space-y-1">
             <Label>Descricao</Label>
@@ -264,7 +272,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
                   {plan.name} ({plan.code})
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  R$ {toBrl(plan.monthly_price_cents)} | periodo {plan.period_days} dias | cortesia {plan.trial_days} dias
+                  R$ {toBrl(plan.monthly_price_cents)} | vigencia {SUBSCRIPTION_TERM_LABEL} | cortesia {plan.trial_days} dias
                 </p>
               </div>
 

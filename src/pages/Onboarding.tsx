@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import {
+  SUBSCRIPTION_TERM_LABEL,
   fallbackPlanOptions,
   getPlanMarketingContent,
   readPreferredPlan,
@@ -77,7 +78,7 @@ const Onboarding = () => {
         monthlyPrice: plan.monthly_price_cents / 100,
         description:
           plan.description ??
-          `Periodo ${plan.period_days} dias${plan.trial_days > 0 ? ` | cortesia ${plan.trial_days} dias` : ""}`,
+          `Vigencia de ${SUBSCRIPTION_TERM_LABEL}${plan.trial_days > 0 ? ` | cortesia de ${plan.trial_days} dias` : ""}`,
         periodDays: plan.period_days,
         trialDays: plan.trial_days,
         isCourtesy: plan.is_courtesy,
@@ -289,7 +290,7 @@ const Onboarding = () => {
                     Plano {selectedPlanData.name} - R$ {selectedPlanData.monthlyPrice.toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Apos o pagamento, voce informara os dados que o Super Admin usara para analisar e liberar o acesso.
+                    Assinatura com vigencia de {SUBSCRIPTION_TERM_LABEL}. Apos o pagamento, voce informara os dados que o Super Admin usara para analisar e liberar o acesso.
                   </p>
                 </div>
 
