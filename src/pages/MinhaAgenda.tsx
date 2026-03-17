@@ -197,7 +197,7 @@ const MinhaAgenda = () => {
       user_id: user.id,
       full_name: profile.full_name ?? user.email ?? "Profissional",
       phone: profile.phone ?? null,
-      email: profile.email ?? user.email ?? null,
+      email: user.email ?? null,
       accepting_bookings: profile.accepting_bookings ?? true,
     };
   }, [profile, user?.email, user?.id]);
