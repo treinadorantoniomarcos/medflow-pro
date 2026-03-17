@@ -96,8 +96,7 @@ const PatientDetailSheet = ({ patient, open, onOpenChange }: PatientDetailSheetP
         .select("id, starts_at, status, type, professional_name")
         .eq("tenant_id", patient!.tenant_id)
         .eq("patient_name", patient!.full_name)
-        .order("starts_at", { ascending: false })
-        .limit(10);
+        .order("starts_at", { ascending: false });
 
       if (error) throw error;
       return data ?? [];
@@ -294,12 +293,12 @@ const PatientDetailSheet = ({ patient, open, onOpenChange }: PatientDetailSheetP
 
             <div className="space-y-3 py-4">
               <h3 className="text-sm font-semibold text-foreground">
-                Últimas Consultas ({appointments.length})
+                Histórico de atendimentos ({appointments.length})
               </h3>
               {appointments.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Nenhuma consulta encontrada.</p>
+                <p className="text-xs text-muted-foreground">Nenhum atendimento encontrado.</p>
               ) : (
-                <div className="space-y-2">
+                <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
                   {appointments.map((apt) => (
                     <div
                       key={apt.id}
@@ -313,9 +312,9 @@ const PatientDetailSheet = ({ patient, open, onOpenChange }: PatientDetailSheetP
                           {apt.status}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground">{apt.professional_name}</p>
+                      <p className="text-xs text-muted-foreground">Profissional responsável: {apt.professional_name}</p>
                       {apt.type && (
-                        <p className="text-xs text-muted-foreground">{apt.type}</p>
+                        <p className="text-xs text-muted-foreground">Tipo: {apt.type}</p>
                       )}
                     </div>
                   ))}
