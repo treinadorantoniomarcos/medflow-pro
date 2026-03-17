@@ -339,7 +339,6 @@ export type Database = {
       }
       professional_availability_blocks: {
         Row: {
-          audio_note_path: string | null
           created_at: string
           created_by: string | null
           end_at: string
@@ -352,7 +351,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          audio_note_path?: string | null
           created_at?: string
           created_by?: string | null
           end_at: string
@@ -365,7 +363,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          audio_note_path?: string | null
           created_at?: string
           created_by?: string | null
           end_at?: string
@@ -389,7 +386,6 @@ export type Database = {
       }
       professional_slot_overrides: {
         Row: {
-          audio_note_path: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -402,7 +398,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          audio_note_path?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -415,7 +410,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          audio_note_path?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
