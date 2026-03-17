@@ -114,7 +114,7 @@ const Suporte = () => {
       tenant_id: profile.tenant_id,
       requester_id: user.id,
       requester_name: profile.full_name,
-      requester_email: profile.email ?? user.email ?? null,
+      requester_email: user.email ?? null,
       subject: subject.trim(),
       message: message.trim(),
       status: "open",

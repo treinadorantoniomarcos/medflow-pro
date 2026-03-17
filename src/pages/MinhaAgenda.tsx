@@ -182,7 +182,7 @@ const MinhaAgenda = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("user_id, full_name, phone, email, accepting_bookings")
+        .select("user_id, full_name, phone, accepting_bookings")
         .eq("tenant_id", profile!.tenant_id)
         .not("full_name", "is", null)
         .order("full_name", { ascending: true });
@@ -197,7 +197,7 @@ const MinhaAgenda = () => {
       user_id: user.id,
       full_name: profile.full_name ?? user.email ?? "Profissional",
       phone: profile.phone ?? null,
-      email: profile.email ?? user.email ?? null,
+      email: user.email ?? null,
       accepting_bookings: profile.accepting_bookings ?? true,
     };
   }, [profile, user?.email, user?.id]);
