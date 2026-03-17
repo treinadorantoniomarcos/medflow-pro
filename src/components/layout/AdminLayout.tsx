@@ -18,6 +18,7 @@ import {
   Sun,
   Moon,
   LogOut,
+  LifeBuoy,
 } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { Input } from "@/components/ui/input";
@@ -38,7 +39,8 @@ const navItems: Array<{ icon: any; label: string; path: string; roles: AppRole[]
   { icon: Calendar, label: "Visualização da Agenda", path: "/agenda", roles: ["owner", "admin", "receptionist"] },
   { icon: Stethoscope, label: "Gestão da Agenda", path: "/minha-agenda", roles: ["owner", "admin", "professional"] },
   { icon: Users, label: "Pacientes Cadastrados", path: "/pacientes", roles: ["owner", "admin", "receptionist", "professional"] },
-  { icon: MessageSquare, label: "Mensagens", path: "/mensagens", roles: ["owner", "admin", "receptionist"] },
+  { icon: LifeBuoy, label: "Suporte", path: "/suporte", roles: ["owner", "admin", "professional", "receptionist", "super_admin"] },
+  { icon: MessageSquare, label: "Mensagens", path: "/mensagens", roles: ["owner", "admin", "professional", "receptionist"] },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios", roles: ["owner", "admin"] },
   { icon: Settings, label: "Configurações", path: "/configuracoes", roles: ["owner", "admin"] },
 ];

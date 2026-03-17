@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import PatientHome from "./pages/PatientHome";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import SubscriptionPlans from "./pages/SubscriptionPlans";
+import Suporte from "./pages/Suporte";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +52,8 @@ const App = () => (
               <Route path="/super-admin" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminDashboard /></ProtectedRoute>} />
               <Route path="/minha-agenda" element={<ProtectedRoute allowedRoles={["owner", "admin", "professional"]}><MinhaAgenda /></ProtectedRoute>} />
               <Route path="/pacientes" element={<ProtectedRoute allowedRoles={["owner", "admin", "receptionist", "professional"]}><Pacientes /></ProtectedRoute>} />
-              <Route path="/mensagens" element={<ProtectedRoute allowedRoles={["owner", "admin", "receptionist", "patient"]}><Mensagens /></ProtectedRoute>} />
+              <Route path="/suporte" element={<ProtectedRoute allowedRoles={["owner", "admin", "professional", "receptionist", "super_admin"]}><Suporte /></ProtectedRoute>} />
+              <Route path="/mensagens" element={<ProtectedRoute allowedRoles={["owner", "admin", "professional", "receptionist", "patient"]}><Mensagens /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute allowedRoles={["owner", "admin"]}><Relatorios /></ProtectedRoute>} />
               <Route path="/configuracoes" element={<ProtectedRoute allowedRoles={["owner", "admin"]}><Configuracoes /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />

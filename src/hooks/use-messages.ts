@@ -4,12 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface Message {
+  attachment_mime_type?: string | null;
+  attachment_name?: string | null;
+  attachment_path?: string | null;
   id: string;
   tenant_id: string;
   sender_id: string;
   sender_name: string;
   content: string;
   created_at: string;
+}
+
+interface SendMessageInput {
+  content: string;
+  file?: File | null;
 }
 
 export const useMessages = () => {
@@ -67,9 +75,34 @@ export const useSendMessage = () => {
   const { user, profile } = useAuth();
 
   return useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, file }: SendMessageInput) => {
       if (!user || !profile?.tenant_id || !profile.full_name) {
         throw new Error("Not authenticated");
+      }
+
+      if (!content.trim() && !file) {
+        throw new Error("Mensagem vazia");
+      }
+
+      let attachmentPath: string | null = null;
+      let attachmentName: string | null = null;
+      let attachmentMimeType: string | null = null;
+
+      if (file) {
+        if (file.size > 15 * 1024 * 1024) {
+          throw new Error("O arquivo deve ter no máximo 15MB.");
+        }
+
+        const extension = file.name.split(".").pop() ?? "bin";
+        attachmentPath = `${profile.tenant_id}/${user.id}/${crypto.randomUUID()}.${extension}`;
+        attachmentName = file.name;
+        attachmentMimeType = file.type || "application/octet-stream";
+
+        const { error: uploadError } = await supabase.storage
+          .from("message-attachments")
+          .upload(attachmentPath, file, { upsert: false });
+
+        if (uploadError) throw uploadError;
       }
 
       const { error } = await supabase.from("messages").insert({
@@ -77,6 +110,9 @@ export const useSendMessage = () => {
         sender_id: user.id,
         sender_name: profile.full_name,
         content: content.trim(),
+        attachment_name: attachmentName,
+        attachment_path: attachmentPath,
+        attachment_mime_type: attachmentMimeType,
       });
 
       if (error) throw error;

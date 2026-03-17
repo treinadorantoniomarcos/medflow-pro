@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 type GrantRole = "admin" | "super_admin";
-type Action = "grant_access" | "set_access_status" | "revoke_access";
+type Action = "grant_access" | "set_access_status" | "revoke_access" | "reset_password";
 
 interface Payload {
   action: Action;
@@ -17,6 +17,7 @@ interface Payload {
   tenant_id?: string;
   target_user_id?: string;
   is_active?: boolean;
+  redirect_to?: string;
 }
 
 async function findUserByEmail(supabaseAdmin: any, email: string) {
@@ -347,6 +348,46 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    if (payload.action === "reset_password") {
+      const email = payload.email?.trim().toLowerCase();
+      const tenantId = payload.tenant_id?.trim() || null;
+      const redirectTo = payload.redirect_to?.trim() || null;
+
+      if (!email || !tenantId || !redirectTo) {
+        return new Response(JSON.stringify({ error: "invalid_payload" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+
+      if (resetError) {
+        return new Response(JSON.stringify({ error: "reset_password_failed", detail: resetError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      await supabaseAdmin.from("audit_logs").insert({
+        tenant_id: tenantId,
+        user_id: user.id,
+        action: "super_admin_reset_password",
+        table_name: "profiles",
+        new_data: {
+          email,
+          tenant_id: tenantId,
+        },
+      });
+
+      return new Response(JSON.stringify({ ok: true, email, tenant_id: tenantId }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ error: "invalid_action" }), {

@@ -155,6 +155,9 @@ export type Database = {
       }
       messages: {
         Row: {
+          attachment_mime_type: string | null
+          attachment_name: string | null
+          attachment_path: string | null
           content: string
           created_at: string
           id: string
@@ -163,6 +166,9 @@ export type Database = {
           tenant_id: string
         }
         Insert: {
+          attachment_mime_type?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
           content: string
           created_at?: string
           id?: string
@@ -171,6 +177,9 @@ export type Database = {
           tenant_id: string
         }
         Update: {
+          attachment_mime_type?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -181,6 +190,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          requester_email: string | null
+          requester_id: string
+          requester_name: string
+          responded_at: string | null
+          responded_by: string | null
+          status: string
+          subject: string
+          super_admin_response: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          requester_email?: string | null
+          requester_id: string
+          requester_name: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+          subject: string
+          super_admin_response?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          requester_email?: string | null
+          requester_id?: string
+          requester_name?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+          subject?: string
+          super_admin_response?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "clinics"

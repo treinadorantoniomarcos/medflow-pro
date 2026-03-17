@@ -218,6 +218,7 @@ const SuperAdminDashboard = () => {
   const [copiedCopyKey, setCopiedCopyKey] = useState<string | null>(null);
   const [subscriberDetailOpen, setSubscriberDetailOpen] = useState(false);
   const [selectedSubscriberId, setSelectedSubscriberId] = useState<string | null>(null);
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [subscriberDraft, setSubscriberDraft] = useState({
     clinicName: "",
     slug: "",
@@ -532,6 +533,33 @@ const SuperAdminDashboard = () => {
     toast.success("Dados do assinante atualizados.");
     setSubscriberDetailOpen(false);
     queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] });
+  };
+
+  const resetSubscriberPassword = async () => {
+    if (!selectedSubscriberId || !subscriberDraft.adminEmail.trim()) {
+      toast.error("Informe o e-mail do administrador para reiniciar a senha.");
+      return;
+    }
+
+    setResettingPassword(true);
+    const { data: result, error } = await supabase.functions.invoke("super-admin-access", {
+      body: {
+        action: "reset_password",
+        tenant_id: selectedSubscriberId,
+        email: subscriberDraft.adminEmail.trim().toLowerCase(),
+        redirect_to: `${window.location.origin}/reset-password`,
+      },
+    });
+    setResettingPassword(false);
+
+    if (error || !result?.ok) {
+      toast.error("Falha ao reiniciar senha", {
+        description: result?.detail || error?.message || result?.error,
+      });
+      return;
+    }
+
+    toast.success("E-mail de redefinição de senha enviado.");
   };
 
   const saveSubscriptionState = async (tenantId: string) => {
@@ -1158,10 +1186,19 @@ const SuperAdminDashboard = () => {
               </div>
             )}
 
-            <Button onClick={saveSubscriberDetails} disabled={!selectedSubscriberId || savingTenantId === selectedSubscriberId}>
-              <Save className="mr-1.5 h-4 w-4" />
-              {savingTenantId === selectedSubscriberId ? "Salvando..." : "Salvar alterações"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={resetSubscriberPassword}
+                disabled={!selectedSubscriberId || resettingPassword || !subscriberDraft.adminEmail.trim()}
+              >
+                {resettingPassword ? "Enviando reset..." : "Reiniciar senha do cliente"}
+              </Button>
+              <Button onClick={saveSubscriberDetails} disabled={!selectedSubscriberId || savingTenantId === selectedSubscriberId}>
+                <Save className="mr-1.5 h-4 w-4" />
+                {savingTenantId === selectedSubscriberId ? "Salvando..." : "Salvar alterações"}
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
 
