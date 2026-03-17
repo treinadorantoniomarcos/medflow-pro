@@ -10,6 +10,8 @@ export interface Message {
   attachment_path?: string | null;
   id: string;
   tenant_id: string;
+  recipient_id?: string | null;
+  recipient_name?: string | null;
   sender_id: string;
   sender_name: string;
   content: string;
@@ -19,23 +21,36 @@ export interface Message {
 interface SendMessageInput {
   content: string;
   file?: File | null;
+  recipientId?: string | null;
+  recipientName?: string | null;
 }
 
-export const useMessages = () => {
+export const useMessages = (selectedRecipientId?: string | null) => {
   const { profile, user } = useAuth();
   const queryClient = useQueryClient();
   const hasInitialized = useRef(false);
+  const conversationKey = selectedRecipientId ?? "group";
 
   const query = useQuery({
-    queryKey: ["messages", profile?.tenant_id],
-    enabled: !!profile?.tenant_id,
+    queryKey: ["messages", profile?.tenant_id, conversationKey],
+    enabled: !!profile?.tenant_id && !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let queryBuilder = supabase
         .from("messages")
         .select("*")
         .eq("tenant_id", profile!.tenant_id)
         .order("created_at", { ascending: true })
         .limit(200);
+
+      if (selectedRecipientId) {
+        queryBuilder = queryBuilder.or(
+          `and(sender_id.eq.${user!.id},recipient_id.eq.${selectedRecipientId}),and(sender_id.eq.${selectedRecipientId},recipient_id.eq.${user!.id})`
+        );
+      } else {
+        queryBuilder = queryBuilder.is("recipient_id", null);
+      }
+
+      const { data, error } = await queryBuilder;
 
       if (error) throw error;
       return (data ?? []) as Message[];
@@ -64,12 +79,15 @@ export const useMessages = () => {
         },
         (payload) => {
           const incoming = payload.new as Message;
-          queryClient.setQueryData<Message[]>(
-            ["messages", profile.tenant_id],
-            (old) => [...(old ?? []), incoming]
-          );
+          queryClient.invalidateQueries({ queryKey: ["messages", profile.tenant_id] });
 
-          if (hasInitialized.current && incoming.sender_id !== user.id) {
+          const isRelevantToGroup = !selectedRecipientId && !incoming.recipient_id;
+          const isRelevantDirect =
+            !!selectedRecipientId &&
+            ((incoming.sender_id === selectedRecipientId && incoming.recipient_id === user.id) ||
+              (incoming.sender_id === user.id && incoming.recipient_id === selectedRecipientId));
+
+          if (hasInitialized.current && incoming.sender_id !== user.id && (isRelevantToGroup || isRelevantDirect)) {
             toast.info("Nova mensagem no chat", {
               description: `${incoming.sender_name}: ${incoming.content || incoming.attachment_name || "Arquivo enviado"}`,
             });
@@ -81,7 +99,7 @@ export const useMessages = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile?.tenant_id, queryClient, user?.id]);
+  }, [profile?.tenant_id, queryClient, selectedRecipientId, user?.id]);
 
   return query;
 };
@@ -90,7 +108,7 @@ export const useSendMessage = () => {
   const { user, profile } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ content, file }: SendMessageInput) => {
+    mutationFn: async ({ content, file, recipientId, recipientName }: SendMessageInput) => {
       if (!user || !profile?.tenant_id || !profile.full_name) {
         throw new Error("Not authenticated");
       }
@@ -124,6 +142,8 @@ export const useSendMessage = () => {
         tenant_id: profile.tenant_id,
         sender_id: user.id,
         sender_name: profile.full_name,
+        recipient_id: recipientId ?? null,
+        recipient_name: recipientName ?? null,
         content: content.trim(),
         attachment_name: attachmentName,
         attachment_path: attachmentPath,

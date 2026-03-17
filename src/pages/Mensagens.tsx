@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
 import { Download, MessageSquare, Paperclip, Send, Users } from "lucide-react";
@@ -15,9 +16,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
+type AppRole = "owner" | "admin" | "professional" | "receptionist" | "patient" | "super_admin";
+
+const GROUP_CHAT_ID = "__group__";
+
 const Mensagens = () => {
-  const { user } = useAuth();
-  const { data: messages = [], isLoading } = useMessages();
+  const { user, profile } = useAuth();
+  const [selectedConversation, setSelectedConversation] = useState<string>(GROUP_CHAT_ID);
+  const selectedRecipientId = selectedConversation === GROUP_CHAT_ID ? null : selectedConversation;
+  const { data: messages = [], isLoading } = useMessages(selectedRecipientId);
   const { data: members = [] } = useTeamMembers();
   const sendMessage = useSendMessage();
   const [input, setInput] = useState("");
@@ -25,6 +32,30 @@ const Mensagens = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: role } = useQuery({
+    queryKey: ["messages-role", user?.id, profile?.tenant_id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role, tenant_id")
+        .eq("user_id", user!.id);
+      if (error) throw error;
+
+      const roles = (data ?? []) as Array<{ role: AppRole; tenant_id: string }>;
+      if (roles.some((item) => item.role === "super_admin")) return "super_admin";
+      const scoped = roles.find((item) => item.tenant_id === profile?.tenant_id);
+      return scoped?.role ?? null;
+    },
+  });
+
+  const canSelectRecipient = role === "owner" || role === "admin" || role === "professional";
+  const availableRecipients = useMemo(
+    () => members.filter((member) => member.user_id !== user?.id),
+    [members, user?.id]
+  );
+  const selectedRecipient = availableRecipients.find((member) => member.user_id === selectedRecipientId) ?? null;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -37,7 +68,12 @@ const Mensagens = () => {
     if (!input.trim() && !attachment) return;
 
     try {
-      await sendMessage.mutateAsync({ content: input, file: attachment });
+      await sendMessage.mutateAsync({
+        content: input,
+        file: attachment,
+        recipientId: selectedRecipient?.user_id ?? null,
+        recipientName: selectedRecipient?.full_name ?? null,
+      });
       setInput("");
       setAttachment(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -75,37 +111,62 @@ const Mensagens = () => {
         <motion.div
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
-          className="hidden w-[220px] shrink-0 flex-col rounded-lg border border-border bg-card shadow-soft md:flex"
+          className="hidden w-[240px] shrink-0 flex-col rounded-lg border border-border bg-card shadow-soft md:flex"
         >
           <div className="flex items-center gap-2 border-b border-border p-3">
             <Users className="h-4 w-4 text-primary" />
-            <span className="text-xs font-semibold text-foreground">Equipe</span>
-            <span className="ml-auto text-[10px] text-muted-foreground">{members.length}</span>
+            <span className="text-xs font-semibold text-foreground">Conversas</span>
+            <span className="ml-auto text-[10px] text-muted-foreground">{availableRecipients.length}</span>
           </div>
           <ScrollArea className="flex-1">
             <div className="space-y-1 p-2">
-              {members.map((member) => {
+              <button
+                type="button"
+                onClick={() => setSelectedConversation(GROUP_CHAT_ID)}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left",
+                  selectedConversation === GROUP_CHAT_ID ? "bg-primary/10 text-primary" : "hover:bg-secondary"
+                )}
+              >
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                  GR
+                </div>
+                <div>
+                  <p className="text-xs font-semibold">Grupo da equipe</p>
+                  <p className="text-[10px] text-muted-foreground">Mensagem para todos</p>
+                </div>
+              </button>
+
+              {availableRecipients.map((member) => {
                 const initials = member.full_name
                   ?.split(" ")
                   .map((name: string) => name[0])
                   .slice(0, 2)
                   .join("")
                   .toUpperCase() ?? "?";
-                const isMe = member.user_id === user?.id;
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={member.user_id}
-                    className={cn("flex items-center gap-2 rounded-md px-2 py-1.5", isMe && "bg-primary/5")}
+                    onClick={() => canSelectRecipient && setSelectedConversation(member.user_id)}
+                    disabled={!canSelectRecipient}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left",
+                      selectedConversation === member.user_id ? "bg-primary/10 text-primary" : "hover:bg-secondary",
+                      !canSelectRecipient && "cursor-not-allowed opacity-70"
+                    )}
                   >
                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
                       {initials}
                     </div>
-                    <span className="truncate text-xs font-medium text-foreground">
-                      {member.full_name ?? "Sem nome"}
-                      {isMe && <span className="ml-1 text-muted-foreground">(voce)</span>}
-                    </span>
-                  </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-foreground">{member.full_name ?? "Sem nome"}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {canSelectRecipient ? "Conversa direta" : "Visualização da equipe"}
+                      </p>
+                    </div>
+                  </button>
                 );
               })}
             </div>
@@ -121,14 +182,18 @@ const Mensagens = () => {
             <div className="flex items-center gap-3">
               <MessageSquare className="h-5 w-5 text-primary" />
               <div>
-                <h1 className="text-sm font-bold text-foreground">Chat da Equipe</h1>
+                <h1 className="text-sm font-bold text-foreground">
+                  {selectedRecipient ? `Conversa com ${selectedRecipient.full_name}` : "Chat da Equipe"}
+                </h1>
                 <p className="text-[10px] text-muted-foreground">
-                  {members.length} membro{members.length !== 1 ? "s" : ""} | Tempo real
+                  {selectedRecipient
+                    ? "Mensagem direcionada ao destinatário selecionado"
+                    : `${members.length} membro${members.length !== 1 ? "s" : ""} | Tempo real`}
                 </p>
               </div>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Espaco para clientes conversarem com os profissionais e encaminharem arquivos para download dentro do grupo.
+              Espaço para clientes conversarem com os profissionais e encaminharem arquivos para download dentro do grupo.
             </p>
           </div>
 
@@ -144,7 +209,9 @@ const Mensagens = () => {
                 <MessageSquare className="mb-2 h-10 w-10 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda.</p>
                 <p className="text-xs text-muted-foreground">
-                  Use este grupo para falar com a equipe e compartilhar arquivos.
+                  {selectedRecipient
+                    ? "Envie a primeira mensagem para este destinatário."
+                    : "Use este grupo para falar com a equipe e compartilhar arquivos."}
                 </p>
               </div>
             ) : (
@@ -236,7 +303,7 @@ const Mensagens = () => {
           <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-border p-3">
             <Input
               ref={inputRef}
-              placeholder="Digite sua mensagem..."
+              placeholder={selectedRecipient ? `Mensagem para ${selectedRecipient.full_name}...` : "Digite sua mensagem..."}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               className="flex-1 border-0 bg-secondary"
