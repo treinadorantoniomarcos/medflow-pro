@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -54,6 +54,7 @@ const Suporte = () => {
   const [savingTicket, setSavingTicket] = useState(false);
   const [savingReplyId, setSavingReplyId] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, { status: SupportStatus; response: string }>>({});
+  const hasInitialized = useRef(false);
 
   const { data: role } = useQuery({
     queryKey: ["support-role", user?.id, profile?.tenant_id],
@@ -101,6 +102,71 @@ const Suporte = () => {
       answered: tickets.filter((ticket) => ticket.status === "answered").length,
     };
   }, [tickets]);
+
+  useEffect(() => {
+    if (tickets.length >= 0) {
+      hasInitialized.current = true;
+    }
+  }, [tickets.length]);
+
+  useEffect(() => {
+    if ((!profile?.tenant_id && !isSuperAdmin) || !user?.id) return;
+
+    const channel = supabase
+      .channel(`support-tickets-${isSuperAdmin ? "super-admin" : profile?.tenant_id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "support_tickets",
+          ...(isSuperAdmin ? {} : { filter: `tenant_id=eq.${profile?.tenant_id}` }),
+        },
+        (payload) => {
+          const incoming = payload.new as SupportTicket;
+          queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+
+          if (!hasInitialized.current) return;
+          if (isSuperAdmin) {
+            toast.info("Novo chamado de suporte", {
+              description: `${incoming.requester_name}: ${incoming.subject}`,
+            });
+            return;
+          }
+
+          if (incoming.requester_id !== user.id) {
+            toast.info("Novo chamado registrado no suporte", {
+              description: incoming.subject,
+            });
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "support_tickets",
+          ...(isSuperAdmin ? {} : { filter: `tenant_id=eq.${profile?.tenant_id}` }),
+        },
+        (payload) => {
+          const updated = payload.new as SupportTicket;
+          queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+
+          if (!hasInitialized.current || isSuperAdmin) return;
+          if (updated.super_admin_response) {
+            toast.info("Nova resposta do suporte", {
+              description: updated.subject,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isSuperAdmin, profile?.tenant_id, queryClient, user?.id]);
 
   const createTicket = async () => {
     if (!profile?.tenant_id || !user || !profile.full_name) return;

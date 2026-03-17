@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export interface Message {
   attachment_mime_type?: string | null;
@@ -21,8 +22,9 @@ interface SendMessageInput {
 }
 
 export const useMessages = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const queryClient = useQueryClient();
+  const hasInitialized = useRef(false);
 
   const query = useQuery({
     queryKey: ["messages", profile?.tenant_id],
@@ -42,7 +44,13 @@ export const useMessages = () => {
 
   // Realtime subscription
   useEffect(() => {
-    if (!profile?.tenant_id) return;
+    if (query.data) {
+      hasInitialized.current = true;
+    }
+  }, [query.data]);
+
+  useEffect(() => {
+    if (!profile?.tenant_id || !user?.id) return;
 
     const channel = supabase
       .channel("messages-realtime")
@@ -55,10 +63,17 @@ export const useMessages = () => {
           filter: `tenant_id=eq.${profile.tenant_id}`,
         },
         (payload) => {
+          const incoming = payload.new as Message;
           queryClient.setQueryData<Message[]>(
             ["messages", profile.tenant_id],
-            (old) => [...(old ?? []), payload.new as Message]
+            (old) => [...(old ?? []), incoming]
           );
+
+          if (hasInitialized.current && incoming.sender_id !== user.id) {
+            toast.info("Nova mensagem no chat", {
+              description: `${incoming.sender_name}: ${incoming.content || incoming.attachment_name || "Arquivo enviado"}`,
+            });
+          }
         }
       )
       .subscribe();
@@ -66,7 +81,7 @@ export const useMessages = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile?.tenant_id, queryClient]);
+  }, [profile?.tenant_id, queryClient, user?.id]);
 
   return query;
 };
