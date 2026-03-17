@@ -3,17 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface AppointmentAudioPlayerProps {
   audioPath: string | null;
+  bucketName?: string;
 }
 
-const AppointmentAudioPlayer = ({ audioPath }: AppointmentAudioPlayerProps) => {
+const AppointmentAudioPlayer = ({ audioPath, bucketName = "appointment-audios" }: AppointmentAudioPlayerProps) => {
   const { data: signedUrl } = useQuery({
-    queryKey: ["appointment-audio-url", audioPath],
+    queryKey: ["appointment-audio-url", bucketName, audioPath],
     enabled: !!audioPath,
     staleTime: 45 * 60 * 1000,
     queryFn: async () => {
       if (!audioPath) return null;
       const { data, error } = await supabase.storage
-        .from("appointment-audios")
+        .from(bucketName)
         .createSignedUrl(audioPath, 3600);
 
       if (error) throw error;

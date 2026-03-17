@@ -267,19 +267,27 @@ const Mensagens = () => {
                           )}
 
                           {attachmentUrl && (
-                            <a
-                              href={attachmentUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className={cn(
-                                "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium",
-                                isOwn ? "border-primary/30 text-primary" : "border-border text-foreground"
-                              )}
-                            >
-                              <Paperclip className="h-3.5 w-3.5" />
-                              {message.attachment_name ?? "Arquivo enviado"}
-                              <Download className="h-3.5 w-3.5" />
-                            </a>
+                            <div className="space-y-2">
+                              {message.attachment_mime_type?.startsWith("audio/") ? (
+                                <audio controls preload="none" className="w-full max-w-sm">
+                                  <source src={attachmentUrl} />
+                                  Seu navegador não suporta áudio.
+                                </audio>
+                              ) : null}
+                              <a
+                                href={attachmentUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={cn(
+                                  "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium",
+                                  isOwn ? "border-primary/30 text-primary" : "border-border text-foreground"
+                                )}
+                              >
+                                <Paperclip className="h-3.5 w-3.5" />
+                                {message.attachment_name ?? "Arquivo enviado"}
+                                <Download className="h-3.5 w-3.5" />
+                              </a>
+                            </div>
                           )}
 
                           <p className={cn("text-[9px] text-muted-foreground", isOwn && "text-right")}>

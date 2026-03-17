@@ -145,6 +145,7 @@ const MinhaAgenda = () => {
   const [bulkUnit, setBulkUnit] = useState<BulkUnit>("days");
   const [bulkAction, setBulkAction] = useState<BulkActionType>("close");
   const [blockReason, setBlockReason] = useState("");
+  const [blockAudioFile, setBlockAudioFile] = useState<File | null>(null);
   const [savingBlock, setSavingBlock] = useState(false);
   const [blockSaved, setBlockSaved] = useState(false);
   const [periodStatusFilter, setPeriodStatusFilter] = useState<PeriodStatusFilter>("all");
@@ -306,14 +307,14 @@ const MinhaAgenda = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("professional_availability_blocks")
-        .select("id, start_at, end_at, reason")
+        .select("id, start_at, end_at, reason, audio_note_path")
         .eq("tenant_id", profile!.tenant_id)
         .eq("professional_user_id", managedProfessionalId!)
         .gte("end_at", `${queryPeriodStartDate}T00:00:00`)
         .lte("start_at", `${queryPeriodEndDate}T23:59:59`)
         .order("start_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string; start_at: string; end_at: string; reason: string | null }>;
+      return (data ?? []) as Array<{ id: string; start_at: string; end_at: string; reason: string | null; audio_note_path: string | null }>;
     },
   });
 
@@ -323,7 +324,7 @@ const MinhaAgenda = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("professional_slot_overrides")
-        .select("slot_date, slot_time")
+        .select("slot_date, slot_time, audio_note_path")
         .eq("tenant_id", profile!.tenant_id)
         .eq("professional_user_id", managedProfessionalId!)
         .eq("is_available", true)
@@ -332,7 +333,7 @@ const MinhaAgenda = () => {
         .order("slot_date", { ascending: true })
         .order("slot_time", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as Array<{ slot_date: string; slot_time: string }>;
+      return (data ?? []) as Array<{ slot_date: string; slot_time: string; audio_note_path: string | null }>;
     },
   });
 
@@ -411,10 +412,14 @@ const MinhaAgenda = () => {
 
     return Array.from(grouped.entries()).flatMap(([dateKey, instants]) => {
       const sorted = instants.sort((a, b) => a.getTime() - b.getTime());
-      const periods: Array<{ id: string; start_at: string; end_at: string; reason: string | null }> = [];
+      const periods: Array<{ id: string; start_at: string; end_at: string; reason: string | null; audio_note_path: string | null }> = [];
 
       let rangeStart = sorted[0];
       let previous = sorted[0];
+      let currentAudioPath = instants[0] ? (futureOpenSlots.find((slot) => {
+        const slotDateTime = new Date(`${slot.slot_date}T${String(slot.slot_time).slice(0, 5)}:00`);
+        return slotDateTime.getTime() === sorted[0].getTime();
+      })?.audio_note_path ?? null) : null;
 
       for (let i = 1; i < sorted.length; i++) {
         const current = sorted[i];
@@ -425,8 +430,13 @@ const MinhaAgenda = () => {
             start_at: rangeStart.toISOString(),
             end_at: new Date(previous.getTime() + slotDuration * 60 * 1000).toISOString(),
             reason: "Agenda liberada",
+            audio_note_path: currentAudioPath,
           });
           rangeStart = current;
+          currentAudioPath = futureOpenSlots.find((slot) => {
+            const slotDateTime = new Date(`${slot.slot_date}T${String(slot.slot_time).slice(0, 5)}:00`);
+            return slotDateTime.getTime() === current.getTime();
+          })?.audio_note_path ?? null;
         }
         previous = current;
       }
@@ -436,6 +446,7 @@ const MinhaAgenda = () => {
         start_at: rangeStart.toISOString(),
         end_at: new Date(previous.getTime() + slotDuration * 60 * 1000).toISOString(),
         reason: "Agenda liberada",
+        audio_note_path: currentAudioPath,
       });
 
       return periods;
@@ -600,6 +611,33 @@ const MinhaAgenda = () => {
     setBlockSaved(false);
     let actionSaved = false;
     setSavingBlock(true);
+    let audioNotePath: string | null = null;
+
+    if (blockAudioFile) {
+      if (!blockAudioFile.type.startsWith("audio/")) {
+        toast.error("Arquivo de áudio inválido.");
+        setSavingBlock(false);
+        return;
+      }
+      if (blockAudioFile.size > 15 * 1024 * 1024) {
+        toast.error("O áudio deve ter no máximo 15MB.");
+        setSavingBlock(false);
+        return;
+      }
+
+      const extension = blockAudioFile.name.split(".").pop() ?? "webm";
+      audioNotePath = `${profile.tenant_id}/${user.id}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage
+        .from("agenda-audios")
+        .upload(audioNotePath, blockAudioFile, { upsert: false });
+
+      if (uploadError) {
+        toast.error("Erro ao enviar áudio", { description: uploadError.message });
+        setSavingBlock(false);
+        return;
+      }
+    }
+
     if (bulkAction === "close") {
       const { error } = await supabase.from("professional_availability_blocks").insert(
         resolvedBulkProfessionals.map((professional) => ({
@@ -609,6 +647,7 @@ const MinhaAgenda = () => {
           start_at: startIso,
           end_at: endIso,
           reason: blockReason.trim() || null,
+          audio_note_path: audioNotePath,
           created_by: user.id,
         }))
       );
@@ -621,6 +660,7 @@ const MinhaAgenda = () => {
         setBlockEnd("");
         setBulkAmount("1");
         setBlockReason("");
+        setBlockAudioFile(null);
         setBlockSaved(true);
         actionSaved = true;
         queryClient.invalidateQueries({ queryKey: ["availability-blocks"] });
@@ -633,6 +673,7 @@ const MinhaAgenda = () => {
         slot_date: string;
         slot_time: string;
         is_available: boolean;
+        audio_note_path: string | null;
         created_by: string;
       }> = [];
 
@@ -650,6 +691,7 @@ const MinhaAgenda = () => {
                 slot_date: dateKey,
                 slot_time: `${time}:00`,
                 is_available: true,
+                audio_note_path: audioNotePath,
                 created_by: user.id,
               });
             }
@@ -676,6 +718,7 @@ const MinhaAgenda = () => {
         setBlockEnd("");
         setBulkAmount("1");
         setBlockReason("");
+        setBlockAudioFile(null);
         setBlockSaved(true);
         actionSaved = true;
         queryClient.invalidateQueries({ queryKey: ["slot-overrides"] });
@@ -1005,6 +1048,18 @@ const MinhaAgenda = () => {
               placeholder="Férias, almoço, evento, indisponível..."
             />
           </div>
+          <div className="mt-3 space-y-2">
+            <Label htmlFor="block-audio">Áudio da ação (opcional)</Label>
+            <Input
+              id="block-audio"
+              type="file"
+              accept="audio/*"
+              onChange={(e) => setBlockAudioFile(e.target.files?.[0] ?? null)}
+            />
+            {blockAudioFile && (
+              <p className="text-xs text-muted-foreground">Áudio selecionado: {blockAudioFile.name}</p>
+            )}
+          </div>
           <div className="mt-3">
             <Button
               size="sm"
@@ -1106,6 +1161,11 @@ const MinhaAgenda = () => {
                     <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
                       {period.reason} | <span className={getDayTypeAccentClass(getDayType(new Date(period.start_at)))}>{getReadableDayTypeLabel(getDayType(new Date(period.start_at)))}</span>
                     </p>
+                    {period.audio_note_path && (
+                      <div className="mt-2">
+                        <AppointmentAudioPlayer audioPath={period.audio_note_path} bucketName="agenda-audios" />
+                      </div>
+                    )}
                   </div>
                   <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">Liberado</Badge>
                 </div>
@@ -1120,6 +1180,11 @@ const MinhaAgenda = () => {
                   <p className="text-[11px] text-rose-700 dark:text-rose-400">
                     {(block.reason || "Sem motivo informado")} | <span className={getDayTypeAccentClass(getDayType(new Date(block.start_at)))}>{getReadableDayTypeLabel(getDayType(new Date(block.start_at)))}</span>
                   </p>
+                  {block.audio_note_path && (
+                    <div className="mt-2">
+                      <AppointmentAudioPlayer audioPath={block.audio_note_path} bucketName="agenda-audios" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className="border-rose-200 bg-rose-100 text-rose-700">Bloqueado</Badge>
