@@ -1,4 +1,4 @@
-import AdminLayout from "@/components/layout/AdminLayout";
+﻿import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
 import {
   Settings, MessageCircle, Bell, Clock, CheckCircle2, XCircle,
@@ -25,6 +25,11 @@ import { cn } from "@/lib/utils";
 import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import TeamManagement from "@/components/settings/TeamManagement";
+import {
+  buildAbsoluteTenantUrl,
+  buildClinicBookingPath,
+  buildProfessionalAccessPath,
+} from "@/lib/tenant-links";
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
   pending: { label: "Pendente", icon: <Clock className="h-3 w-3" />, className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
@@ -60,7 +65,10 @@ const Configuracoes = () => {
   const clinicName = clinicData?.name ?? "";
 
   const bookingUrl = clinicSlug
-    ? `${window.location.origin}/agendar/${clinicSlug}`
+    ? buildAbsoluteTenantUrl(buildClinicBookingPath(clinicSlug))
+    : null;
+  const professionalAgendaUrl = clinicSlug
+    ? buildAbsoluteTenantUrl(buildProfessionalAccessPath(clinicSlug))
     : null;
 
   const whatsappEnabled = settings?.whatsapp_reminders_enabled ?? false;
@@ -100,7 +108,7 @@ const Configuracoes = () => {
   const handleShareEmail = () => {
     if (!bookingUrl) return;
     const subject = `Agende sua consulta - ${clinicName}`;
-    const body = `Olá!\n\nAgende sua consulta online:\n${bookingUrl}\n\nAtenciosamente,\n${clinicName}`;
+    const body = `OlÃ¡!\n\nAgende sua consulta online:\n${bookingUrl}\n\nAtenciosamente,\n${clinicName}`;
     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   };
 
@@ -130,9 +138,9 @@ const Configuracoes = () => {
         >
           <Settings className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Configurações</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">ConfiguraÃ§Ãµes</h1>
             <p className="text-sm text-muted-foreground">
-              Gestão de notificações e preferências da clínica
+              GestÃ£o de notificaÃ§Ãµes e preferÃªncias da clÃ­nica
             </p>
           </div>
         </motion.div>
@@ -236,19 +244,19 @@ const Configuracoes = () => {
                             onClick={handleShareNative}
                           >
                             <Share2 className="h-4 w-4 mr-2 text-primary" />
-                            Mais opções (Instagram, etc.)
+                            Mais opÃ§Ãµes (Instagram, etc.)
                           </Button>
                         )}
                       </div>
                       <p className="text-[10px] text-muted-foreground">
-                        Use o QR Code em materiais impressos, stories do Instagram ou cartão de visita digital.
+                        Use o QR Code em materiais impressos, stories do Instagram ou cartÃ£o de visita digital.
                       </p>
                     </div>
                   </div>
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Nenhum slug configurado para a clínica. Entre em contato para configurar.
+                  Nenhum slug configurado para a clÃ­nica. Entre em contato para configurar.
                 </p>
               )}
             </CardContent>
@@ -276,14 +284,12 @@ const Configuracoes = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {(() => {
-                const agendaUrl = `${window.location.origin}/minha-agenda`;
-                return (
+              {professionalAgendaUrl ? (
                   <>
                     <div className="flex items-center gap-2">
                       <Input
                         readOnly
-                        value={agendaUrl}
+                        value={professionalAgendaUrl}
                         className="bg-secondary border-0 text-sm font-mono"
                         onFocus={(e) => e.target.select()}
                       />
@@ -292,7 +298,7 @@ const Configuracoes = () => {
                         size="icon"
                         className="shrink-0"
                         onClick={() => {
-                          navigator.clipboard.writeText(agendaUrl);
+                          navigator.clipboard.writeText(professionalAgendaUrl);
                           setCopiedAgenda(true);
                           setTimeout(() => setCopiedAgenda(false), 2000);
                         }}
@@ -312,7 +318,7 @@ const Configuracoes = () => {
                           className="rounded-xl border border-border bg-card p-4"
                         >
                           <QRCodeSVG
-                            value={agendaUrl}
+                            value={professionalAgendaUrl}
                             size={160}
                             level="M"
                             includeMargin={false}
@@ -354,7 +360,7 @@ const Configuracoes = () => {
                             variant="outline"
                             className="w-full justify-start"
                             onClick={() => {
-                              const text = `Acesse sua agenda profissional: ${agendaUrl}`;
+                              const text = `Acesse sua agenda profissional da ${clinicName}: ${professionalAgendaUrl}`;
                               window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
                             }}
                           >
@@ -366,7 +372,7 @@ const Configuracoes = () => {
                             className="w-full justify-start"
                             onClick={() => {
                               const subject = `Acesse sua agenda - ${clinicName}`;
-                              const body = `Olá!\n\nAcesse sua agenda profissional pelo link:\n${agendaUrl}\n\nAtenciosamente,\n${clinicName}`;
+                              const body = `Ola!\n\nAcesse sua agenda profissional pelo link exclusivo:\n${professionalAgendaUrl}\n\nAtenciosamente,\n${clinicName}`;
                               window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
                             }}
                           >
@@ -381,25 +387,28 @@ const Configuracoes = () => {
                                 try {
                                   await navigator.share({
                                     title: `Agenda Profissional - ${clinicName}`,
-                                    text: `Acesse sua agenda profissional`,
-                                    url: agendaUrl,
+                                    text: `Acesse sua agenda profissional da ${clinicName}`,
+                                    url: professionalAgendaUrl,
                                   });
                                 } catch { /* cancelled */ }
                               }}
                             >
                               <Share2 className="h-4 w-4 mr-2 text-primary" />
-                              Mais opções
+                              Mais opÃ§Ãµes
                             </Button>
                           )}
                         </div>
                         <p className="text-[10px] text-muted-foreground">
-                          Compartilhe este link com os profissionais da equipe para que acessem suas agendas individuais.
+                          Compartilhe este link exclusivo com os profissionais deste assinante para que acessem suas agendas individuais.
                         </p>
                       </div>
                     </div>
                   </>
-                );
-              })()}
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum slug configurado para a clinica. Configure o slug para gerar o link exclusivo dos profissionais.
+                </p>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -428,7 +437,7 @@ const Configuracoes = () => {
                 <div className="flex-1">
                   <CardTitle className="text-base">Lembretes por Aplicativo e WhatsApp</CardTitle>
                   <CardDescription>
-                    Envie lembretes autom�ticos para pacientes antes das consultas (D-1 e 2h antes)
+                    Envie lembretes automáticos para pacientes antes das consultas (D-1 e 2h antes)
                   </CardDescription>
                 </div>
               </div>
@@ -441,10 +450,10 @@ const Configuracoes = () => {
                   <div className="flex items-center justify-between rounded-lg border border-border p-4">
                     <div className="space-y-0.5">
                       <Label htmlFor="whatsapp-toggle" className="text-sm font-semibold">
-                        Ativar lembretes automáticos
+                        Ativar lembretes automÃ¡ticos
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Ao ativar, lembretes ser�o enfileirados no app e no WhatsApp em D-1 e 2h antes da consulta
+                        Ao ativar, lembretes serão enfileirados no app e no WhatsApp em D-1 e 2h antes da consulta
                       </p>
                     </div>
                     <Switch
@@ -468,9 +477,9 @@ const Configuracoes = () => {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Os lembretes estão sendo enfileirados. Para envio real via WhatsApp,
-                        é necessário configurar a API do WhatsApp Business da Meta. Entre em contato
-                        para configurar a integração completa.
+                        Os lembretes estÃ£o sendo enfileirados. Para envio real via WhatsApp,
+                        Ã© necessÃ¡rio configurar a API do WhatsApp Business da Meta. Entre em contato
+                        para configurar a integraÃ§Ã£o completa.
                       </p>
                     </motion.div>
                   )}
@@ -533,8 +542,8 @@ const Configuracoes = () => {
               <div className="flex items-center gap-3">
                 <Bell className="h-5 w-5 text-primary" />
                 <div>
-                  <CardTitle className="text-base">Fila de Notificações</CardTitle>
-                  <CardDescription>Últimas notificações enfileiradas</CardDescription>
+                  <CardTitle className="text-base">Fila de NotificaÃ§Ãµes</CardTitle>
+                  <CardDescription>Ãšltimas notificaÃ§Ãµes enfileiradas</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -549,10 +558,10 @@ const Configuracoes = () => {
                 <div className="py-8 text-center">
                   <Bell className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    Nenhuma notificação na fila ainda.
+                    Nenhuma notificaÃ§Ã£o na fila ainda.
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Notificações aparecerão aqui quando consultas forem agendadas.
+                    NotificaÃ§Ãµes aparecerÃ£o aqui quando consultas forem agendadas.
                   </p>
                 </div>
               ) : (
@@ -571,9 +580,9 @@ const Configuracoes = () => {
                             </p>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span>
-                                {format(new Date(item.appointment_date), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                                {format(new Date(item.appointment_date), "dd/MM 'Ã s' HH:mm", { locale: ptBR })}
                               </span>
-                              <span>•</span>
+                              <span>â€¢</span>
                               <span className="truncate">{item.professional_name}</span>
                             </div>
                             {item.last_error && (
@@ -602,4 +611,5 @@ const Configuracoes = () => {
 };
 
 export default Configuracoes;
+
 
