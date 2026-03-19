@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { format, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
