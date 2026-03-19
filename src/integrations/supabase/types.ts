@@ -21,11 +21,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           ends_at: string | null
-            id: string
-            notes: string | null
-            patient_name: string
-            patient_user_id: string | null
-            professional_name: string
+          id: string
+          notes: string | null
+          patient_name: string
+          patient_user_id: string | null
+          professional_name: string
           professional_user_id: string | null
           starts_at: string
           status: Database["public"]["Enums"]["appointment_status"]
@@ -39,11 +39,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           ends_at?: string | null
-            id?: string
-            notes?: string | null
-            patient_name: string
-            patient_user_id?: string | null
-            professional_name: string
+          id?: string
+          notes?: string | null
+          patient_name: string
+          patient_user_id?: string | null
+          professional_name: string
           professional_user_id?: string | null
           starts_at: string
           status?: Database["public"]["Enums"]["appointment_status"]
@@ -57,11 +57,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           ends_at?: string | null
-            id?: string
-            notes?: string | null
-            patient_name?: string
-            patient_user_id?: string | null
-            professional_name?: string
+          id?: string
+          notes?: string | null
+          patient_name?: string
+          patient_user_id?: string | null
+          professional_name?: string
           professional_user_id?: string | null
           starts_at?: string
           status?: Database["public"]["Enums"]["appointment_status"]
@@ -534,15 +534,9 @@ export type Database = {
           created_at: string
           id: string
           message: string
-          requester_attachment_mime_type: string | null
-          requester_attachment_name: string | null
-          requester_attachment_path: string | null
           requester_email: string | null
           requester_id: string
           requester_name: string
-          response_attachment_mime_type: string | null
-          response_attachment_name: string | null
-          response_attachment_path: string | null
           responded_at: string | null
           responded_by: string | null
           status: string
@@ -555,15 +549,9 @@ export type Database = {
           created_at?: string
           id?: string
           message: string
-          requester_attachment_mime_type?: string | null
-          requester_attachment_name?: string | null
-          requester_attachment_path?: string | null
           requester_email?: string | null
           requester_id: string
           requester_name: string
-          response_attachment_mime_type?: string | null
-          response_attachment_name?: string | null
-          response_attachment_path?: string | null
           responded_at?: string | null
           responded_by?: string | null
           status?: string
@@ -576,15 +564,9 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string
-          requester_attachment_mime_type?: string | null
-          requester_attachment_name?: string | null
-          requester_attachment_path?: string | null
           requester_email?: string | null
           requester_id?: string
           requester_name?: string
-          response_attachment_mime_type?: string | null
-          response_attachment_name?: string | null
-          response_attachment_path?: string | null
           responded_at?: string | null
           responded_by?: string | null
           status?: string

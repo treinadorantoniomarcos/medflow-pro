@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { format, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -14,7 +14,6 @@ import {
   Download,
   Share2,
   MessageCircle,
-  Mic,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import medfluxLogo from "@/assets/medflux-logo.png";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
-import AudioRecorderButton from "@/components/ui/audio-recorder-button";
+import AudioRecorder from "@/components/audio/AudioRecorder";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -98,9 +97,13 @@ const PublicBooking = () => {
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [patientCpf, setPatientCpf] = useState("");
-  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
 
   const confirmationRef = useRef<HTMLDivElement>(null);
+
+  const handleAudioRecording = useCallback((blob: Blob | null) => {
+    setAudioBlob(blob);
+  }, []);
 
   const handlePrint = () => {
     window.print();
@@ -112,7 +115,7 @@ const PublicBooking = () => {
     try {
       await navigator.share({
         title: `Agendamento - ${clinic?.name}`,
-        text: `Consulta com ${selectedProfessional.name} em ${dateStr} Ã s ${selectedTime} - ${clinic?.name}`,
+        text: `Consulta com ${selectedProfessional.name} em ${dateStr} às ${selectedTime} - ${clinic?.name}`,
       });
     } catch { /* user cancelled */ }
   };
@@ -148,14 +151,14 @@ const PublicBooking = () => {
         `${SUPABASE_URL}/functions/v1/public-booking?slug=${slug}`,
         { headers: { apikey: SUPABASE_ANON_KEY } }
       );
-      if (!res.ok) { setError("ClÃ­nica nÃ£o encontrada"); setLoading(false); return; }
+      if (!res.ok) { setError("Clínica não encontrada"); setLoading(false); return; }
       const data = await res.json();
       setClinic(data.clinic);
       setProfessionals(data.professionals);
       setWorkHours(data.workHours);
       setLoading(false);
     } catch {
-      setError("Erro ao carregar dados da clÃ­nica");
+      setError("Erro ao carregar dados da clínica");
       setLoading(false);
     }
   };
@@ -226,21 +229,16 @@ const PublicBooking = () => {
     setSubmitting(true);
 
     const startsAt = `${format(selectedDate, "yyyy-MM-dd")}T${selectedTime}:00`;
-    let audioNoteData: string | null = null;
 
-    if (audioFile) {
+    let audioBase64: string | null = null;
+    if (audioBlob) {
       try {
-        audioNoteData = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result));
-          reader.onerror = () => reject(new Error("Falha ao ler o audio gravado."));
-          reader.readAsDataURL(audioFile);
-        });
-      } catch {
-        toast.error("Nao foi possivel preparar o audio do agendamento.");
-        setSubmitting(false);
-        return;
-      }
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        audioBase64 = btoa(binary);
+      } catch { /* skip audio */ }
     }
 
     try {
@@ -254,8 +252,7 @@ const PublicBooking = () => {
           patient_cpf: patientCpf.replace(/\D/g, ""),
           professional_name: selectedProfessional.name,
           starts_at: startsAt,
-          audio_note_data: audioNoteData,
-          audio_note_mime_type: audioFile?.type ?? null,
+          audio_base64: audioBase64,
         }),
       });
 
@@ -288,9 +285,8 @@ const PublicBooking = () => {
         return;
       }
       setStep("confirmed");
-      setAudioFile(null);
     } catch {
-      toast.error("Erro de conexÃ£o. Tente novamente.");
+      toast.error("Erro de conexão. Tente novamente.");
     }
     setSubmitting(false);
   };
@@ -308,8 +304,8 @@ const PublicBooking = () => {
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="text-center space-y-3">
           <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/40" />
-          <h1 className="text-xl font-bold text-foreground">ClÃ­nica nÃ£o encontrada</h1>
-          <p className="text-sm text-muted-foreground">Verifique o link de agendamento com sua clÃ­nica.</p>
+          <h1 className="text-xl font-bold text-foreground">Clínica não encontrada</h1>
+          <p className="text-sm text-muted-foreground">Verifique o link de agendamento com sua clínica.</p>
         </div>
       </div>
     );
@@ -356,7 +352,7 @@ const PublicBooking = () => {
 
               <div className="space-y-2">
                 {professionals.filter((p) => p.accepting_bookings).length === 0 ? (
-                  <p className="text-center text-sm text-muted-foreground py-8">Nenhum profissional disponÃ­vel no momento.</p>
+                  <p className="text-center text-sm text-muted-foreground py-8">Nenhum profissional disponível no momento.</p>
                 ) : (
                   professionals.map((p) => {
                     const closed = !p.accepting_bookings;
@@ -425,7 +421,7 @@ const PublicBooking = () => {
 
               <div className="text-center space-y-1">
                 <CalendarDays className="h-8 w-8 mx-auto text-primary" />
-                <h2 className="text-xl font-bold text-foreground">Escolha a data e horÃ¡rio</h2>
+                <h2 className="text-xl font-bold text-foreground">Escolha a data e horário</h2>
                 <p className="text-sm text-muted-foreground">
                   Profissional: <span className="font-medium text-foreground">{selectedProfessional?.name}</span>
                 </p>
@@ -449,7 +445,7 @@ const PublicBooking = () => {
                       {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
                     </p>
                     {availableSlots.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-4 text-center">Nenhum horÃ¡rio disponÃ­vel nesta data.</p>
+                      <p className="text-sm text-muted-foreground py-4 text-center">Nenhum horário disponível nesta data.</p>
                     ) : (
                       <div className="grid grid-cols-3 gap-2 max-h-[260px] overflow-y-auto">
                         {availableSlots.map((time) => (
@@ -489,7 +485,7 @@ const PublicBooking = () => {
                 <User className="h-8 w-8 mx-auto text-primary" />
                 <h2 className="text-xl font-bold text-foreground">Seus dados</h2>
                 <p className="text-sm text-muted-foreground">
-                  {selectedProfessional?.name} â€” {selectedDate && format(selectedDate, "dd/MM")} Ã s {selectedTime}
+                  {selectedProfessional?.name} — {selectedDate && format(selectedDate, "dd/MM")} às {selectedTime}
                 </p>
               </div>
 
@@ -523,7 +519,7 @@ const PublicBooking = () => {
                     />
                   </div>
                   {patientPhone.length > 0 && patientPhone.replace(/\D/g, "").length < 10 && (
-                    <p className="text-xs text-destructive">Informe um nÃºmero de WhatsApp vÃ¡lido</p>
+                    <p className="text-xs text-destructive">Informe um número de WhatsApp válido</p>
                   )}
                 </div>
 
@@ -541,36 +537,15 @@ const PublicBooking = () => {
                     />
                   </div>
                   {patientCpf.length > 0 && patientCpf.replace(/\D/g, "").length < 11 && (
-                    <p className="text-xs text-destructive">Informe um CPF vÃ¡lido com 11 dÃ­gitos</p>
+                    <p className="text-xs text-destructive">Informe um CPF válido com 11 dígitos</p>
                   )}
                 </div>
 
-                <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Mic className="h-4 w-4 text-primary" />
-                    <p className="text-sm font-semibold text-foreground">Audio do agendamento (opcional)</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Grave um audio para complementar o pedido de agendamento.
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <AudioRecorderButton
-                      size="sm"
-                      disabled={submitting}
-                      onRecorded={(file) => {
-                        setAudioFile(file);
-                        toast.success("Audio anexado ao agendamento.");
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      O audio sera enviado junto com a solicitacao da consulta.
-                    </p>
-                  </div>
-                  {audioFile && (
-                    <p className="text-xs text-muted-foreground">
-                      Audio gravado: <span className="font-medium text-foreground">{audioFile.name}</span>
-                    </p>
-                  )}
+                {/* Audio note */}
+                <div className="space-y-2">
+                  <Label>Observação em áudio</Label>
+                  <AudioRecorder onRecordingComplete={handleAudioRecording} maxDurationSeconds={60} />
+                  <p className="text-xs text-muted-foreground">Grave uma mensagem de até 60s para o profissional (opcional)</p>
                 </div>
 
                 {/* Summary */}
@@ -603,7 +578,7 @@ const PublicBooking = () => {
               <div className="text-center space-y-2">
                 <CheckCircle2 className="h-16 w-16 mx-auto text-primary" />
                 <h2 className="text-2xl font-bold text-foreground">Agendamento confirmado!</h2>
-                <p className="text-sm text-muted-foreground">Guarde este comprovante para sua referÃªncia.</p>
+                <p className="text-sm text-muted-foreground">Guarde este comprovante para sua referência.</p>
               </div>
 
               {/* Confirmation card */}
@@ -650,7 +625,7 @@ const PublicBooking = () => {
                   <div className="flex items-start gap-3">
                     <Clock className="h-4 w-4 mt-0.5 text-primary shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">HorÃ¡rio</p>
+                      <p className="text-xs text-muted-foreground">Horário</p>
                       <p className="text-sm font-semibold text-foreground">{selectedTime}</p>
                     </div>
                   </div>
@@ -712,6 +687,5 @@ const PublicBooking = () => {
 };
 
 export default PublicBooking;
-
 
 
