@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import medfluxLogo from "@/assets/medflux-logo.png";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import AudioRecorder from "@/components/audio/AudioRecorder";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
