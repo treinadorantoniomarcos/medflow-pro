@@ -15,6 +15,7 @@ import { useMessages, useSendMessage, useTeamMembers } from "@/hooks/use-message
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import AudioRecorderButton from "@/components/ui/audio-recorder-button";
 
 type AppRole = "owner" | "admin" | "professional" | "receptionist" | "patient" | "super_admin";
 
@@ -327,6 +328,15 @@ const Mensagens = () => {
             <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => fileInputRef.current?.click()}>
               <Paperclip className="h-4 w-4" />
             </Button>
+            <AudioRecorderButton
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              disabled={sendMessage.isPending}
+              onRecorded={(file) => {
+                setAttachment(file);
+                toast.success("Audio gravado e anexado.");
+              }}
+            />
             <Button
               type="submit"
               size="icon"

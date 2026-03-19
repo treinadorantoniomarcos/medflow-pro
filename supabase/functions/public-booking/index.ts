@@ -15,6 +15,25 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
   try {
+    const uploadAppointmentAudio = async (tenantId: string, base64Data: string, mimeType: string) => {
+      const match = base64Data.match(/^data:(.+);base64,(.+)$/);
+      const encoded = match?.[2] ?? base64Data;
+      const resolvedMimeType = match?.[1] ?? mimeType || "audio/webm";
+      const binary = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+      const extension = resolvedMimeType.includes("mp4") || resolvedMimeType.includes("m4a") ? "m4a" : "webm";
+      const path = `${tenantId}/public-booking/${crypto.randomUUID()}.${extension}`;
+
+      const { error } = await supabase.storage
+        .from("appointment-audios")
+        .upload(path, binary, {
+          contentType: resolvedMimeType,
+          upsert: false,
+        });
+
+      if (error) throw error;
+      return path;
+    };
+
     const url = new URL(req.url);
 
     // GET: fetch clinic info, professionals, and available slots
@@ -126,7 +145,17 @@ Deno.serve(async (req) => {
     // POST: create appointment
     if (req.method === "POST") {
       const body = await req.json();
-      const { slug, patient_name, patient_phone, patient_cpf, professional_name, starts_at, type } = body;
+      const {
+        slug,
+        patient_name,
+        patient_phone,
+        patient_cpf,
+        professional_name,
+        starts_at,
+        type,
+        audio_note_data,
+        audio_note_mime_type,
+      } = body;
 
       if (!slug || !patient_name?.trim() || !professional_name || !starts_at || !patient_phone?.trim() || !patient_cpf?.trim()) {
         return new Response(
@@ -146,6 +175,18 @@ Deno.serve(async (req) => {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      let audioNotePath: string | null = null;
+      if (audio_note_data) {
+        try {
+          audioNotePath = await uploadAppointmentAudio(clinic.id, audio_note_data, audio_note_mime_type ?? "audio/webm");
+        } catch (uploadError) {
+          return new Response(
+            JSON.stringify({ error: "audio_upload_failed", detail: String(uploadError) }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
 
       // Check if professional is accepting bookings
@@ -251,6 +292,7 @@ Deno.serve(async (req) => {
           professional_name: professional_name.trim(),
           starts_at,
           type: type || "Consulta",
+          audio_note_path: audioNotePath,
           status: "scheduled",
         })
         .select("id, starts_at, professional_name, status")
