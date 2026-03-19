@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     // POST: create appointment
     if (req.method === "POST") {
       const body = await req.json();
-      const { slug, patient_name, patient_phone, patient_cpf, professional_name, starts_at, type } = body;
+      const { slug, patient_name, patient_phone, patient_cpf, professional_name, starts_at, type, audio_base64 } = body;
 
       if (!slug || !patient_name?.trim() || !professional_name || !starts_at || !patient_phone?.trim() || !patient_cpf?.trim()) {
         return new Response(
