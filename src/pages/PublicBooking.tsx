@@ -541,6 +541,13 @@ const PublicBooking = () => {
                   )}
                 </div>
 
+                {/* Audio note */}
+                <div className="space-y-2">
+                  <Label>Observação em áudio</Label>
+                  <AudioRecorder onRecordingComplete={handleAudioRecording} maxDurationSeconds={60} />
+                  <p className="text-xs text-muted-foreground">Grave uma mensagem de até 60s para o profissional (opcional)</p>
+                </div>
+
                 {/* Summary */}
                 <div className="rounded-lg bg-secondary/50 p-3 space-y-1">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Resumo</p>
