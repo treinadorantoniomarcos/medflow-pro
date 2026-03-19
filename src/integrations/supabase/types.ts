@@ -17,6 +17,7 @@ export type Database = {
       appointments: {
         Row: {
           audio_note_path: string | null
+          cancellation_audio_note_path: string | null
           created_at: string
           created_by: string | null
           ends_at: string | null
@@ -34,6 +35,7 @@ export type Database = {
         }
         Insert: {
           audio_note_path?: string | null
+          cancellation_audio_note_path?: string | null
           created_at?: string
           created_by?: string | null
           ends_at?: string | null
@@ -51,6 +53,7 @@ export type Database = {
         }
         Update: {
           audio_note_path?: string | null
+          cancellation_audio_note_path?: string | null
           created_at?: string
           created_by?: string | null
           ends_at?: string | null
