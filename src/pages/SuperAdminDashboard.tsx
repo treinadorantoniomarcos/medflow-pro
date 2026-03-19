@@ -1,4 +1,4 @@
-﻿
+
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -52,11 +52,6 @@ import {
   getSubscriptionShareUrl,
   type PlanOption,
 } from "@/lib/subscription-plans";
-import {
-  buildAbsoluteTenantUrl,
-  buildClinicBookingPath,
-  buildProfessionalAccessPath,
-} from "@/lib/tenant-links";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -124,19 +119,19 @@ const appIntegrations = [
   {
     name: "WhatsApp Business",
     status: "conectado",
-    description: "ConfirmaÃ§Ãµes, lembretes e recuperaÃ§Ã£o de no-show por mensageria.",
+    description: "Confirmações, lembretes e recuperação de no-show por mensageria.",
     href: "https://business.facebook.com",
   },
   {
     name: "Google Calendar",
     status: "pendente",
-    description: "SincronizaÃ§Ã£o de agenda externa para a equipe clÃ­nica.",
+    description: "Sincronização de agenda externa para a equipe clínica.",
     href: "https://calendar.google.com",
   },
   {
     name: "Stripe Billing",
     status: "pendente",
-    description: "CobranÃ§a recorrente e conciliaÃ§Ã£o de assinaturas.",
+    description: "Cobrança recorrente e conciliação de assinaturas.",
     href: "https://dashboard.stripe.com",
   },
 ];
@@ -170,7 +165,7 @@ const statusBadgeClass: Record<SubscriptionStatus, string> = {
 
 const planCapacityLabel = (planCode: string) => {
   if (planCode === "start") return "1 profissional";
-  if (planCode === "pro") return "AtÃ© 3 profissionais";
+  if (planCode === "pro") return "Até 3 profissionais";
   if (planCode === "signature") return "4 a 10 profissionais";
   return "Plano ativo";
 };
@@ -221,7 +216,6 @@ const SuperAdminDashboard = () => {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [copiedCopyKey, setCopiedCopyKey] = useState<string | null>(null);
-  const [copiedTenantLinkKey, setCopiedTenantLinkKey] = useState<string | null>(null);
   const [subscriberDetailOpen, setSubscriberDetailOpen] = useState(false);
   const [selectedSubscriberId, setSelectedSubscriberId] = useState<string | null>(null);
   const [resettingPassword, setResettingPassword] = useState(false);
@@ -565,7 +559,7 @@ const SuperAdminDashboard = () => {
       return;
     }
 
-    toast.success("E-mail de redefiniÃ§Ã£o de senha enviado.");
+    toast.success("E-mail de redefinição de senha enviado.");
   };
 
   const saveSubscriptionState = async (tenantId: string) => {
@@ -623,13 +617,6 @@ const SuperAdminDashboard = () => {
     queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] });
   };
 
-  const copyTenantLink = async (key: string, value: string) => {
-    await navigator.clipboard.writeText(value);
-    setCopiedTenantLinkKey(key);
-    toast.success("Link copiado");
-    window.setTimeout(() => setCopiedTenantLinkKey(null), 2000);
-  };
-
   const grantAccess = async () => {
     if (!inviteName.trim() || !inviteEmail.trim() || !selectedTenantIdSafe) {
       toast.error("Preencha nome, email e assinante.");
@@ -650,7 +637,7 @@ const SuperAdminDashboard = () => {
     setInviteLoading(false);
 
     if (error || !result?.ok) {
-      toast.error("Falha na liberaÃ§Ã£o de acesso", {
+      toast.error("Falha na liberação de acesso", {
         description: result?.detail || error?.message || result?.error || "Edge Function indisponivel.",
       });
       return;
@@ -712,7 +699,7 @@ const SuperAdminDashboard = () => {
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Super Admin</h1>
             <p className="text-sm text-muted-foreground">
-              Link dedicado: <span className="font-medium text-foreground">/super-admin</span> | GestÃ£o completa de assinantes.
+              Link dedicado: <span className="font-medium text-foreground">/super-admin</span> | Gestão completa de assinantes.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -724,7 +711,7 @@ const SuperAdminDashboard = () => {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[640px]">
                 <DialogHeader>
-                  <DialogTitle>GestÃ£o de acesso dos assinantes</DialogTitle>
+                  <DialogTitle>Gestão de acesso dos assinantes</DialogTitle>
                   <DialogDescription>
                     Libere novos admins por assinante e novos super admins da plataforma.
                   </DialogDescription>
@@ -861,7 +848,7 @@ const SuperAdminDashboard = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-          <MetricCard value={totals.clinics} label="Assinantes (clÃ­nicas)" icon={Building2} />
+          <MetricCard value={totals.clinics} label="Assinantes (clínicas)" icon={Building2} />
           <MetricCard value={totals.professionals} label="Profissionais" icon={Stethoscope} variant="accent" />
           <MetricCard value={totals.patients} label="Pacientes" icon={UserRound} variant="success" />
           <MetricCard value={totals.appointmentsMonth} label="Consultas no mes" icon={CalendarCheck2} />
@@ -973,7 +960,7 @@ const SuperAdminDashboard = () => {
                             <div className="mt-2 space-y-1 rounded-md border border-border bg-secondary/30 p-2 text-xs">
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline">
-                                  {row.access_request.status === "pending_super_admin_release" ? "Aguardando liberaÃ§Ã£o" : row.access_request.status}
+                                  {row.access_request.status === "pending_super_admin_release" ? "Aguardando liberação" : row.access_request.status}
                                 </Badge>
                               </div>
                               {row.access_request.contractor_name && (
@@ -1092,7 +1079,7 @@ const SuperAdminDashboard = () => {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Nome da clÃ­nica ou contratante</Label>
+                <Label>Nome da clínica ou contratante</Label>
                 <Input
                   value={subscriberDraft.clinicName}
                   onChange={(e) => setSubscriberDraft((prev) => ({ ...prev, clinicName: e.target.value }))}
@@ -1115,7 +1102,7 @@ const SuperAdminDashboard = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Administrador responsÃ¡vel</Label>
+                <Label>Administrador responsável</Label>
                 <Input
                   value={subscriberDraft.adminFullName}
                   onChange={(e) => setSubscriberDraft((prev) => ({ ...prev, adminFullName: e.target.value }))}
@@ -1187,78 +1174,12 @@ const SuperAdminDashboard = () => {
                 {(() => {
                   const row = subscriberRows.find((item) => item.clinic_id === selectedSubscriberId);
                   if (!row) return null;
-                  const normalizedSlug = row.slug && row.slug !== "sem-slug" ? row.slug : null;
-                  const patientBookingUrl = normalizedSlug
-                    ? buildAbsoluteTenantUrl(buildClinicBookingPath(normalizedSlug))
-                    : null;
-                  const professionalAccessUrl = normalizedSlug
-                    ? buildAbsoluteTenantUrl(buildProfessionalAccessPath(normalizedSlug))
-                    : null;
-
                   return (
-                    <div className="space-y-4">
-                      <div className="grid gap-2 md:grid-cols-2">
-                        <p>Profissionais: <span className="font-medium text-foreground">{row.professionals}</span></p>
-                        <p>Pacientes: <span className="font-medium text-foreground">{row.patients}</span></p>
-                        <p>Consultas no mes: <span className="font-medium text-foreground">{row.month_appointments}</span></p>
-                        <p>No-show no mes: <span className="font-medium text-foreground">{row.month_no_show}</span></p>
-                      </div>
-
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="rounded-lg border border-border bg-background p-3">
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                            Link exclusivo de agendamento
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Envie para os clientes e pacientes deste assinante.
-                          </p>
-                          {patientBookingUrl ? (
-                            <div className="mt-3 flex gap-2">
-                              <Input readOnly value={patientBookingUrl} className="font-mono text-xs" />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="shrink-0"
-                                onClick={() => copyTenantLink(`booking-${row.clinic_id}`, patientBookingUrl)}
-                              >
-                                {copiedTenantLinkKey === `booking-${row.clinic_id}` ? "Copiado" : "Copiar"}
-                              </Button>
-                            </div>
-                          ) : (
-                            <p className="mt-3 text-xs text-muted-foreground">
-                              Defina um slug para gerar o link exclusivo de agendamento.
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="rounded-lg border border-border bg-background p-3">
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                            Link exclusivo dos profissionais
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Envie para os profissionais deste assinante acessarem suas agendas.
-                          </p>
-                          {professionalAccessUrl ? (
-                            <div className="mt-3 flex gap-2">
-                              <Input readOnly value={professionalAccessUrl} className="font-mono text-xs" />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="shrink-0"
-                                onClick={() => copyTenantLink(`professional-${row.clinic_id}`, professionalAccessUrl)}
-                              >
-                                {copiedTenantLinkKey === `professional-${row.clinic_id}` ? "Copiado" : "Copiar"}
-                              </Button>
-                            </div>
-                          ) : (
-                            <p className="mt-3 text-xs text-muted-foreground">
-                              Defina um slug para gerar o link exclusivo dos profissionais.
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      <p>Profissionais: <span className="font-medium text-foreground">{row.professionals}</span></p>
+                      <p>Pacientes: <span className="font-medium text-foreground">{row.patients}</span></p>
+                      <p>Consultas no mês: <span className="font-medium text-foreground">{row.month_appointments}</span></p>
+                      <p>No-show no mês: <span className="font-medium text-foreground">{row.month_no_show}</span></p>
                     </div>
                   );
                 })()}
@@ -1275,7 +1196,7 @@ const SuperAdminDashboard = () => {
               </Button>
               <Button onClick={saveSubscriberDetails} disabled={!selectedSubscriberId || savingTenantId === selectedSubscriberId}>
                 <Save className="mr-1.5 h-4 w-4" />
-                {savingTenantId === selectedSubscriberId ? "Salvando..." : "Salvar alteraÃ§Ãµes"}
+                {savingTenantId === selectedSubscriberId ? "Salvando..." : "Salvar alterações"}
               </Button>
             </div>
           </DialogContent>
@@ -1294,7 +1215,7 @@ const SuperAdminDashboard = () => {
               <div className="rounded-xl border border-border bg-secondary/40 p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <Link2 className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold text-foreground">DivulgaÃ§Ã£o para clÃ­nicas e profissionais</p>
+                  <p className="text-sm font-semibold text-foreground">Divulgação para clínicas e profissionais</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a pagina publica de planos.
@@ -1354,7 +1275,7 @@ const SuperAdminDashboard = () => {
 
         <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle className="text-base">DescriÃ§Ãµes dos pacotes para divulgaÃ§Ã£o</CardTitle>
+            <CardTitle className="text-base">Descrições dos pacotes para divulgação</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {planMarketingCatalog.map((plan) => {
@@ -1371,7 +1292,7 @@ const SuperAdminDashboard = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Texto Ãºnico para divulgaÃ§Ã£o</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Texto único para divulgação</p>
                     <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.text}</div>
                     <Button
                       variant="outline"
@@ -1393,14 +1314,14 @@ const SuperAdminDashboard = () => {
             })}
 
             <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Acima de 11 profissionais, divulgar como plataforma customizada, com solicitaÃ§Ã£o de orÃ§amento.
+              Acima de 11 profissionais, divulgar como plataforma customizada, com solicitação de orçamento.
             </div>
           </CardContent>
         </Card>
 
         <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle className="text-base">Aplicativos para gestÃ£o</CardTitle>
+            <CardTitle className="text-base">Aplicativos para gestão</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-3">
             {appIntegrations.map((app) => (
@@ -1426,4 +1347,3 @@ const SuperAdminDashboard = () => {
 };
 
 export default SuperAdminDashboard;
-

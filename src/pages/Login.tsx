@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,39 +11,20 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { LogIn, Eye, EyeOff } from "lucide-react";
 import medfluxLogo from "@/assets/medflux-logo.png";
-import { useQuery } from "@tanstack/react-query";
-import { buildProfessionalAccessPath } from "@/lib/tenant-links";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { slug } = useParams<{ slug?: string }>();
   const { user, loading: authLoading, needsOnboarding } = useAuth();
-  const professionalAccessMode = Boolean(slug);
-
-  const { data: clinicData } = useQuery({
-    queryKey: ["login-clinic-by-slug", slug],
-    enabled: !!slug,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clinics")
-        .select("name, slug")
-        .eq("slug", slug!)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
-  });
 
   useEffect(() => {
     if (!authLoading && user) {
       if (needsOnboarding) {
         navigate("/onboarding", { replace: true });
       } else {
-        navigate(professionalAccessMode ? "/minha-agenda" : "/", { replace: true });
+        navigate("/", { replace: true });
       }
     }
-  }, [user, authLoading, needsOnboarding, navigate, professionalAccessMode]);
+  }, [user, authLoading, needsOnboarding, navigate]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -63,7 +44,7 @@ const Login = () => {
       toast.error("Erro ao entrar", { description: error.message });
     } else {
       toast.success("Bem-vindo de volta!");
-      navigate(professionalAccessMode ? "/minha-agenda" : "/");
+      navigate("/");
     }
     setLoading(false);
   };
@@ -71,9 +52,7 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: professionalAccessMode && slug
-        ? `${window.location.origin}${buildProfessionalAccessPath(slug)}`
-        : window.location.origin,
+      redirect_uri: window.location.origin,
     });
     if (error) {
       toast.error("Erro ao entrar com Google", { description: String(error) });
@@ -92,21 +71,10 @@ const Login = () => {
             MedFlux <span className="font-semibold text-muted-foreground">Pro</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {professionalAccessMode
-              ? `Acesso exclusivo dos profissionais${clinicData?.name ? ` - ${clinicData.name}` : ""}`
-              : "Entre na sua conta para continuar"}
+            Entre na sua conta para continuar
           </p>
         </CardHeader>
         <CardContent>
-          {professionalAccessMode && (
-            <div className="mb-4 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-center">
-              <p className="text-xs text-muted-foreground">
-                Este link e exclusivo para profissionais cadastrados neste assinante.
-                Apos entrar, voce sera direcionado para <span className="font-semibold text-foreground">Gestao da Agenda</span>.
-              </p>
-            </div>
-          )}
-
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>

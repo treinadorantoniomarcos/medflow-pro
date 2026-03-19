@@ -44,7 +44,6 @@ const App = () => (
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/assinar" element={<SubscriptionPlans />} />
               <Route path="/agendar/:slug" element={<PublicBooking />} />
-              <Route path="/acesso/:slug/profissionais" element={<Login />} />
 
               {/* Protected routes */}
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
