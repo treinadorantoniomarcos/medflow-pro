@@ -381,6 +381,33 @@ const Mensagens = () => {
             </div>
           )}
 
+          {recordedAudio && (
+            <div className="border-t border-border px-3 py-2 flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                🎙️ Áudio gravado ({String(Math.floor(recordingSeconds / 60)).padStart(2, "0")}:{String(recordingSeconds % 60).padStart(2, "0")})
+              </span>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={discardRecording}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+              <Button type="button" size="sm" className="h-7 gap-1 ml-auto" onClick={sendAudio} disabled={sendMessage.isPending}>
+                <Send className="h-3.5 w-3.5" />
+                Enviar áudio
+              </Button>
+            </div>
+          )}
+
+          {isRecording && (
+            <div className="border-t border-border px-3 py-2 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+              <span className="text-xs text-destructive font-medium">
+                Gravando {String(Math.floor(recordingSeconds / 60)).padStart(2, "0")}:{String(recordingSeconds % 60).padStart(2, "0")}
+              </span>
+              <Button type="button" variant="destructive" size="icon" className="h-7 w-7 ml-auto" onClick={stopRecording}>
+                <Square className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+
           <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-border p-3">
             <Input
               ref={inputRef}
@@ -390,6 +417,7 @@ const Mensagens = () => {
               className="flex-1 border-0 bg-secondary"
               maxLength={1000}
               autoComplete="off"
+              disabled={isRecording}
             />
             <input
               ref={fileInputRef}
@@ -397,14 +425,24 @@ const Mensagens = () => {
               className="hidden"
               onChange={(e) => setAttachment(e.target.files?.[0] ?? null)}
             />
-            <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => fileInputRef.current?.click()}>
+            <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => fileInputRef.current?.click()} disabled={isRecording}>
               <Paperclip className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant={isRecording ? "destructive" : "outline"}
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={!!recordedAudio}
+            >
+              {isRecording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
             </Button>
             <Button
               type="submit"
               size="icon"
               className="h-9 w-9 shrink-0"
-              disabled={(!input.trim() && !attachment) || sendMessage.isPending}
+              disabled={(!input.trim() && !attachment) || sendMessage.isPending || isRecording}
             >
               <Send className="h-4 w-4" />
             </Button>
