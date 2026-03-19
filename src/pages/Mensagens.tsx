@@ -29,9 +29,15 @@ const Mensagens = () => {
   const sendMessage = useSendMessage();
   const [input, setInput] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: role } = useQuery({
     queryKey: ["messages-role", user?.id, profile?.tenant_id],
