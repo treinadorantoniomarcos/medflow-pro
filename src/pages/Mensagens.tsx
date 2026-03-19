@@ -69,6 +69,73 @@ const Mensagens = () => {
     }
   }, [messages.length]);
 
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
+      });
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        setRecordedAudio(blob);
+        setIsRecording(false);
+      };
+
+      mediaRecorder.start(250);
+      setRecordingSeconds(0);
+      setIsRecording(true);
+      setRecordedAudio(null);
+
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => {
+          if (prev + 1 >= 120) {
+            mediaRecorder.stop();
+            if (timerRef.current) clearInterval(timerRef.current);
+            return prev + 1;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } catch {
+      toast.error("Não foi possível acessar o microfone.");
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    mediaRecorderRef.current?.stop();
+  }, []);
+
+  const discardRecording = useCallback(() => {
+    setRecordedAudio(null);
+    setRecordingSeconds(0);
+  }, []);
+
+  const sendAudio = useCallback(async () => {
+    if (!recordedAudio) return;
+    const file = new File([recordedAudio], `audio-${Date.now()}.webm`, { type: "audio/webm" });
+    try {
+      await sendMessage.mutateAsync({
+        content: "",
+        file,
+        recipientId: selectedRecipient?.user_id ?? null,
+        recipientName: selectedRecipient?.full_name ?? null,
+      });
+      setRecordedAudio(null);
+      setRecordingSeconds(0);
+    } catch (err: any) {
+      toast.error("Erro ao enviar áudio", { description: err.message });
+    }
+  }, [recordedAudio, sendMessage, selectedRecipient]);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() && !attachment) return;
