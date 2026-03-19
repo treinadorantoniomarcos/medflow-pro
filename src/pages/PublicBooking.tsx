@@ -97,8 +97,13 @@ const PublicBooking = () => {
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [patientCpf, setPatientCpf] = useState("");
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
 
   const confirmationRef = useRef<HTMLDivElement>(null);
+
+  const handleAudioRecording = useCallback((blob: Blob | null) => {
+    setAudioBlob(blob);
+  }, []);
 
   const handlePrint = () => {
     window.print();
