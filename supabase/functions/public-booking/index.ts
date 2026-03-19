@@ -241,6 +241,21 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Upload audio if provided
+      let audioNotePath: string | null = null;
+      if (audio_base64 && typeof audio_base64 === "string") {
+        try {
+          const binaryStr = atob(audio_base64);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+          const audioPath = `${clinic.id}/${crypto.randomUUID()}.webm`;
+          const { error: uploadErr } = await supabase.storage
+            .from("appointment-audios")
+            .upload(audioPath, bytes, { contentType: "audio/webm", upsert: false });
+          if (!uploadErr) audioNotePath = audioPath;
+        } catch { /* skip audio on error */ }
+      }
+
       // Create appointment
       const { data: appointment, error: insertError } = await supabase
         .from("appointments")
@@ -252,6 +267,7 @@ Deno.serve(async (req) => {
           starts_at,
           type: type || "Consulta",
           status: "scheduled",
+          audio_note_path: audioNotePath,
         })
         .select("id, starts_at, professional_name, status")
         .single();
