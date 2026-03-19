@@ -230,6 +230,17 @@ const PublicBooking = () => {
 
     const startsAt = `${format(selectedDate, "yyyy-MM-dd")}T${selectedTime}:00`;
 
+    let audioBase64: string | null = null;
+    if (audioBlob) {
+      try {
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        audioBase64 = btoa(binary);
+      } catch { /* skip audio */ }
+    }
+
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/public-booking`, {
         method: "POST",
@@ -241,6 +252,7 @@ const PublicBooking = () => {
           patient_cpf: patientCpf.replace(/\D/g, ""),
           professional_name: selectedProfessional.name,
           starts_at: startsAt,
+          audio_base64: audioBase64,
         }),
       });
 
