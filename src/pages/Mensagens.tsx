@@ -1,5 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
 import { Download, MessageSquare, Paperclip, Send, Users } from "lucide-react";
@@ -23,7 +22,7 @@ type AppRole = "owner" | "admin" | "professional" | "receptionist" | "patient" |
 const GROUP_CHAT_ID = "__group__";
 
 const Mensagens = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, role } = useAuth();
   const [selectedConversation, setSelectedConversation] = useState<string>(GROUP_CHAT_ID);
   const selectedRecipientId = selectedConversation === GROUP_CHAT_ID ? null : selectedConversation;
   const { data: messages = [], isLoading } = useMessages(selectedRecipientId);
@@ -31,6 +30,33 @@ const Mensagens = () => {
   const sendMessage = useSendMessage();
   const [input, setInput] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Only admin/owner/professional can send direct messages
+  const canSelectRecipient = ["admin", "owner", "professional"].includes(role ?? "");
+
+  // Available recipients = other team members (exclude self)
+  const availableRecipients = useMemo(
+    () => members.filter((m) => m.user_id !== user?.id),
+    [members, user?.id]
+  );
+
+  // Selected recipient profile object
+  const selectedRecipient = useMemo(
+    () => (selectedRecipientId ? members.find((m) => m.user_id === selectedRecipientId) ?? null : null),
+    [selectedRecipientId, members]
+  );
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() && !attachment) return;
@@ -150,18 +176,18 @@ const Mensagens = () => {
           <div className="border-b border-border p-3">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-              <MessageSquare className="h-5 w-5 text-primary" />
-              <div>
-                <h1 className="text-sm font-bold text-foreground">
-                  {selectedRecipient ? `Conversa com ${selectedRecipient.full_name}` : "Chat da Equipe"}
-                </h1>
-                <p className="text-[10px] text-muted-foreground">
-                  {selectedRecipient
-                    ? "Mensagem direcionada ao destinatário selecionado"
-                    : `${members.length} membro${members.length !== 1 ? "s" : ""} | Tempo real`}
-                </p>
+                <MessageSquare className="h-5 w-5 text-primary" />
+                <div>
+                  <h1 className="text-sm font-bold text-foreground">
+                    {selectedRecipient ? `Conversa com ${selectedRecipient.full_name}` : "Chat da Equipe"}
+                  </h1>
+                  <p className="text-[10px] text-muted-foreground">
+                    {selectedRecipient
+                      ? "Mensagem direcionada ao destinatário selecionado"
+                      : `${members.length} membro${members.length !== 1 ? "s" : ""} | Tempo real`}
+                  </p>
+                </div>
               </div>
-            </div>
               <HelpIcon screen="mensagens" />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
@@ -328,4 +354,3 @@ const Mensagens = () => {
 };
 
 export default Mensagens;
-
