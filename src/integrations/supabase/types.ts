@@ -449,7 +449,6 @@ export type Database = {
           id: string
           is_active: boolean
           phone: string | null
-          tutorial_state: Json | null
           tenant_id: string
           tutorial_state: Json | null
           updated_at: string
@@ -463,7 +462,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           phone?: string | null
-          tutorial_state?: Json | null
           tenant_id: string
           tutorial_state?: Json | null
           updated_at?: string
@@ -477,7 +475,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           phone?: string | null
-          tutorial_state?: Json | null
           tenant_id?: string
           tutorial_state?: Json | null
           updated_at?: string
