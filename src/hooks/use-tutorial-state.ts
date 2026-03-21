@@ -80,12 +80,11 @@ export const useTutorialState = ({ pathname, userId, profileRole, profileState }
       writeTutorialState(userId, profileRole, nextState);
 
       if (userId) {
-        void supabase
+        supabase
           .from("profiles")
-          .update({ tutorial_state: serializeTutorialState(nextState) })
+          .update({ tutorial_state: serializeTutorialState(nextState) } as any)
           .eq("user_id", userId)
-          .then(() => undefined)
-          .catch(() => undefined);
+          .then(() => undefined, () => undefined);
       }
 
       return nextState;

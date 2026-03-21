@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
@@ -31,6 +31,47 @@ const Mensagens = () => {
   const sendMessage = useSendMessage();
   const [input, setInput] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Fetch user role to determine if they can send direct messages
+  const { data: userRole } = useQuery({
+    queryKey: ["user-role", user?.id],
+    enabled: !!user?.id && !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("tenant_id", profile!.tenant_id)
+        .limit(1)
+        .maybeSingle();
+      return data?.role ?? null;
+    },
+  });
+
+  const canSelectRecipient = ["admin", "owner", "professional"].includes(userRole ?? "");
+  // Available recipients = other team members (exclude self)
+  const availableRecipients = useMemo(
+    () => members.filter((m) => m.user_id !== user?.id),
+    [members, user?.id]
+  );
+
+  // Selected recipient profile object
+  const selectedRecipient = useMemo(
+    () => (selectedRecipientId ? members.find((m) => m.user_id === selectedRecipientId) ?? null : null),
+    [selectedRecipientId, members]
+  );
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() && !attachment) return;
@@ -150,18 +191,18 @@ const Mensagens = () => {
           <div className="border-b border-border p-3">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-              <MessageSquare className="h-5 w-5 text-primary" />
-              <div>
-                <h1 className="text-sm font-bold text-foreground">
-                  {selectedRecipient ? `Conversa com ${selectedRecipient.full_name}` : "Chat da Equipe"}
-                </h1>
-                <p className="text-[10px] text-muted-foreground">
-                  {selectedRecipient
-                    ? "Mensagem direcionada ao destinatário selecionado"
-                    : `${members.length} membro${members.length !== 1 ? "s" : ""} | Tempo real`}
-                </p>
+                <MessageSquare className="h-5 w-5 text-primary" />
+                <div>
+                  <h1 className="text-sm font-bold text-foreground">
+                    {selectedRecipient ? `Conversa com ${selectedRecipient.full_name}` : "Chat da Equipe"}
+                  </h1>
+                  <p className="text-[10px] text-muted-foreground">
+                    {selectedRecipient
+                      ? "Mensagem direcionada ao destinatário selecionado"
+                      : `${members.length} membro${members.length !== 1 ? "s" : ""} | Tempo real`}
+                  </p>
+                </div>
               </div>
-            </div>
               <HelpIcon screen="mensagens" />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
@@ -328,4 +369,3 @@ const Mensagens = () => {
 };
 
 export default Mensagens;
-
