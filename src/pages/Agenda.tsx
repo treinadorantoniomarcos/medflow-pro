@@ -30,6 +30,7 @@ import NewAppointmentDialog from "@/components/dashboard/NewAppointmentDialog";
 import WeeklySlotCard from "@/components/agenda/WeeklySlotCard";
 import AppointmentAudioPlayer from "@/components/agenda/AppointmentAudioPlayer";
 import StatusChip from "@/components/dashboard/StatusChip";
+import HelpIcon from "@/components/tutorial/HelpIcon";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -210,7 +211,12 @@ const Agenda = () => {
               </p>
             </div>
           </div>
-          <NewAppointmentDialog />
+          <div className="flex items-center gap-2">
+            <HelpIcon screen="agenda" />
+            <div data-tutorial-target="agenda-new">
+              <NewAppointmentDialog />
+            </div>
+          </div>
         </motion.div>
 
         <motion.div
@@ -231,6 +237,7 @@ const Agenda = () => {
             </Button>
           </div>
 
+          <div data-tutorial-target="agenda-period">
           <Select
             value={selectedPeriod}
             onValueChange={(value) => {
@@ -251,7 +258,9 @@ const Agenda = () => {
               ))}
             </SelectContent>
           </Select>
+          </div>
 
+          <div data-tutorial-target="agenda-professional">
           <Select value={selectedProfessional} onValueChange={setSelectedProfessional}>
             <SelectTrigger className="w-[200px] h-9 text-xs">
               <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
@@ -274,7 +283,9 @@ const Agenda = () => {
               ))}
             </SelectContent>
           </Select>
+          </div>
 
+          <div data-tutorial-target="agenda-status">
           <Select
             value={selectedStatus}
             onValueChange={(value) => setSelectedStatus(value as AppointmentStatus | "all")}
@@ -290,6 +301,7 @@ const Agenda = () => {
               ))}
             </SelectContent>
           </Select>
+          </div>
 
           {hasFilters && (
             <Button

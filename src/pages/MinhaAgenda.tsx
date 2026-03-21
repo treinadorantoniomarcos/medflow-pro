@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppointmentAudioPlayer from "@/components/agenda/AppointmentAudioPlayer";
 import NewAppointmentDialog from "@/components/dashboard/NewAppointmentDialog";
+import HelpIcon from "@/components/tutorial/HelpIcon";
 import { buildAppointmentReminder, buildWhatsAppUrl } from "@/lib/whatsapp";
 import type { AppointmentStatus } from "@/components/dashboard/StatusChip";
 import { useProfessionalAgenda, useProfessionalStats } from "@/hooks/use-professional-agenda";
@@ -830,13 +831,16 @@ const MinhaAgenda = () => {
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <NewAppointmentDialog
-                open={appointmentDialogOpen}
-                onOpenChange={setAppointmentDialogOpen}
-                defaultDate={format(selectedDate, "yyyy-MM-dd")}
-                lockedProfessionalUserId={!isAdminScope ? managedProfessionalId ?? undefined : undefined}
-                lockedProfessionalName={!isAdminScope ? managedProfessionalName ?? undefined : undefined}
-              />
+              <HelpIcon screen="gestao_agenda" />
+              <div data-tutorial-target="agenda-new-appointment">
+                <NewAppointmentDialog
+                  open={appointmentDialogOpen}
+                  onOpenChange={setAppointmentDialogOpen}
+                  defaultDate={format(selectedDate, "yyyy-MM-dd")}
+                  lockedProfessionalUserId={!isAdminScope ? managedProfessionalId ?? undefined : undefined}
+                  lockedProfessionalName={!isAdminScope ? managedProfessionalName ?? undefined : undefined}
+                />
+              </div>
               <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
                 <span className="text-xs text-muted-foreground">Agenda geral</span>
                 <Badge variant={acceptingBookings ? "default" : "outline"}>{acceptingBookings ? "Aberta" : "Fechada"}</Badge>
@@ -846,7 +850,7 @@ const MinhaAgenda = () => {
           </div>
 
           {isAdminScope && (
-            <div className="max-w-sm">
+            <div className="max-w-sm" data-tutorial-target="agenda-professionals">
               <Select value={managedProfessionalId ?? ""} onValueChange={setSelectedProfessionalId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar profissional" />
@@ -878,7 +882,7 @@ const MinhaAgenda = () => {
           )}
         </motion.div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-tutorial-target="agenda-period-range">
           <StatCard label="Atendimentos" value={stats?.total ?? 0} loading={isLoading} />
           <StatCard label="Disponíveis" value={stats?.available ?? 0} loading={isLoading} />
           <StatCard label="Agendadas" value={stats?.pending ?? 0} loading={isLoading} />
@@ -1060,12 +1064,12 @@ const MinhaAgenda = () => {
               <p className="text-xs text-muted-foreground">Áudio selecionado: {blockAudioFile.name}</p>
             )}
           </div>
-          <div className="mt-3">
-            <Button
-              size="sm"
-              variant={blockSaved ? "secondary" : "default"}
-              onClick={handleCreateBlock}
-              disabled={savingBlock || resolvedBulkProfessionals.length === 0}
+            <div className="mt-3" data-tutorial-target="agenda-save-action">
+              <Button
+                size="sm"
+                variant={blockSaved ? "secondary" : "default"}
+                onClick={handleCreateBlock}
+                disabled={savingBlock || resolvedBulkProfessionals.length === 0}
             >
               {savingBlock ? "Salvando..." : blockSaved ? "Salvo" : bulkAction === "close" ? "Salvar bloqueio" : "Salvar liberação"}
             </Button>

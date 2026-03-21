@@ -8,6 +8,7 @@ import { usePatients, type Patient } from "@/hooks/use-patients";
 import NewPatientDialog from "@/components/patients/NewPatientDialog";
 import PatientDetailSheet from "@/components/patients/PatientDetailSheet";
 import { useDebounce } from "@/hooks/use-debounce";
+import HelpIcon from "@/components/tutorial/HelpIcon";
 
 const Pacientes = () => {
   const [search, setSearch] = useState("");
@@ -39,7 +40,12 @@ const Pacientes = () => {
               </p>
             </div>
           </div>
-          <NewPatientDialog />
+          <div className="flex items-center gap-2">
+            <HelpIcon screen="pacientes" />
+            <div data-tutorial-target="patient-create">
+              <NewPatientDialog />
+            </div>
+          </div>
         </motion.div>
 
         {/* Search */}
@@ -48,6 +54,7 @@ const Pacientes = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
           className="relative max-w-md"
+          data-tutorial-target="patient-edit"
         >
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -59,7 +66,7 @@ const Pacientes = () => {
         </motion.div>
 
         {/* Patient list */}
-        <div className="space-y-2">
+        <div className="space-y-2" data-tutorial-target="patient-history">
           {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-[68px] w-full rounded-lg" />

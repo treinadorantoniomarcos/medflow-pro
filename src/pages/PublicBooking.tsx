@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { format, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import medfluxLogo from "@/assets/medflux-logo.png";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import AudioRecorder from "@/components/audio/AudioRecorder";
+import HelpIcon from "@/components/tutorial/HelpIcon";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -115,7 +116,7 @@ const PublicBooking = () => {
     try {
       await navigator.share({
         title: `Agendamento - ${clinic?.name}`,
-        text: `Consulta com ${selectedProfessional.name} em ${dateStr} às ${selectedTime} - ${clinic?.name}`,
+        text: `Consulta com ${selectedProfessional.name} em ${dateStr} Ã s ${selectedTime} - ${clinic?.name}`,
       });
     } catch { /* user cancelled */ }
   };
@@ -151,14 +152,14 @@ const PublicBooking = () => {
         `${SUPABASE_URL}/functions/v1/public-booking?slug=${slug}`,
         { headers: { apikey: SUPABASE_ANON_KEY } }
       );
-      if (!res.ok) { setError("Clínica não encontrada"); setLoading(false); return; }
+      if (!res.ok) { setError("ClÃ­nica nÃ£o encontrada"); setLoading(false); return; }
       const data = await res.json();
       setClinic(data.clinic);
       setProfessionals(data.professionals);
       setWorkHours(data.workHours);
       setLoading(false);
     } catch {
-      setError("Erro ao carregar dados da clínica");
+      setError("Erro ao carregar dados da clÃ­nica");
       setLoading(false);
     }
   };
@@ -286,7 +287,7 @@ const PublicBooking = () => {
       }
       setStep("confirmed");
     } catch {
-      toast.error("Erro de conexão. Tente novamente.");
+      toast.error("Erro de conexÃ£o. Tente novamente.");
     }
     setSubmitting(false);
   };
@@ -304,8 +305,8 @@ const PublicBooking = () => {
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="text-center space-y-3">
           <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/40" />
-          <h1 className="text-xl font-bold text-foreground">Clínica não encontrada</h1>
-          <p className="text-sm text-muted-foreground">Verifique o link de agendamento com sua clínica.</p>
+          <h1 className="text-xl font-bold text-foreground">ClÃ­nica nÃ£o encontrada</h1>
+          <p className="text-sm text-muted-foreground">Verifique o link de agendamento com sua clÃ­nica.</p>
         </div>
       </div>
     );
@@ -315,12 +316,15 @@ const PublicBooking = () => {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b border-border bg-card px-4 py-4">
-        <div className="max-w-xl mx-auto flex items-center gap-3">
-          <img src={clinic.logo_url || medfluxLogo} alt={clinic.name} className="h-10 w-10 rounded-lg object-cover" />
-          <div>
-            <h1 className="text-lg font-bold text-foreground">{clinic.name}</h1>
-            <p className="text-xs text-muted-foreground">Agendamento online</p>
+        <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <img src={clinic.logo_url || medfluxLogo} alt={clinic.name} className="h-10 w-10 rounded-lg object-cover" />
+            <div>
+              <h1 className="text-lg font-bold text-foreground">{clinic.name}</h1>
+              <p className="text-xs text-muted-foreground">Agendamento online</p>
+            </div>
           </div>
+          <HelpIcon screen="public_booking" />
         </div>
       </header>
 
@@ -343,7 +347,7 @@ const PublicBooking = () => {
 
           {/* Step 1: Select Professional */}
           {step === "professional" && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4 animate-fade-in" data-tutorial-target="booking-professional">
               <div className="text-center space-y-1">
                 <Stethoscope className="h-8 w-8 mx-auto text-primary" />
                 <h2 className="text-xl font-bold text-foreground">Escolha o profissional</h2>
@@ -352,7 +356,7 @@ const PublicBooking = () => {
 
               <div className="space-y-2">
                 {professionals.filter((p) => p.accepting_bookings).length === 0 ? (
-                  <p className="text-center text-sm text-muted-foreground py-8">Nenhum profissional disponível no momento.</p>
+                  <p className="text-center text-sm text-muted-foreground py-8">Nenhum profissional disponÃ­vel no momento.</p>
                 ) : (
                   professionals.map((p) => {
                     const closed = !p.accepting_bookings;
@@ -410,7 +414,7 @@ const PublicBooking = () => {
 
           {/* Step 2: Select Date & Time */}
           {step === "datetime" && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4 animate-fade-in" data-tutorial-target="booking-datetime">
               <button
                 onClick={() => { setStep("professional"); setSelectedDate(undefined); setSelectedTime(""); }}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -421,7 +425,7 @@ const PublicBooking = () => {
 
               <div className="text-center space-y-1">
                 <CalendarDays className="h-8 w-8 mx-auto text-primary" />
-                <h2 className="text-xl font-bold text-foreground">Escolha a data e horário</h2>
+                <h2 className="text-xl font-bold text-foreground">Escolha a data e horÃ¡rio</h2>
                 <p className="text-sm text-muted-foreground">
                   Profissional: <span className="font-medium text-foreground">{selectedProfessional?.name}</span>
                 </p>
@@ -445,7 +449,7 @@ const PublicBooking = () => {
                       {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
                     </p>
                     {availableSlots.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-4 text-center">Nenhum horário disponível nesta data.</p>
+                      <p className="text-sm text-muted-foreground py-4 text-center">Nenhum horÃ¡rio disponÃ­vel nesta data.</p>
                     ) : (
                       <div className="grid grid-cols-3 gap-2 max-h-[260px] overflow-y-auto">
                         {availableSlots.map((time) => (
@@ -472,7 +476,7 @@ const PublicBooking = () => {
 
           {/* Step 3: Patient Info */}
           {step === "info" && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4 animate-fade-in" data-tutorial-target="booking-info">
               <button
                 onClick={() => setStep("datetime")}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -485,7 +489,7 @@ const PublicBooking = () => {
                 <User className="h-8 w-8 mx-auto text-primary" />
                 <h2 className="text-xl font-bold text-foreground">Seus dados</h2>
                 <p className="text-sm text-muted-foreground">
-                  {selectedProfessional?.name} — {selectedDate && format(selectedDate, "dd/MM")} às {selectedTime}
+                  {selectedProfessional?.name} â€” {selectedDate && format(selectedDate, "dd/MM")} Ã s {selectedTime}
                 </p>
               </div>
 
@@ -519,7 +523,7 @@ const PublicBooking = () => {
                     />
                   </div>
                   {patientPhone.length > 0 && patientPhone.replace(/\D/g, "").length < 10 && (
-                    <p className="text-xs text-destructive">Informe um número de WhatsApp válido</p>
+                    <p className="text-xs text-destructive">Informe um nÃºmero de WhatsApp vÃ¡lido</p>
                   )}
                 </div>
 
@@ -537,15 +541,15 @@ const PublicBooking = () => {
                     />
                   </div>
                   {patientCpf.length > 0 && patientCpf.replace(/\D/g, "").length < 11 && (
-                    <p className="text-xs text-destructive">Informe um CPF válido com 11 dígitos</p>
+                    <p className="text-xs text-destructive">Informe um CPF vÃ¡lido com 11 dÃ­gitos</p>
                   )}
                 </div>
 
                 {/* Audio note */}
                 <div className="space-y-2">
-                  <Label>Observação em áudio</Label>
+                  <Label>ObservaÃ§Ã£o em Ã¡udio</Label>
                   <AudioRecorder onRecordingComplete={handleAudioRecording} maxDurationSeconds={60} />
-                  <p className="text-xs text-muted-foreground">Grave uma mensagem de até 60s para o profissional (opcional)</p>
+                  <p className="text-xs text-muted-foreground">Grave uma mensagem de atÃ© 60s para o profissional (opcional)</p>
                 </div>
 
                 {/* Summary */}
@@ -578,7 +582,7 @@ const PublicBooking = () => {
               <div className="text-center space-y-2">
                 <CheckCircle2 className="h-16 w-16 mx-auto text-primary" />
                 <h2 className="text-2xl font-bold text-foreground">Agendamento confirmado!</h2>
-                <p className="text-sm text-muted-foreground">Guarde este comprovante para sua referência.</p>
+                <p className="text-sm text-muted-foreground">Guarde este comprovante para sua referÃªncia.</p>
               </div>
 
               {/* Confirmation card */}
@@ -625,7 +629,7 @@ const PublicBooking = () => {
                   <div className="flex items-start gap-3">
                     <Clock className="h-4 w-4 mt-0.5 text-primary shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Horário</p>
+                      <p className="text-xs text-muted-foreground">HorÃ¡rio</p>
                       <p className="text-sm font-semibold text-foreground">{selectedTime}</p>
                     </div>
                   </div>
@@ -687,5 +691,6 @@ const PublicBooking = () => {
 };
 
 export default PublicBooking;
+
 
 

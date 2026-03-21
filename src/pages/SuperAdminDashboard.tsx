@@ -70,6 +70,7 @@ import {
 } from "@/components/ui/select";
 import PlanCatalogManager from "@/components/superadmin/PlanCatalogManager";
 import { QRCodeSVG } from "qrcode.react";
+import HelpIcon from "@/components/tutorial/HelpIcon";
 
 type ClinicRow = {
   id: string;
@@ -702,10 +703,11 @@ const SuperAdminDashboard = () => {
               Link dedicado: <span className="font-medium text-foreground">/super-admin</span> | Gestão completa de assinantes.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <HelpIcon screen="super_admin" />
             <Dialog open={accessDialogOpen} onOpenChange={setAccessDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="default" size="sm">
+                <Button variant="default" size="sm" data-tutorial-target="superadmin-access">
                   <ShieldCheck className="mr-1.5 h-4 w-4" /> Liberar acessos
                 </Button>
               </DialogTrigger>
@@ -912,7 +914,7 @@ const SuperAdminDashboard = () => {
           </Card>
         </div>
 
-        <Card className="shadow-soft">
+        <Card className="shadow-soft" data-tutorial-target="superadmin-subscriber">
           <CardHeader>
             <CardTitle className="text-base">Assinantes - visao detalhada e assinatura</CardTitle>
           </CardHeader>
@@ -1189,6 +1191,7 @@ const SuperAdminDashboard = () => {
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
+                data-tutorial-target="superadmin-reset-password"
                 onClick={resetSubscriberPassword}
                 disabled={!selectedSubscriberId || resettingPassword || !subscriberDraft.adminEmail.trim()}
               >
@@ -1206,7 +1209,7 @@ const SuperAdminDashboard = () => {
           onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
         />
 
-        <Card className="shadow-soft">
+        <Card className="shadow-soft" data-tutorial-target="superadmin-share">
           <CardHeader>
             <CardTitle className="text-base">Link publico de assinatura</CardTitle>
           </CardHeader>
@@ -1273,7 +1276,7 @@ const SuperAdminDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-soft">
+        <Card className="shadow-soft" data-tutorial-target="superadmin-plans">
           <CardHeader>
             <CardTitle className="text-base">Descrições dos pacotes para divulgação</CardTitle>
           </CardHeader>

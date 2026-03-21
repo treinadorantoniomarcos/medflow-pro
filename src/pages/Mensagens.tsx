@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
-import { Download, MessageSquare, Mic, Paperclip, Send, Square, Trash2, Users } from "lucide-react";
+import { Download, MessageSquare, Paperclip, Send, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,6 +15,8 @@ import { useMessages, useSendMessage, useTeamMembers } from "@/hooks/use-message
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import AudioRecorder from "@/components/audio/AudioRecorder";
+import HelpIcon from "@/components/tutorial/HelpIcon";
 
 type AppRole = "owner" | "admin" | "professional" | "receptionist" | "patient" | "super_admin";
 
@@ -29,113 +31,6 @@ const Mensagens = () => {
   const sendMessage = useSendMessage();
   const [input, setInput] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const { data: role } = useQuery({
-    queryKey: ["messages-role", user?.id, profile?.tenant_id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role, tenant_id")
-        .eq("user_id", user!.id);
-      if (error) throw error;
-
-      const roles = (data ?? []) as Array<{ role: AppRole; tenant_id: string }>;
-      if (roles.some((item) => item.role === "super_admin")) return "super_admin";
-      const scoped = roles.find((item) => item.tenant_id === profile?.tenant_id);
-      return scoped?.role ?? null;
-    },
-  });
-
-  const canSelectRecipient = role === "owner" || role === "admin" || role === "professional";
-  const availableRecipients = useMemo(
-    () => members.filter((member) => member.user_id !== user?.id),
-    [members, user?.id]
-  );
-  const selectedRecipient = availableRecipients.find((member) => member.user_id === selectedRecipientId) ?? null;
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages.length]);
-
-  const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
-      });
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        setRecordedAudio(blob);
-        setIsRecording(false);
-      };
-
-      mediaRecorder.start(250);
-      setRecordingSeconds(0);
-      setIsRecording(true);
-      setRecordedAudio(null);
-
-      timerRef.current = setInterval(() => {
-        setRecordingSeconds((prev) => {
-          if (prev + 1 >= 120) {
-            mediaRecorder.stop();
-            if (timerRef.current) clearInterval(timerRef.current);
-            return prev + 1;
-          }
-          return prev + 1;
-        });
-      }, 1000);
-    } catch {
-      toast.error("Não foi possível acessar o microfone.");
-    }
-  }, []);
-
-  const stopRecording = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    mediaRecorderRef.current?.stop();
-  }, []);
-
-  const discardRecording = useCallback(() => {
-    setRecordedAudio(null);
-    setRecordingSeconds(0);
-  }, []);
-
-  const sendAudio = useCallback(async () => {
-    if (!recordedAudio) return;
-    const file = new File([recordedAudio], `audio-${Date.now()}.webm`, { type: "audio/webm" });
-    try {
-      await sendMessage.mutateAsync({
-        content: "",
-        file,
-        recipientId: selectedRecipient?.user_id ?? null,
-        recipientName: selectedRecipient?.full_name ?? null,
-      });
-      setRecordedAudio(null);
-      setRecordingSeconds(0);
-    } catch (err: any) {
-      toast.error("Erro ao enviar áudio", { description: err.message });
-    }
-  }, [recordedAudio, sendMessage, selectedRecipient]);
-
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() && !attachment) return;
@@ -185,6 +80,7 @@ const Mensagens = () => {
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           className="hidden w-[240px] shrink-0 flex-col rounded-lg border border-border bg-card shadow-soft md:flex"
+          data-tutorial-target="message-recipient"
         >
           <div className="flex items-center gap-2 border-b border-border p-3">
             <Users className="h-4 w-4 text-primary" />
@@ -252,7 +148,8 @@ const Mensagens = () => {
           className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-soft"
         >
           <div className="border-b border-border p-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
               <MessageSquare className="h-5 w-5 text-primary" />
               <div>
                 <h1 className="text-sm font-bold text-foreground">
@@ -264,6 +161,8 @@ const Mensagens = () => {
                     : `${members.length} membro${members.length !== 1 ? "s" : ""} | Tempo real`}
                 </p>
               </div>
+            </div>
+              <HelpIcon screen="mensagens" />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
               Espaço para clientes conversarem com os profissionais e encaminharem arquivos para download dentro do grupo.
@@ -380,35 +279,7 @@ const Mensagens = () => {
               Arquivo pronto para envio: <span className="font-medium text-foreground">{attachment.name}</span>
             </div>
           )}
-
-          {recordedAudio && (
-            <div className="border-t border-border px-3 py-2 flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                🎙️ Áudio gravado ({String(Math.floor(recordingSeconds / 60)).padStart(2, "0")}:{String(recordingSeconds % 60).padStart(2, "0")})
-              </span>
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={discardRecording}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-              <Button type="button" size="sm" className="h-7 gap-1 ml-auto" onClick={sendAudio} disabled={sendMessage.isPending}>
-                <Send className="h-3.5 w-3.5" />
-                Enviar áudio
-              </Button>
-            </div>
-          )}
-
-          {isRecording && (
-            <div className="border-t border-border px-3 py-2 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
-              <span className="text-xs text-destructive font-medium">
-                Gravando {String(Math.floor(recordingSeconds / 60)).padStart(2, "0")}:{String(recordingSeconds % 60).padStart(2, "0")}
-              </span>
-              <Button type="button" variant="destructive" size="icon" className="h-7 w-7 ml-auto" onClick={stopRecording}>
-                <Square className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          )}
-
-          <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-border p-3">
+          <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-border p-3" data-tutorial-target="message-attachment">
             <Input
               ref={inputRef}
               placeholder={selectedRecipient ? `Mensagem para ${selectedRecipient.full_name}...` : "Digite sua mensagem..."}
@@ -417,7 +288,6 @@ const Mensagens = () => {
               className="flex-1 border-0 bg-secondary"
               maxLength={1000}
               autoComplete="off"
-              disabled={isRecording}
             />
             <input
               ref={fileInputRef}
@@ -425,24 +295,28 @@ const Mensagens = () => {
               className="hidden"
               onChange={(e) => setAttachment(e.target.files?.[0] ?? null)}
             />
-            <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => fileInputRef.current?.click()} disabled={isRecording}>
+            <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => fileInputRef.current?.click()}>
               <Paperclip className="h-4 w-4" />
             </Button>
-            <Button
-              type="button"
-              variant={isRecording ? "destructive" : "outline"}
-              size="icon"
-              className="h-9 w-9 shrink-0"
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={!!recordedAudio}
-            >
-              {isRecording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            </Button>
+            <div data-tutorial-target="message-audio">
+              <AudioRecorder
+                maxDurationSeconds={60}
+                className="flex items-center"
+                onRecordingComplete={(blob) => {
+                  if (!blob) {
+                    setAttachment(null);
+                    return;
+                  }
+                  setAttachment(new File([blob], `audio-${Date.now()}.webm`, { type: "audio/webm" }));
+                  toast.success("Audio gravado e anexado.");
+                }}
+              />
+            </div>
             <Button
               type="submit"
               size="icon"
               className="h-9 w-9 shrink-0"
-              disabled={(!input.trim() && !attachment) || sendMessage.isPending || isRecording}
+              disabled={(!input.trim() && !attachment) || sendMessage.isPending}
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -454,3 +328,4 @@ const Mensagens = () => {
 };
 
 export default Mensagens;
+

@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import HelpIcon from "@/components/tutorial/HelpIcon";
 
 const statusFilters: { value: AppointmentStatus | "all"; label: string }[] = [
   { value: "all", label: "Todas" },
@@ -105,7 +106,12 @@ const Dashboard = () => {
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
             <p className="text-sm text-muted-foreground capitalize">{formattedDate}</p>
           </div>
-          <NewAppointmentDialog />
+          <div className="flex items-center gap-2">
+            <HelpIcon screen="dashboard" />
+            <div data-tutorial-target="dashboard-new-appointment">
+              <NewAppointmentDialog />
+            </div>
+          </div>
         </motion.div>
 
         <motion.div
@@ -113,6 +119,7 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
           className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6"
+          data-tutorial-target="dashboard-metrics"
         >
           <MetricCard value={metrics?.todayCount ?? 0} label="Atendimentos no Período" icon={Calendar} />
           <MetricCard value={metrics?.availableCount ?? 0} label="Vagas Disponíveis" icon={Clock} variant="accent" />
@@ -141,7 +148,7 @@ const Dashboard = () => {
               </Button>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" data-tutorial-target="dashboard-period-filters">
               {periodFilters.map((filter) => (
                 <Button
                   key={filter.value}
