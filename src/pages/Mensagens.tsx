@@ -22,7 +22,7 @@ type AppRole = "owner" | "admin" | "professional" | "receptionist" | "patient" |
 const GROUP_CHAT_ID = "__group__";
 
 const Mensagens = () => {
-  const { user, profile, role } = useAuth();
+  const { user, profile } = useAuth();
   const [selectedConversation, setSelectedConversation] = useState<string>(GROUP_CHAT_ID);
   const selectedRecipientId = selectedConversation === GROUP_CHAT_ID ? null : selectedConversation;
   const { data: messages = [], isLoading } = useMessages(selectedRecipientId);
@@ -35,11 +35,23 @@ const Mensagens = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Only admin/owner/professional can send direct messages
-  const canSelectRecipient = ["admin", "owner", "professional"].includes(role ?? "");
+  // Fetch user role to determine if they can send direct messages
+  const { data: userRole } = useQuery({
+    queryKey: ["user-role", user?.id],
+    enabled: !!user?.id && !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("tenant_id", profile!.tenant_id)
+        .limit(1)
+        .maybeSingle();
+      return data?.role ?? null;
+    },
+  });
 
-  // Available recipients = other team members (exclude self)
-  const availableRecipients = useMemo(
+  const canSelectRecipient = ["admin", "owner", "professional"].includes(userRole ?? "");
     () => members.filter((m) => m.user_id !== user?.id),
     [members, user?.id]
   );
