@@ -53,6 +53,8 @@ const Mensagens = () => {
   });
 
   const canSelectRecipient = ["admin", "owner", "professional"].includes(userRole ?? "");
+  // Available recipients = other team members (exclude self)
+  const availableRecipients = useMemo(
     () => members.filter((m) => m.user_id !== user?.id),
     [members, user?.id]
   );
