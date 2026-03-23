@@ -629,7 +629,7 @@ const PublicBooking = () => {
                   <div className="flex items-start gap-3">
                     <Clock className="h-4 w-4 mt-0.5 text-primary shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">HorÃ¡rio</p>
+                      <p className="text-xs text-muted-foreground">Horário</p>
                       <p className="text-sm font-semibold text-foreground">{selectedTime}</p>
                     </div>
                   </div>

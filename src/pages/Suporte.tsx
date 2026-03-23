@@ -358,7 +358,7 @@ const Suporte = () => {
                               [ticket.id]: { ...draft, response: e.target.value },
                             }))
                           }
-                          placeholder="Digite a orientaÃ§Ã£o para o cliente."
+                          placeholder="Digite a orientação para o cliente."
                         />
                       </div>
                       <Button onClick={() => saveReply(ticket)} disabled={savingReplyId === ticket.id}>

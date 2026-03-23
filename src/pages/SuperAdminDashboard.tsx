@@ -1251,7 +1251,7 @@ const SuperAdminDashboard = () => {
 
         <Card className="shadow-soft" data-tutorial-target="superadmin-platform-settings">
           <CardHeader>
-            <CardTitle className="text-base">ConfiguraÃ§Ã£o da plataforma</CardTitle>
+            <CardTitle className="text-base">Configuração da plataforma</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-xl border border-border bg-secondary/40 p-4">
