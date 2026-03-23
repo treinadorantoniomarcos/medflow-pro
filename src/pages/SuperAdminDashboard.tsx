@@ -312,7 +312,7 @@ const SuperAdminDashboard = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as Array<{
+      return (data ?? []) as unknown as Array<{
         id: string;
         company_name: string;
         contact_name: string;
