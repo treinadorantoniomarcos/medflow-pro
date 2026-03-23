@@ -167,7 +167,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
       return;
     }
 
-    toast.success("Pacote excluido");
+    toast.success("Pacote excluído");
     if (form.id === plan.id) resetForm();
     refreshPlans();
   };
