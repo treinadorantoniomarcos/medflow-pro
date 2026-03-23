@@ -101,7 +101,7 @@ const Configuracoes = () => {
   const handleShareEmail = () => {
     if (!bookingUrl) return;
     const subject = `Agende sua consulta - ${clinicName}`;
-    const body = `OlÃ¡!\n\nAgende sua consulta online:\n${bookingUrl}\n\nAtenciosamente,\n${clinicName}`;
+    const body = `Olá!\n\nAgende sua consulta online:\n${bookingUrl}\n\nAtenciosamente,\n${clinicName}`;
     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   };
 
