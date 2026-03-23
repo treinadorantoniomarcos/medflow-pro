@@ -243,7 +243,7 @@ const Configuracoes = () => {
                         )}
                       </div>
                       <p className="text-[10px] text-muted-foreground">
-                        Use o QR Code em materiais impressos, stories do Instagram ou cartÃ£o de visita digital.
+                        Use o QR Code em materiais impressos, stories do Instagram ou cartão de visita digital.
                       </p>
                     </div>
                   </div>
