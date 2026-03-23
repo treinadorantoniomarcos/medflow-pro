@@ -1334,7 +1334,7 @@ const SuperAdminDashboard = () => {
                    <p className="text-sm font-semibold text-foreground">Divulgação para clínicas e profissionais</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a pagina publica de planos.
+                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a página pública de planos.
                 </p>
               </div>
 
