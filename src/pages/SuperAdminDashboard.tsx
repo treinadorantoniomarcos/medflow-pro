@@ -904,7 +904,7 @@ const SuperAdminDashboard = () => {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="shadow-soft">
             <CardHeader>
-              <CardTitle className="text-base">Tendencia mensal (6 meses)</CardTitle>
+              <CardTitle className="text-base">Tendência mensal (6 meses)</CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[250px] w-full">
