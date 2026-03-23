@@ -582,7 +582,7 @@ const PublicBooking = () => {
               <div className="text-center space-y-2">
                 <CheckCircle2 className="h-16 w-16 mx-auto text-primary" />
                 <h2 className="text-2xl font-bold text-foreground">Agendamento confirmado!</h2>
-                <p className="text-sm text-muted-foreground">Guarde este comprovante para sua referÃªncia.</p>
+                <p className="text-sm text-muted-foreground">Guarde este comprovante para sua referência.</p>
               </div>
 
               {/* Confirmation card */}
