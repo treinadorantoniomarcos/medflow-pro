@@ -305,8 +305,8 @@ const PublicBooking = () => {
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="text-center space-y-3">
           <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/40" />
-          <h1 className="text-xl font-bold text-foreground">ClÃ­nica nÃ£o encontrada</h1>
-          <p className="text-sm text-muted-foreground">Verifique o link de agendamento com sua clÃ­nica.</p>
+          <h1 className="text-xl font-bold text-foreground">Clínica não encontrada</h1>
+          <p className="text-sm text-muted-foreground">Verifique o link de agendamento com sua clínica.</p>
         </div>
       </div>
     );
