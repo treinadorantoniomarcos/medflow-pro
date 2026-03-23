@@ -137,7 +137,7 @@ const appIntegrations = [
   {
     name: "Stripe Billing",
     status: "pendente",
-    description: "Cobrança recorrente e conciliação de assinaturas.",
+     description: "Cobrança recorrente e conciliação de assinaturas.",
     href: "https://dashboard.stripe.com",
   },
 ];
