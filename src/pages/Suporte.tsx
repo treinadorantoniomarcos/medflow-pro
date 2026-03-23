@@ -235,8 +235,8 @@ const Suporte = () => {
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Suporte</h1>
             <p className="text-sm text-muted-foreground">
               {isSuperAdmin
-                ? "Gerencie dÃºvidas e chamados encaminhados pelos clientes."
-                : "Encaminhe dÃºvidas da plataforma diretamente para o Super Admin."}
+                 ? "Gerencie dúvidas e chamados encaminhados pelos clientes."
+                 : "Encaminhe dúvidas da plataforma diretamente para o Super Admin."}
             </p>
           </div>
           <HelpIcon screen="suporte" />
