@@ -267,7 +267,7 @@ const Suporte = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Assunto</Label>
-                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Ex.: dÃºvida sobre agenda, acesso, assinatura..." />
+                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Ex.: dúvida sobre agenda, acesso, assinatura..." />
               </div>
               <div className="space-y-2">
                 <Label>Mensagem</Label>
