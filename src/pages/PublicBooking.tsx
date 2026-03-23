@@ -152,7 +152,7 @@ const PublicBooking = () => {
         `${SUPABASE_URL}/functions/v1/public-booking?slug=${slug}`,
         { headers: { apikey: SUPABASE_ANON_KEY } }
       );
-      if (!res.ok) { setError("ClÃ­nica nÃ£o encontrada"); setLoading(false); return; }
+      if (!res.ok) { setError("Clínica não encontrada"); setLoading(false); return; }
       const data = await res.json();
       setClinic(data.clinic);
       setProfessionals(data.professionals);
