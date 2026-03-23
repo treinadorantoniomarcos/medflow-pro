@@ -1409,7 +1409,7 @@ const SuperAdminDashboard = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Texto único para divulgação</p>
+                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Texto único para divulgação</p>
                     <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.text}</div>
                     <Button
                       variant="outline"
