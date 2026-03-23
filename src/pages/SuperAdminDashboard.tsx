@@ -1,5 +1,6 @@
 
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
@@ -927,6 +928,45 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
 
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Card className="shadow-soft">
+            <CardContent className="flex h-full flex-col gap-2 p-4">
+              <p className="text-sm font-semibold text-foreground">Plataforma</p>
+              <p className="text-xs text-muted-foreground">Checkout único, link público e QR Code.</p>
+              <Button asChild variant="outline" size="sm" className="mt-auto w-full">
+                <Link to="/super-admin/plataforma">Abrir página</Link>
+              </Button>
+            </CardContent>
+          </Card>
+          <Card className="shadow-soft">
+            <CardContent className="flex h-full flex-col gap-2 p-4">
+              <p className="text-sm font-semibold text-foreground">Solicitações customizadas</p>
+              <p className="text-xs text-muted-foreground">Pedidos acima de 11 profissionais.</p>
+              <Button asChild variant="outline" size="sm" className="mt-auto w-full">
+                <Link to="/super-admin/orcamentos">Abrir página</Link>
+              </Button>
+            </CardContent>
+          </Card>
+          <Card className="shadow-soft">
+            <CardContent className="flex h-full flex-col gap-2 p-4">
+              <p className="text-sm font-semibold text-foreground">Catálogo de planos</p>
+              <p className="text-xs text-muted-foreground">Preços, cortesia e textos comerciais.</p>
+              <Button asChild variant="outline" size="sm" className="mt-auto w-full">
+                <Link to="/super-admin/catalogo">Abrir página</Link>
+              </Button>
+            </CardContent>
+          </Card>
+          <Card className="shadow-soft">
+            <CardContent className="flex h-full flex-col gap-2 p-4">
+              <p className="text-sm font-semibold text-foreground">Integrações</p>
+              <p className="text-xs text-muted-foreground">Apps e conectores da operação.</p>
+              <Button asChild variant="outline" size="sm" className="mt-auto w-full">
+                <Link to="/super-admin/integracoes">Abrir página</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
           <MetricCard value={totals.clinics} label="Assinantes (clínicas)" icon={Building2} />
           <MetricCard value={totals.professionals} label="Profissionais" icon={Stethoscope} variant="accent" />
@@ -1294,7 +1334,7 @@ const SuperAdminDashboard = () => {
           </DialogContent>
         </Dialog>
 
-        <Card className="shadow-soft" data-tutorial-target="superadmin-platform-settings">
+        <Card className="hidden shadow-soft" data-tutorial-target="superadmin-platform-settings">
           <CardHeader>
             <CardTitle className="text-base">Configuração da plataforma</CardTitle>
           </CardHeader>
@@ -1363,12 +1403,14 @@ const SuperAdminDashboard = () => {
           </CardContent>
         </Card>
 
-        <PlanCatalogManager
-          onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
-        />
+        <div className="hidden">
+          <PlanCatalogManager
+            onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
+          />
+        </div>
 
         {/* Quote requests */}
-        <Card className="shadow-soft">
+        <Card className="hidden shadow-soft">
           <CardHeader>
             <CardTitle className="text-base">Solicitações de orçamento customizado</CardTitle>
           </CardHeader>
@@ -1510,7 +1552,7 @@ const SuperAdminDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-soft" data-tutorial-target="superadmin-plans">
+        <Card className="hidden shadow-soft" data-tutorial-target="superadmin-plans">
           <CardHeader>
              <CardTitle className="text-base">Descrições dos pacotes para divulgação</CardTitle>
           </CardHeader>
@@ -1556,7 +1598,7 @@ const SuperAdminDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-soft">
+        <Card className="hidden shadow-soft">
           <CardHeader>
              <CardTitle className="text-base">Aplicativos para gestão</CardTitle>
           </CardHeader>

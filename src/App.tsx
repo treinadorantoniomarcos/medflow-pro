@@ -23,6 +23,10 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import PatientHome from "./pages/PatientHome";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import SuperAdminPlatform from "./pages/SuperAdminPlatform";
+import SuperAdminCustomQuotes from "./pages/SuperAdminCustomQuotes";
+import SuperAdminPlanCatalog from "./pages/SuperAdminPlanCatalog";
+import SuperAdminIntegrations from "./pages/SuperAdminIntegrations";
 import SubscriptionPlans from "./pages/SubscriptionPlans";
 import Suporte from "./pages/Suporte";
 
@@ -52,6 +56,10 @@ const App = () => (
                 <Route path="/agenda" element={<ProtectedRoute allowedRoles={["owner", "admin", "receptionist"]}><Agenda /></ProtectedRoute>} />
                 <Route path="/paciente/home" element={<ProtectedRoute allowedRoles={["patient"]}><PatientHome /></ProtectedRoute>} />
                 <Route path="/super-admin" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminDashboard /></ProtectedRoute>} />
+                <Route path="/super-admin/plataforma" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminPlatform /></ProtectedRoute>} />
+                <Route path="/super-admin/orcamentos" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminCustomQuotes /></ProtectedRoute>} />
+                <Route path="/super-admin/catalogo" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminPlanCatalog /></ProtectedRoute>} />
+                <Route path="/super-admin/integracoes" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminIntegrations /></ProtectedRoute>} />
                 <Route path="/minha-agenda" element={<ProtectedRoute allowedRoles={["owner", "admin", "professional"]}><MinhaAgenda /></ProtectedRoute>} />
                 <Route path="/pacientes" element={<ProtectedRoute allowedRoles={["owner", "admin", "receptionist", "professional"]}><Pacientes /></ProtectedRoute>} />
                 <Route path="/suporte" element={<ProtectedRoute allowedRoles={["owner", "admin", "professional", "receptionist", "super_admin"]}><Suporte /></ProtectedRoute>} />
