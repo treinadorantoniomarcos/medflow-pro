@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -175,7 +175,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
   return (
     <Card className="shadow-soft">
       <CardHeader>
-        <CardTitle className="text-base">Catalogo de Pacotes e Cortesias</CardTitle>
+        <CardTitle className="text-base">Catálogo de Pacotes e Cortesias</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
@@ -207,7 +207,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
 
         <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-1">
-            <Label>Vigencia</Label>
+            <Label>Vigência</Label>
             <Input
               readOnly
               value={form.period_days}
@@ -226,7 +226,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
             <p className="text-xs text-muted-foreground">Valores permitidos: 7, 15 ou 30 dias. Use 0 para sem cortesia.</p>
           </div>
           <div className="space-y-1">
-            <Label>Descricao</Label>
+            <Label>Descrição</Label>
             <Input
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
@@ -272,7 +272,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
                   {plan.name} ({plan.code})
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  R$ {toBrl(plan.monthly_price_cents)} | vigencia {SUBSCRIPTION_TERM_LABEL} | cortesia {plan.trial_days} dias
+                  R$ {toBrl(plan.monthly_price_cents)} | Vigência {SUBSCRIPTION_TERM_LABEL} | cortesia {plan.trial_days} dias
                 </p>
               </div>
 
@@ -293,3 +293,5 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
 };
 
 export default PlanCatalogManager;
+
+

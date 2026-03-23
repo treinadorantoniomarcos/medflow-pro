@@ -235,8 +235,8 @@ const Suporte = () => {
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Suporte</h1>
             <p className="text-sm text-muted-foreground">
               {isSuperAdmin
-                ? "Gerencie dÃºvidas e chamados encaminhados pelos clientes."
-                : "Encaminhe dÃºvidas da plataforma diretamente para o Super Admin."}
+                ? "Gerencie dúvidas e chamados encaminhados pelos clientes."
+                : "Encaminhe dúvidas da plataforma diretamente para o Super Admin."}
             </p>
           </div>
           <HelpIcon screen="suporte" />
@@ -267,7 +267,7 @@ const Suporte = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Assunto</Label>
-                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Ex.: dÃºvida sobre agenda, acesso, assinatura..." />
+                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Ex.: dúvida sobre agenda, acesso, assinatura..." />
               </div>
               <div className="space-y-2">
                 <Label>Mensagem</Label>
@@ -275,7 +275,7 @@ const Suporte = () => {
                   rows={5}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Descreva a dÃºvida ou problema para o Super Admin."
+                  placeholder="Descreva a dúvida ou problema para o Super Admin."
                 />
               </div>
               <Button onClick={createTicket} disabled={savingTicket}>
@@ -358,7 +358,7 @@ const Suporte = () => {
                               [ticket.id]: { ...draft, response: e.target.value },
                             }))
                           }
-                          placeholder="Digite a orientaÃ§Ã£o para o cliente."
+                          placeholder="Digite a orientação para o cliente."
                         />
                       </div>
                       <Button onClick={() => saveReply(ticket)} disabled={savingReplyId === ticket.id}>

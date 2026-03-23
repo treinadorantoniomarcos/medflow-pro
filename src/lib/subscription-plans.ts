@@ -70,7 +70,7 @@ export const planMarketingContent: Record<string, PlanMarketingContent> = {
     audience: "Uso interno ou comercial assistido, sem foco em autoatendimento.",
     features: [
       "Período temporário de experimentação",
-      "Configuracao inicial acompanhada",
+      "Configuração inicial acompanhada",
       "Ativação controlada pelo time da plataforma",
     ],
   },

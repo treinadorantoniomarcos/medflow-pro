@@ -101,7 +101,7 @@ const Configuracoes = () => {
   const handleShareEmail = () => {
     if (!bookingUrl) return;
     const subject = `Agende sua consulta - ${clinicName}`;
-    const body = `OlÃ¡!\n\nAgende sua consulta online:\n${bookingUrl}\n\nAtenciosamente,\n${clinicName}`;
+    const body = `Olá!\n\nAgende sua consulta online:\n${bookingUrl}\n\nAtenciosamente,\n${clinicName}`;
     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   };
 
@@ -131,9 +131,9 @@ const Configuracoes = () => {
         >
           <Settings className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">ConfiguraÃ§Ãµes</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Configurações</h1>
             <p className="text-sm text-muted-foreground">
-              GestÃ£o de notificaÃ§Ãµes e preferÃªncias da clÃ­nica
+              Gestão de notificações e preferências da clínica
             </p>
           </div>
           <HelpIcon screen="configuracoes" />
@@ -238,19 +238,19 @@ const Configuracoes = () => {
                             onClick={handleShareNative}
                           >
                             <Share2 className="h-4 w-4 mr-2 text-primary" />
-                            Mais opÃ§Ãµes (Instagram, etc.)
+                            Mais opções (Instagram, etc.)
                           </Button>
                         )}
                       </div>
                       <p className="text-[10px] text-muted-foreground">
-                        Use o QR Code em materiais impressos, stories do Instagram ou cartÃ£o de visita digital.
+                        Use o QR Code em materiais impressos, stories do Instagram ou cartão de visita digital.
                       </p>
                     </div>
                   </div>
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Nenhum slug configurado para a clÃ­nica. Entre em contato para configurar.
+                  Nenhum slug configurado para a clínica. Entre em contato para configurar.
                 </p>
               )}
             </CardContent>
@@ -368,7 +368,7 @@ const Configuracoes = () => {
                             className="w-full justify-start"
                             onClick={() => {
                               const subject = `Acesse sua agenda - ${clinicName}`;
-                              const body = `OlÃ¡!\n\nAcesse sua agenda profissional pelo link:\n${agendaUrl}\n\nAtenciosamente,\n${clinicName}`;
+                              const body = `Olá!\n\nAcesse sua agenda profissional pelo link:\n${agendaUrl}\n\nAtenciosamente,\n${clinicName}`;
                               window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
                             }}
                           >
@@ -390,7 +390,7 @@ const Configuracoes = () => {
                               }}
                             >
                               <Share2 className="h-4 w-4 mr-2 text-primary" />
-                              Mais opÃ§Ãµes
+                              Mais opções
                             </Button>
                           )}
                         </div>
@@ -443,7 +443,7 @@ const Configuracoes = () => {
                   <div className="flex items-center justify-between rounded-lg border border-border p-4">
                     <div className="space-y-0.5">
                       <Label htmlFor="whatsapp-toggle" className="text-sm font-semibold">
-                        Ativar lembretes automÃ¡ticos
+                        Ativar lembretes automáticos
                       </Label>
                       <p className="text-xs text-muted-foreground">
                         Ao ativar, lembretes serão enfileirados no app e no WhatsApp em D-1 e 2h antes da consulta
@@ -470,9 +470,9 @@ const Configuracoes = () => {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Os lembretes estÃ£o sendo enfileirados. Para envio real via WhatsApp,
-                        Ã© necessÃ¡rio configurar a API do WhatsApp Business da Meta. Entre em contato
-                        para configurar a integraÃ§Ã£o completa.
+                        Os lembretes estão sendo enfileirados. Para envio real via WhatsApp,
+                        é necessário configurar a API do WhatsApp Business da Meta. Entre em contato
+                        para configurar a integração completa.
                       </p>
                     </motion.div>
                   )}
@@ -535,8 +535,8 @@ const Configuracoes = () => {
               <div className="flex items-center gap-3">
                 <Bell className="h-5 w-5 text-primary" />
                 <div>
-                  <CardTitle className="text-base">Fila de NotificaÃ§Ãµes</CardTitle>
-                  <CardDescription>Ãšltimas notificaÃ§Ãµes enfileiradas</CardDescription>
+                  <CardTitle className="text-base">Fila de Notificações</CardTitle>
+                  <CardDescription>Últimas notificações enfileiradas</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -551,10 +551,10 @@ const Configuracoes = () => {
                 <div className="py-8 text-center">
                   <Bell className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    Nenhuma notificaÃ§Ã£o na fila ainda.
+                    Nenhuma notificação na fila ainda.
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    NotificaÃ§Ãµes aparecerÃ£o aqui quando consultas forem agendadas.
+                    Notificações aparecerão aqui quando consultas forem agendadas.
                   </p>
                 </div>
               ) : (
@@ -573,7 +573,7 @@ const Configuracoes = () => {
                             </p>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span>
-                                {format(new Date(item.appointment_date), "dd/MM 'Ã s' HH:mm", { locale: ptBR })}
+                                {format(new Date(item.appointment_date), "dd/MM 'às' HH:mm", { locale: ptBR })}
                               </span>
                               <span>â€¢</span>
                               <span className="truncate">{item.professional_name}</span>
@@ -604,5 +604,6 @@ const Configuracoes = () => {
 };
 
 export default Configuracoes;
+
 
 
