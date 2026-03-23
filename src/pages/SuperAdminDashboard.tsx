@@ -1431,7 +1431,7 @@ const SuperAdminDashboard = () => {
             })}
 
             <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Acima de 11 profissionais, divulgar como plataforma customizada, com solicitação de orçamento.
+               Acima de 11 profissionais, divulgar como plataforma customizada, com solicitação de orçamento.
             </div>
           </CardContent>
         </Card>
