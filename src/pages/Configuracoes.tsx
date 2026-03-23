@@ -470,9 +470,9 @@ const Configuracoes = () => {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Os lembretes estÃ£o sendo enfileirados. Para envio real via WhatsApp,
-                        Ã© necessÃ¡rio configurar a API do WhatsApp Business da Meta. Entre em contato
-                        para configurar a integraÃ§Ã£o completa.
+                         Os lembretes estão sendo enfileirados. Para envio real via WhatsApp,
+                        é necessário configurar a API do WhatsApp Business da Meta. Entre em contato
+                        para configurar a integração completa.
                       </p>
                     </motion.div>
                   )}
