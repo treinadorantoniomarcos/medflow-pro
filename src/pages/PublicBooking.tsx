@@ -287,7 +287,7 @@ const PublicBooking = () => {
       }
       setStep("confirmed");
     } catch {
-      toast.error("Erro de conexÃ£o. Tente novamente.");
+      toast.error("Erro de conexão. Tente novamente.");
     }
     setSubmitting(false);
   };
