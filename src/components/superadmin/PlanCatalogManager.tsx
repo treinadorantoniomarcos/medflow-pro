@@ -207,12 +207,12 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
 
         <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-1">
-            <Label>Vigencia</Label>
-            <Input
-              readOnly
-              value={form.period_days}
-            />
-            <p className="text-xs text-muted-foreground">Assinaturas padronizadas em {SUBSCRIPTION_TERM_LABEL}.</p>
+             <Label>Vigência</Label>
+             <Input
+               readOnly
+               value={form.period_days}
+             />
+             <p className="text-xs text-muted-foreground">Assinaturas padronizadas em {SUBSCRIPTION_TERM_LABEL}.</p>
           </div>
           <div className="space-y-1">
             <Label>Cortesia (dias)</Label>
