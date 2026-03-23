@@ -131,7 +131,7 @@ const appIntegrations = [
    {
     name: "Google Calendar",
     status: "pendente",
-    description: "Sincronização de agenda externa para a equipe clínica.",
+     description: "Sincronização de agenda externa para a equipe clínica.",
     href: "https://calendar.google.com",
   },
   {
