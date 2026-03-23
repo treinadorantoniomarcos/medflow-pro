@@ -1293,6 +1293,20 @@ const SuperAdminDashboard = () => {
                 <Save className="h-4 w-4" />
                 {savingPlatformSettings ? "Salvando..." : "Salvar link"}
               </Button>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={async () => {
+                  const urlToCopy = platformCheckoutUrlDraft.trim() || `${window.location.origin}/assinar`;
+                  await navigator.clipboard.writeText(urlToCopy);
+                  setCopiedCheckoutLink(true);
+                  toast.success("Link copiado!");
+                  window.setTimeout(() => setCopiedCheckoutLink(false), 2000);
+                }}
+              >
+                {copiedCheckoutLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copiedCheckoutLink ? "Copiado" : "Copiar"}
+              </Button>
             </div>
 
             <div className="grid gap-2 text-sm text-muted-foreground">
