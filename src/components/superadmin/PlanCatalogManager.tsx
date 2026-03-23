@@ -226,7 +226,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
             <p className="text-xs text-muted-foreground">Valores permitidos: 7, 15 ou 30 dias. Use 0 para sem cortesia.</p>
           </div>
           <div className="space-y-1">
-            <Label>Descricao</Label>
+            <Label>Descrição</Label>
             <Input
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
