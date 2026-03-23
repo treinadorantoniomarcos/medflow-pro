@@ -140,7 +140,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const roleGuide = userRole ? roleGuideMap[userRole] : null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex min-h-dvh overflow-hidden bg-background">
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col border-r border-border bg-card transition-transform duration-300 lg:static lg:translate-x-0",
@@ -224,7 +224,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         />
       )}
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <header className="flex h-16 items-center gap-4 border-b border-border bg-card px-4 lg:px-6">
           <Button
             variant="ghost"
@@ -260,7 +260,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
       </div>
     </div>
   );
