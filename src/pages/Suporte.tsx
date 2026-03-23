@@ -275,7 +275,7 @@ const Suporte = () => {
                   rows={5}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Descreva a dÃºvida ou problema para o Super Admin."
+                  placeholder="Descreva a dúvida ou problema para o Super Admin."
                 />
               </div>
               <Button onClick={createTicket} disabled={savingTicket}>
