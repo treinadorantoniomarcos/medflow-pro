@@ -1260,7 +1260,7 @@ const SuperAdminDashboard = () => {
                 <p className="text-sm font-semibold text-foreground">Checkout oficial da Kiwify ou landing page externa</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                Use este campo para definir o link de venda que a equipe vai divulgar em campanhas e botões de assinatura.
+                Este é o link único que leva o lead direto para escolher o pacote antes de assinar. Use em campanhas, botões de venda e materiais comerciais.
               </p>
             </div>
 
