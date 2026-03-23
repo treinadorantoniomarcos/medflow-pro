@@ -159,7 +159,7 @@ const PublicBooking = () => {
       setWorkHours(data.workHours);
       setLoading(false);
     } catch {
-      setError("Erro ao carregar dados da clÃ­nica");
+      setError("Erro ao carregar dados da clínica");
       setLoading(false);
     }
   };
