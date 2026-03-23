@@ -186,7 +186,7 @@ const Mensagens = () => {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-soft"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-soft"
         >
           <div className="border-b border-border p-3">
             <div className="flex items-center justify-between gap-3">
