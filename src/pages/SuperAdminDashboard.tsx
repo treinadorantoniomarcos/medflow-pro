@@ -125,10 +125,10 @@ const appIntegrations = [
   {
     name: "WhatsApp Business",
     status: "conectado",
-    description: "Confirmações, lembretes e recuperação de no-show por mensageria.",
-    href: "https://business.facebook.com",
-  },
-  {
+     description: "Confirmações, lembretes e recuperação de no-show por mensageria.",
+     href: "https://business.facebook.com",
+   },
+   {
     name: "Google Calendar",
     status: "pendente",
     description: "Sincronização de agenda externa para a equipe clínica.",
