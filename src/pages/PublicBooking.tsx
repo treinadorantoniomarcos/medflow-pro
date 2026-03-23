@@ -449,7 +449,7 @@ const PublicBooking = () => {
                       {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
                     </p>
                     {availableSlots.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-4 text-center">Nenhum horÃ¡rio disponÃ­vel nesta data.</p>
+                      <p className="text-sm text-muted-foreground py-4 text-center">Nenhum horário disponível nesta data.</p>
                     ) : (
                       <div className="grid grid-cols-3 gap-2 max-h-[260px] overflow-y-auto">
                         {availableSlots.map((time) => (
