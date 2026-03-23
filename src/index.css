@@ -5,6 +5,12 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
   :root {
     /* MedFlux Pro Design System — Light Mode */
     --background: 210 20% 98%;
@@ -121,6 +127,7 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow-y: auto;
   }
 }
 

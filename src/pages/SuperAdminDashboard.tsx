@@ -1267,7 +1267,7 @@ const SuperAdminDashboard = () => {
               <Input
                 value={platformCheckoutUrlDraft}
                 onChange={(e) => setPlatformCheckoutUrlDraft(e.target.value)}
-                placeholder="https://dashboard.kiwify.com.br/products/..."
+                placeholder="https://seu-dominio.com/assinar"
                 className="font-mono text-sm"
               />
               <Button
@@ -1292,13 +1292,34 @@ const SuperAdminDashboard = () => {
                 <Save className="h-4 w-4" />
                 {savingPlatformSettings ? "Salvando..." : "Salvar link"}
               </Button>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={async () => {
+                  const linkToCopy = platformCheckoutUrlDraft.trim() || subscriptionShareUrl;
+                  try {
+                    await navigator.clipboard.writeText(linkToCopy);
+                    setCopiedShareLink(true);
+                    toast.success("Link copiado");
+                    window.setTimeout(() => setCopiedShareLink(false), 2000);
+                  } catch (error) {
+                    toast.error("Nao foi possivel copiar o link", {
+                      description: error instanceof Error ? error.message : "Permissao do navegador indisponivel.",
+                    });
+                  }
+                }}
+              >
+                {copiedShareLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copiedShareLink ? "Copiado" : "Copiar link"}
+              </Button>
             </div>
 
             <div className="grid gap-2 text-sm text-muted-foreground">
               <p>
-                Destino: <span className="font-medium text-foreground">{platformCheckoutUrlDraft || "/assinar"}</span>
+                Destino:{" "}
+                <span className="font-medium text-foreground">{platformCheckoutUrlDraft.trim() || subscriptionShareUrl}</span>
               </p>
-              <p>Se o campo estiver vazio, a plataforma continua com o link público padrão de assinatura.</p>
+              <p>Esse é o link único que leva o lead para a tela onde ele escolhe o pacote antes de assinar.</p>
             </div>
           </CardContent>
         </Card>
