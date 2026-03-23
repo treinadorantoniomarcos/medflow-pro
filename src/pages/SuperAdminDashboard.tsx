@@ -789,7 +789,7 @@ const SuperAdminDashboard = () => {
                   <ShieldCheck className="mr-1.5 h-4 w-4" /> Liberar acessos
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[640px]">
+              <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Gestão de acesso dos assinantes</DialogTitle>
                   <DialogDescription>
@@ -1149,7 +1149,7 @@ const SuperAdminDashboard = () => {
         </Card>
 
         <Dialog open={subscriberDetailOpen} onOpenChange={setSubscriberDetailOpen}>
-          <DialogContent className="sm:max-w-[720px]">
+          <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Dados do assinante</DialogTitle>
               <DialogDescription>
