@@ -1392,7 +1392,7 @@ const SuperAdminDashboard = () => {
 
         <Card className="shadow-soft" data-tutorial-target="superadmin-plans">
           <CardHeader>
-            <CardTitle className="text-base">Descrições dos pacotes para divulgação</CardTitle>
+             <CardTitle className="text-base">Descrições dos pacotes para divulgação</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {planMarketingCatalog.map((plan) => {
