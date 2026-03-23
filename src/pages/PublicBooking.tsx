@@ -541,7 +541,7 @@ const PublicBooking = () => {
                     />
                   </div>
                   {patientCpf.length > 0 && patientCpf.replace(/\D/g, "").length < 11 && (
-                    <p className="text-xs text-destructive">Informe um CPF vÃ¡lido com 11 dÃ­gitos</p>
+                    <p className="text-xs text-destructive">Informe um CPF válido com 11 dígitos</p>
                   )}
                 </div>
 
