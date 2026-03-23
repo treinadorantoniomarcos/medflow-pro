@@ -49,7 +49,7 @@ CREATE TRIGGER set_updated_at_subscription_plans
 INSERT INTO public.subscription_plans (code, name, description, monthly_price_cents, period_days, trial_days, is_courtesy, is_active)
 VALUES
   ('start', 'Start', 'Agenda e operacao essencial', 19900, 30, 0, false, true),
-  ('pro', 'Pro', 'Agenda + automações', 39900, 30, 0, false, true),
+  ('pro', 'Pro', 'Agenda + automacoes + financeiro', 39900, 30, 0, false, true),
   ('signature', 'Signature', 'Operacao completa com controle premium', 79900, 30, 0, false, true),
   ('courtesy', 'Cortesia', 'Acesso completo sem cobranca', 0, 30, 30, true, true)
 ON CONFLICT (code) DO NOTHING;

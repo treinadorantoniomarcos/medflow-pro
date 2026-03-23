@@ -109,24 +109,6 @@ type PlatformSettingsRow = {
   updated_at: string;
 };
 
-type CustomQuoteRequestRow = {
-  id: string;
-  company_name: string;
-  contact_name: string;
-  email: string;
-  whatsapp: string;
-  address_full: string;
-  admin_count: number;
-  professional_count: number;
-  patient_volume: string;
-  desired_app_type: string;
-  additional_info: string | null;
-  source_url: string | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
-};
-
 type PlanRow = {
   id: string;
   code: string;
@@ -241,6 +223,7 @@ const SuperAdminDashboard = () => {
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [copiedCheckoutLink, setCopiedCheckoutLink] = useState(false);
   const [copiedCopyKey, setCopiedCopyKey] = useState<string | null>(null);
+  const [quoteStatusUpdating, setQuoteStatusUpdating] = useState<string | null>(null);
   const [subscriberDetailOpen, setSubscriberDetailOpen] = useState(false);
   const [selectedSubscriberId, setSelectedSubscriberId] = useState<string | null>(null);
   const [resettingPassword, setResettingPassword] = useState(false);
@@ -320,19 +303,49 @@ const SuperAdminDashboard = () => {
     },
   });
 
-  const { data: customQuoteRequests = [] } = useQuery({
-    queryKey: ["super-admin-custom-quote-requests"],
+  const { data: quoteRequests = [], refetch: refetchQuotes } = useQuery({
+    queryKey: ["super-admin-quote-requests"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("custom_quote_requests")
-        .select("id, company_name, contact_name, email, whatsapp, address_full, admin_count, professional_count, patient_volume, desired_app_type, additional_info, source_url, status, created_at, updated_at")
-        .order("created_at", { ascending: false })
-        .limit(20);
+        .from("custom_quote_requests" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as CustomQuoteRequestRow[];
+      return (data ?? []) as unknown as Array<{
+        id: string;
+        company_name: string;
+        contact_name: string;
+        email: string;
+        whatsapp: string;
+        full_address: string | null;
+        admin_count: number;
+        professional_count: number;
+        avg_clients: number;
+        app_type: string | null;
+        additional_info: string | null;
+        status: string;
+        created_at: string;
+      }>;
     },
   });
+
+  const updateQuoteStatus = async (quoteId: string, newStatus: string) => {
+    setQuoteStatusUpdating(quoteId);
+    const { error } = await supabase
+      .from("custom_quote_requests" as any)
+      .update({ status: newStatus } as any)
+      .eq("id", quoteId);
+    setQuoteStatusUpdating(null);
+
+    if (error) {
+      toast.error("Falha ao atualizar status", { description: error.message });
+      return;
+    }
+
+    toast.success(`Status atualizado para ${newStatus}`);
+    refetchQuotes();
+  };
 
   const subscriberRows = useMemo(() => {
     if (!data) return [];
@@ -1350,50 +1363,84 @@ const SuperAdminDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-soft" data-tutorial-target="superadmin-custom-quotes">
-          <CardHeader>
-            <CardTitle className="text-base">Solicitações de projeto customizado</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {customQuoteRequests.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma solicitação enviada ainda.</p>
-            ) : (
-              customQuoteRequests.map((request) => (
-                <div key={request.id} className="rounded-xl border border-border bg-secondary/20 p-4">
-                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{request.company_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {request.contact_name} · {request.email} · {request.whatsapp}
-                      </p>
-                    </div>
-                    <Badge variant={request.status === "pending" ? "outline" : "default"}>{request.status}</Badge>
-                  </div>
-
-                  <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
-                    <p>Admins: <span className="font-medium text-foreground">{request.admin_count}</span></p>
-                    <p>Profissionais: <span className="font-medium text-foreground">{request.professional_count}</span></p>
-                    <p>Pacientes/mês: <span className="font-medium text-foreground">{request.patient_volume}</span></p>
-                    <p>Tipo de app: <span className="font-medium text-foreground">{request.desired_app_type}</span></p>
-                    <p className="md:col-span-2">Endereço: <span className="font-medium text-foreground">{request.address_full}</span></p>
-                    {request.additional_info && (
-                      <p className="md:col-span-2">Observações: <span className="font-medium text-foreground">{request.additional_info}</span></p>
-                    )}
-                  </div>
-
-                  <div className="mt-3 text-xs text-muted-foreground">
-                    <p>Recebido em: {new Date(request.created_at).toLocaleString("pt-BR")}</p>
-                    <p>Canal: formulário de projeto customizado</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
         <PlanCatalogManager
           onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
         />
+
+        {/* Quote requests */}
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-base">Solicitações de orçamento customizado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {quoteRequests.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma solicitação recebida.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted-foreground">
+                      <th className="pb-2 pr-4">Empresa</th>
+                      <th className="pb-2 pr-4">Contato</th>
+                      <th className="pb-2 pr-4">E-mail</th>
+                      <th className="pb-2 pr-4">WhatsApp</th>
+                      <th className="pb-2 pr-4">Profissionais</th>
+                      <th className="pb-2 pr-4">Tipo</th>
+                      <th className="pb-2 pr-4">Status</th>
+                      <th className="pb-2 pr-4">Data</th>
+                      <th className="pb-2 pr-4">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quoteRequests.map((req) => (
+                      <tr key={req.id} className="border-b border-border/70 align-top">
+                        <td className="py-2 pr-4">
+                          <p className="font-medium">{req.company_name}</p>
+                          {req.full_address && <p className="text-xs text-muted-foreground">{req.full_address}</p>}
+                        </td>
+                        <td className="py-2 pr-4">{req.contact_name}</td>
+                        <td className="py-2 pr-4 text-xs">{req.email}</td>
+                        <td className="py-2 pr-4 text-xs">{req.whatsapp}</td>
+                        <td className="py-2 pr-4 text-center">{req.professional_count}</td>
+                        <td className="py-2 pr-4">{req.app_type ?? "—"}</td>
+                        <td className="py-2 pr-4">
+                          <Badge variant={req.status === "pending" ? "outline" : "default"}>
+                            {req.status === "pending" ? "Pendente" : req.status === "contacted" ? "Contatado" : req.status === "closed" ? "Fechado" : req.status}
+                          </Badge>
+                        </td>
+                        <td className="py-2 pr-4 text-xs">{new Date(req.created_at).toLocaleDateString("pt-BR")}</td>
+                        <td className="py-2 pr-4">
+                          <div className="flex flex-col gap-1">
+                            {req.status === "pending" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={quoteStatusUpdating === req.id}
+                                onClick={() => updateQuoteStatus(req.id, "contacted")}
+                              >
+                                Marcar contatado
+                              </Button>
+                            )}
+                            {req.status === "contacted" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={quoteStatusUpdating === req.id}
+                                onClick={() => updateQuoteStatus(req.id, "closed")}
+                              >
+                                Fechar
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="hidden shadow-soft" data-tutorial-target="superadmin-share">
           <CardHeader>
