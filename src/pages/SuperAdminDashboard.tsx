@@ -956,14 +956,14 @@ const SuperAdminDashboard = () => {
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="pb-2 pr-4">Clinica</th>
-                    <th className="pb-2 pr-4">Plano</th>
-                    <th className="pb-2 pr-4">Status</th>
-                    <th className="pb-2 pr-4">Equipe</th>
-                    <th className="pb-2 pr-4">Pacientes</th>
-                    <th className="pb-2 pr-4">Consultas (mes)</th>
-                    <th className="pb-2 pr-4">No-show (mes)</th>
-                    <th className="pb-2 pr-4">Acoes</th>
+                     <th className="pb-2 pr-4">Clínica</th>
+                     <th className="pb-2 pr-4">Plano</th>
+                     <th className="pb-2 pr-4">Status</th>
+                     <th className="pb-2 pr-4">Equipe</th>
+                     <th className="pb-2 pr-4">Pacientes</th>
+                     <th className="pb-2 pr-4">Consultas (mês)</th>
+                     <th className="pb-2 pr-4">No-show (mês)</th>
+                     <th className="pb-2 pr-4">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
