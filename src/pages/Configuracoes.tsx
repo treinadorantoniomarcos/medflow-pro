@@ -131,9 +131,9 @@ const Configuracoes = () => {
         >
           <Settings className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">ConfiguraÃ§Ãµes</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Configurações</h1>
             <p className="text-sm text-muted-foreground">
-              GestÃ£o de notificaÃ§Ãµes e preferÃªncias da clÃ­nica
+              Gestão de notificações e preferências da clínica
             </p>
           </div>
           <HelpIcon screen="configuracoes" />
