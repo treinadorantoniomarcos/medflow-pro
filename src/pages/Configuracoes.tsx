@@ -368,7 +368,7 @@ const Configuracoes = () => {
                             className="w-full justify-start"
                             onClick={() => {
                               const subject = `Acesse sua agenda - ${clinicName}`;
-                              const body = `OlÃ¡!\n\nAcesse sua agenda profissional pelo link:\n${agendaUrl}\n\nAtenciosamente,\n${clinicName}`;
+                              const body = `Olá!\n\nAcesse sua agenda profissional pelo link:\n${agendaUrl}\n\nAtenciosamente,\n${clinicName}`;
                               window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
                             }}
                           >
