@@ -1367,6 +1367,81 @@ const SuperAdminDashboard = () => {
           onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
         />
 
+        {/* Quote requests */}
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-base">Solicitações de orçamento customizado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {quoteRequests.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma solicitação recebida.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted-foreground">
+                      <th className="pb-2 pr-4">Empresa</th>
+                      <th className="pb-2 pr-4">Contato</th>
+                      <th className="pb-2 pr-4">E-mail</th>
+                      <th className="pb-2 pr-4">WhatsApp</th>
+                      <th className="pb-2 pr-4">Profissionais</th>
+                      <th className="pb-2 pr-4">Tipo</th>
+                      <th className="pb-2 pr-4">Status</th>
+                      <th className="pb-2 pr-4">Data</th>
+                      <th className="pb-2 pr-4">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quoteRequests.map((req) => (
+                      <tr key={req.id} className="border-b border-border/70 align-top">
+                        <td className="py-2 pr-4">
+                          <p className="font-medium">{req.company_name}</p>
+                          {req.full_address && <p className="text-xs text-muted-foreground">{req.full_address}</p>}
+                        </td>
+                        <td className="py-2 pr-4">{req.contact_name}</td>
+                        <td className="py-2 pr-4 text-xs">{req.email}</td>
+                        <td className="py-2 pr-4 text-xs">{req.whatsapp}</td>
+                        <td className="py-2 pr-4 text-center">{req.professional_count}</td>
+                        <td className="py-2 pr-4">{req.app_type ?? "—"}</td>
+                        <td className="py-2 pr-4">
+                          <Badge variant={req.status === "pending" ? "outline" : "default"}>
+                            {req.status === "pending" ? "Pendente" : req.status === "contacted" ? "Contatado" : req.status === "closed" ? "Fechado" : req.status}
+                          </Badge>
+                        </td>
+                        <td className="py-2 pr-4 text-xs">{new Date(req.created_at).toLocaleDateString("pt-BR")}</td>
+                        <td className="py-2 pr-4">
+                          <div className="flex flex-col gap-1">
+                            {req.status === "pending" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={quoteStatusUpdating === req.id}
+                                onClick={() => updateQuoteStatus(req.id, "contacted")}
+                              >
+                                Marcar contatado
+                              </Button>
+                            )}
+                            {req.status === "contacted" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={quoteStatusUpdating === req.id}
+                                onClick={() => updateQuoteStatus(req.id, "closed")}
+                              >
+                                Fechar
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="hidden shadow-soft" data-tutorial-target="superadmin-share">
           <CardHeader>
             <CardTitle className="text-base">Link público de assinatura</CardTitle>
