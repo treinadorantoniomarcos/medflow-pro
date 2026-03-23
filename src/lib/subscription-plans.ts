@@ -139,6 +139,11 @@ export const getPlanCommercialCopy = (plan: PlanOption): PlanCommercialCopy => {
 
 export const getSubscriptionShareUrl = (origin: string) => `${origin}${SUBSCRIPTION_SHARE_PATH}`;
 
+export const getConfiguredSubscriptionShareUrl = (origin: string, configuredUrl?: string | null) => {
+  const trimmed = configuredUrl?.trim();
+  return trimmed ? trimmed : getSubscriptionShareUrl(origin);
+};
+
 export const storePreferredPlan = (planKey: string) => {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(PLAN_PREFERENCE_KEY, planKey);

@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
@@ -103,6 +103,11 @@ type AppointmentRow = {
 
 type SubscriptionPlan = string;
 type SubscriptionStatus = "trialing" | "active" | "past_due" | "paused" | "canceled";
+
+type PlatformSettingsRow = {
+  checkout_url: string | null;
+  updated_at: string;
+};
 
 type PlanRow = {
   id: string;
@@ -227,6 +232,7 @@ const SuperAdminDashboard = () => {
     adminFullName: "",
     adminEmail: "",
     adminWhatsapp: "",
+    platformCheckoutUrl: "",
     accessStatus: "",
     plan: "start" as SubscriptionPlan,
     subscriptionStatus: "trialing" as SubscriptionStatus,
@@ -234,6 +240,8 @@ const SuperAdminDashboard = () => {
 
   const [billingDraft, setBillingDraft] = useState<Record<string, { plan: SubscriptionPlan; status: SubscriptionStatus }>>({});
   const [savingTenantId, setSavingTenantId] = useState<string | null>(null);
+  const [platformCheckoutUrlDraft, setPlatformCheckoutUrlDraft] = useState("");
+  const [savingPlatformSettings, setSavingPlatformSettings] = useState(false);
   const subscriptionShareUrl = getSubscriptionShareUrl(window.location.origin);
 
   const { data, isLoading } = useQuery({
@@ -279,6 +287,20 @@ const SuperAdminDashboard = () => {
     },
   });
 
+  const { data: platformSettings } = useQuery({
+    queryKey: ["super-admin-platform-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("platform_settings")
+        .select("checkout_url, updated_at")
+        .eq("id", 1)
+        .single();
+
+      if (error) throw error;
+      return data as PlatformSettingsRow;
+    },
+  });
+
   const subscriberRows = useMemo(() => {
     if (!data) return [];
 
@@ -308,6 +330,9 @@ const SuperAdminDashboard = () => {
         settings: clinic.settings ?? {},
         subscription,
         access_request: readAccessRequest(clinic.settings),
+        platform: {
+          checkout_url: platformSettings?.checkout_url ?? null,
+        },
         owners: roles.filter((r) => r.role === "owner").length,
         admins: roles.filter((r) => r.role === "admin").length,
         professionals: roles.filter((r) => r.role === "professional").length,
@@ -318,6 +343,12 @@ const SuperAdminDashboard = () => {
       };
     });
   }, [data]);
+
+  const configuredPlatformCheckoutUrl = platformSettings?.checkout_url ?? "";
+
+  useEffect(() => {
+    setPlatformCheckoutUrlDraft(configuredPlatformCheckoutUrl);
+  }, [configuredPlatformCheckoutUrl]);
 
   const monthlyTrend = useMemo(() => {
     if (!data) return [];
@@ -1125,6 +1156,17 @@ const SuperAdminDashboard = () => {
                   onChange={(e) => setSubscriberDraft((prev) => ({ ...prev, adminWhatsapp: e.target.value }))}
                 />
               </div>
+              <div className="hidden">
+                <Label>Link da plataforma / checkout</Label>
+                <Input
+                  value={subscriberDraft.platformCheckoutUrl}
+                  onChange={(e) => setSubscriberDraft((prev) => ({ ...prev, platformCheckoutUrl: e.target.value }))}
+                  placeholder="https://dashboard.kiwify.com.br/products/..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Salve aqui o link que vai para o checkout ou página de venda usada na Kiwify.
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label>Status do acesso</Label>
                 <Input
@@ -1205,11 +1247,66 @@ const SuperAdminDashboard = () => {
           </DialogContent>
         </Dialog>
 
+        <Card className="shadow-soft" data-tutorial-target="superadmin-platform-settings">
+          <CardHeader>
+            <CardTitle className="text-base">ConfiguraÃ§Ã£o da plataforma</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-xl border border-border bg-secondary/40 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-primary" />
+                <p className="text-sm font-semibold text-foreground">Checkout oficial da Kiwify ou landing page externa</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Use este campo para definir o link de venda que a equipe vai divulgar em campanhas e botões de assinatura.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                value={platformCheckoutUrlDraft}
+                onChange={(e) => setPlatformCheckoutUrlDraft(e.target.value)}
+                placeholder="https://dashboard.kiwify.com.br/products/..."
+                className="font-mono text-sm"
+              />
+              <Button
+                className="gap-2"
+                onClick={async () => {
+                  setSavingPlatformSettings(true);
+                  const { error } = await supabase
+                    .from("platform_settings")
+                    .upsert({ id: 1, checkout_url: platformCheckoutUrlDraft.trim() || null }, { onConflict: "id" });
+                  setSavingPlatformSettings(false);
+
+                  if (error) {
+                    toast.error("Falha ao salvar link da plataforma", { description: error.message });
+                    return;
+                  }
+
+                  toast.success("Link da plataforma salvo.");
+                  queryClient.invalidateQueries({ queryKey: ["super-admin-platform-settings"] });
+                }}
+                disabled={savingPlatformSettings}
+              >
+                <Save className="h-4 w-4" />
+                {savingPlatformSettings ? "Salvando..." : "Salvar link"}
+              </Button>
+            </div>
+
+            <div className="grid gap-2 text-sm text-muted-foreground">
+              <p>
+                Destino: <span className="font-medium text-foreground">{platformCheckoutUrlDraft || "/assinar"}</span>
+              </p>
+              <p>Se o campo estiver vazio, a plataforma continua com o link público padrão de assinatura.</p>
+            </div>
+          </CardContent>
+        </Card>
+
         <PlanCatalogManager
           onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
         />
 
-        <Card className="shadow-soft" data-tutorial-target="superadmin-share">
+        <Card className="hidden shadow-soft" data-tutorial-target="superadmin-share">
           <CardHeader>
             <CardTitle className="text-base">Link publico de assinatura</CardTitle>
           </CardHeader>
@@ -1226,12 +1323,7 @@ const SuperAdminDashboard = () => {
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
-                  readOnly
-                  value={subscriptionShareUrl}
-                  className="font-mono text-sm"
-                  onFocus={(e) => e.target.select()}
-                />
+                <Input readOnly value={subscriptionShareUrl} className="font-mono text-sm" onFocus={(e) => e.target.select()} />
                 <Button
                   variant="outline"
                   className="gap-2"
@@ -1248,8 +1340,14 @@ const SuperAdminDashboard = () => {
               </div>
 
               <div className="grid gap-2 text-sm text-muted-foreground">
-                <p>Destino: <span className="font-medium text-foreground">/assinar</span></p>
+                <p>
+                  Destino:{" "}
+                  <span className="font-medium text-foreground">{"/assinar"}</span>
+                </p>
                 <p>Uso recomendado: bio do Instagram, WhatsApp comercial, landing pages de campanha e materiais de vendas.</p>
+                <p className="text-xs">
+                  Se quiser vender pela Kiwify, salve o link do checkout no campo do assinante e copie o valor de saída daqui.
+                </p>
               </div>
             </div>
 
@@ -1269,8 +1367,8 @@ const SuperAdminDashboard = () => {
                   className="text-foreground"
                 />
               </div>
-              <p className="text-center text-xs text-muted-foreground">
-                Escaneie para abrir a pagina publica de assinatura.
+            <p className="text-center text-xs text-muted-foreground">
+                Escaneie para abrir a pagina publica de assinatura ou o checkout configurado.
               </p>
             </div>
           </CardContent>
