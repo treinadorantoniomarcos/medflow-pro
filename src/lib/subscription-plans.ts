@@ -42,16 +42,13 @@ export const planMarketingContent: Record<string, PlanMarketingContent> = {
     ],
   },
   pro: {
-    summary: "Fluxo completo para equipes pequenas que precisam reduzir faltas e organizar a rotina financeira.",
+    summary: "Fluxo completo para equipes pequenas que precisam reduzir faltas e organizar a rotina diária.",
     audience: "Ideal para clínicas e consultórios com até 3 profissionais.",
     features: [
       "Licença para até 3 profissionais",
       "Contrato com vigência de 12 meses",
       "Tudo do plano Start",
-      "Automações de lembrete D-2 e D-1",
-      "Controle de retorno, financeiro e repasse por profissional",
     ],
-    highlight: "Mais escolhido",
   },
   signature: {
     summary: "Camada executiva para uma operação estruturada, com governança, indicadores e automações avançadas.",
@@ -91,7 +88,7 @@ export const fallbackPlanOptions: PlanOption[] = [
     key: "pro",
     name: "Pro",
     monthlyPrice: 399,
-    description: "Até 3 profissionais | agenda + automações + financeiro",
+    description: "Até 3 profissionais | agenda + automações",
     periodDays: SUBSCRIPTION_TERM_DAYS,
     trialDays: 0,
     isCourtesy: false,

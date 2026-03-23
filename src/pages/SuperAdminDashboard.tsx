@@ -109,6 +109,24 @@ type PlatformSettingsRow = {
   updated_at: string;
 };
 
+type CustomQuoteRequestRow = {
+  id: string;
+  company_name: string;
+  contact_name: string;
+  email: string;
+  whatsapp: string;
+  address_full: string;
+  admin_count: number;
+  professional_count: number;
+  patient_volume: string;
+  desired_app_type: string;
+  additional_info: string | null;
+  source_url: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type PlanRow = {
   id: string;
   code: string;
@@ -299,6 +317,20 @@ const SuperAdminDashboard = () => {
 
       if (error) throw error;
       return data as PlatformSettingsRow;
+    },
+  });
+
+  const { data: customQuoteRequests = [] } = useQuery({
+    queryKey: ["super-admin-custom-quote-requests"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("custom_quote_requests")
+        .select("id, company_name, contact_name, email, whatsapp, address_full, admin_count, professional_count, patient_volume, desired_app_type, additional_info, source_url, status, created_at, updated_at")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      return (data ?? []) as CustomQuoteRequestRow[];
     },
   });
 
@@ -1315,6 +1347,47 @@ const SuperAdminDashboard = () => {
               </p>
               <p>Se o campo estiver vazio, a plataforma continua com o link público padrão de assinatura.</p>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-soft" data-tutorial-target="superadmin-custom-quotes">
+          <CardHeader>
+            <CardTitle className="text-base">Solicitações de projeto customizado</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {customQuoteRequests.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma solicitação enviada ainda.</p>
+            ) : (
+              customQuoteRequests.map((request) => (
+                <div key={request.id} className="rounded-xl border border-border bg-secondary/20 p-4">
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{request.company_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {request.contact_name} · {request.email} · {request.whatsapp}
+                      </p>
+                    </div>
+                    <Badge variant={request.status === "pending" ? "outline" : "default"}>{request.status}</Badge>
+                  </div>
+
+                  <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
+                    <p>Admins: <span className="font-medium text-foreground">{request.admin_count}</span></p>
+                    <p>Profissionais: <span className="font-medium text-foreground">{request.professional_count}</span></p>
+                    <p>Pacientes/mês: <span className="font-medium text-foreground">{request.patient_volume}</span></p>
+                    <p>Tipo de app: <span className="font-medium text-foreground">{request.desired_app_type}</span></p>
+                    <p className="md:col-span-2">Endereço: <span className="font-medium text-foreground">{request.address_full}</span></p>
+                    {request.additional_info && (
+                      <p className="md:col-span-2">Observações: <span className="font-medium text-foreground">{request.additional_info}</span></p>
+                    )}
+                  </div>
+
+                  <div className="mt-3 text-xs text-muted-foreground">
+                    <p>Recebido em: {new Date(request.created_at).toLocaleString("pt-BR")}</p>
+                    <p>Canal: formulário de projeto customizado</p>
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 

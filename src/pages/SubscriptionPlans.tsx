@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
@@ -7,6 +7,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 import {
   SUBSCRIPTION_TERM_LABEL,
   fallbackPlanOptions,
@@ -26,8 +37,44 @@ type CatalogPlan = {
   is_active: boolean;
 };
 
+type CustomQuoteForm = {
+  companyName: string;
+  contactName: string;
+  email: string;
+  whatsapp: string;
+  addressFull: string;
+  adminCount: string;
+  professionalCount: string;
+  patientVolume: string;
+  desiredAppType: string;
+  additionalInfo: string;
+};
+
+const appTypeOptions = [
+  "Aplicativo web",
+  "Portal web e administrativo",
+  "Aplicativo mobile para equipe",
+  "Aplicativo para pacientes",
+  "Projeto híbrido",
+];
+
+const emptyQuoteForm = (): CustomQuoteForm => ({
+  companyName: "",
+  contactName: "",
+  email: "",
+  whatsapp: "",
+  addressFull: "",
+  adminCount: "",
+  professionalCount: "",
+  patientVolume: "",
+  desiredAppType: appTypeOptions[0],
+  additionalInfo: "",
+});
+
 const SubscriptionPlans = () => {
   const navigate = useNavigate();
+  const [customQuoteForm, setCustomQuoteForm] = useState<CustomQuoteForm>(emptyQuoteForm);
+  const [submittingQuote, setSubmittingQuote] = useState(false);
 
   const { data: catalogPlans = [] } = useQuery({
     queryKey: ["public-subscription-plans"],
@@ -64,6 +111,55 @@ const SubscriptionPlans = () => {
   const handleChoosePlan = (planKey: string) => {
     storePreferredPlan(planKey);
     navigate(`/register?plan=${encodeURIComponent(planKey)}`);
+  };
+
+  const handleSubmitCustomQuote = async () => {
+    const adminCount = Number(customQuoteForm.adminCount);
+    const professionalCount = Number(customQuoteForm.professionalCount);
+
+    if (
+      !customQuoteForm.companyName.trim() ||
+      !customQuoteForm.contactName.trim() ||
+      !customQuoteForm.email.trim() ||
+      !customQuoteForm.whatsapp.trim() ||
+      !customQuoteForm.addressFull.trim() ||
+      !customQuoteForm.patientVolume.trim() ||
+      !customQuoteForm.desiredAppType.trim() ||
+      !Number.isFinite(adminCount) ||
+      adminCount <= 0 ||
+      !Number.isFinite(professionalCount) ||
+      professionalCount <= 11
+    ) {
+      toast.error("Preencha os dados principais do projeto customizado.");
+      return;
+    }
+
+    setSubmittingQuote(true);
+    const { error } = await supabase.from("custom_quote_requests").insert({
+      company_name: customQuoteForm.companyName.trim(),
+      contact_name: customQuoteForm.contactName.trim(),
+      email: customQuoteForm.email.trim(),
+      whatsapp: customQuoteForm.whatsapp.trim(),
+      address_full: customQuoteForm.addressFull.trim(),
+      admin_count: adminCount,
+      professional_count: professionalCount,
+      patient_volume: customQuoteForm.patientVolume.trim(),
+      desired_app_type: customQuoteForm.desiredAppType.trim(),
+      additional_info: customQuoteForm.additionalInfo.trim() || null,
+      source_url: window.location.href,
+      status: "pending",
+    });
+    setSubmittingQuote(false);
+
+    if (error) {
+      toast.error("Não foi possível enviar sua solicitação.", { description: error.message });
+      return;
+    }
+
+    toast.success("Solicitação enviada com sucesso.", {
+      description: "Entraremos em contato em até 48 horas.",
+    });
+    setCustomQuoteForm(emptyQuoteForm());
   };
 
   return (
@@ -147,6 +243,143 @@ const SubscriptionPlans = () => {
               Operações com mais de 11 profissionais saem do pacote padrão e entram em um projeto customizado, com escopo comercial e técnico sob medida.
             </p>
             <p className="text-sm font-medium text-foreground">Solicite um orçamento com o time comercial para definir implantação, capacidade e governança.</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border shadow-soft">
+          <CardHeader>
+            <p className="text-sm font-semibold text-primary">Projeto sob medida</p>
+            <h2 className="text-2xl font-extrabold text-foreground">Solicite uma proposta customizada</h2>
+          </CardHeader>
+          <CardContent className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Preencha as informações principais do seu projeto para que o time comercial entenda a operação e retorne com uma proposta adequada.
+              </p>
+              <div className="grid gap-3 rounded-2xl border border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
+                <p>Resposta em até 48 horas.</p>
+                <p>Ideal para operações com mais de 11 profissionais.</p>
+                <p>Os dados chegam diretamente ao Super Admin para análise comercial.</p>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="quote-company">Nome da empresa</Label>
+                  <Input
+                    id="quote-company"
+                    value={customQuoteForm.companyName}
+                    onChange={(e) => setCustomQuoteForm((prev) => ({ ...prev, companyName: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-contact">Nome do contato</Label>
+                  <Input
+                    id="quote-contact"
+                    value={customQuoteForm.contactName}
+                    onChange={(e) => setCustomQuoteForm((prev) => ({ ...prev, contactName: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-email">E-mail</Label>
+                  <Input
+                    id="quote-email"
+                    type="email"
+                    value={customQuoteForm.email}
+                    onChange={(e) => setCustomQuoteForm((prev) => ({ ...prev, email: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-whatsapp">WhatsApp</Label>
+                  <Input
+                    id="quote-whatsapp"
+                    value={customQuoteForm.whatsapp}
+                    onChange={(e) => setCustomQuoteForm((prev) => ({ ...prev, whatsapp: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="quote-address">Endereço completo</Label>
+                <Textarea
+                  id="quote-address"
+                  value={customQuoteForm.addressFull}
+                  onChange={(e) => setCustomQuoteForm((prev) => ({ ...prev, addressFull: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="quote-admins">Quantos admins terão acesso?</Label>
+                  <Input
+                    id="quote-admins"
+                    type="number"
+                    min={1}
+                    value={customQuoteForm.adminCount}
+                    onChange={(e) => setCustomQuoteForm((prev) => ({ ...prev, adminCount: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-professionals">Quantos profissionais terão acesso?</Label>
+                  <Input
+                    id="quote-professionals"
+                    type="number"
+                    min={12}
+                    value={customQuoteForm.professionalCount}
+                    onChange={(e) => setCustomQuoteForm((prev) => ({ ...prev, professionalCount: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-patients">Média de clientes/pacientes</Label>
+                  <Input
+                    id="quote-patients"
+                    value={customQuoteForm.patientVolume}
+                    onChange={(e) => setCustomQuoteForm((prev) => ({ ...prev, patientVolume: e.target.value }))}
+                    placeholder="Ex.: 300 por mês"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-app-type">Tipo de aplicativo desejado</Label>
+                  <Select
+                    value={customQuoteForm.desiredAppType}
+                    onValueChange={(value) => setCustomQuoteForm((prev) => ({ ...prev, desiredAppType: value }))}
+                  >
+                    <SelectTrigger id="quote-app-type">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {appTypeOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="quote-notes">Mais informações importantes</Label>
+                <Textarea
+                  id="quote-notes"
+                  value={customQuoteForm.additionalInfo}
+                  onChange={(e) => setCustomQuoteForm((prev) => ({ ...prev, additionalInfo: e.target.value }))}
+                  rows={4}
+                  placeholder="Escreva o que mais for importante para o seu projeto."
+                />
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button className="w-full sm:w-auto" onClick={handleSubmitCustomQuote} disabled={submittingQuote}>
+                  {submittingQuote ? "Enviando..." : "Enviar solicitação"}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Ao enviar, você confirma que deseja receber contato comercial em até 48 horas.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

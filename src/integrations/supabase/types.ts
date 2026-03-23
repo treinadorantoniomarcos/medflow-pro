@@ -358,6 +358,60 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_quote_requests: {
+        Row: {
+          additional_info: string | null
+          address_full: string
+          admin_count: number
+          company_name: string
+          contact_name: string
+          created_at: string
+          desired_app_type: string
+          email: string
+          id: string
+          patient_volume: string
+          professional_count: number
+          source_url: string | null
+          status: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          additional_info?: string | null
+          address_full: string
+          admin_count: number
+          company_name: string
+          contact_name: string
+          created_at?: string
+          desired_app_type: string
+          email: string
+          id?: string
+          patient_volume: string
+          professional_count: number
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp: string
+        }
+        Update: {
+          additional_info?: string | null
+          address_full?: string
+          admin_count?: number
+          company_name?: string
+          contact_name?: string
+          created_at?: string
+          desired_app_type?: string
+          email?: string
+          id?: string
+          patient_volume?: string
+          professional_count?: number
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       professional_availability_blocks: {
         Row: {
           audio_note_path: string | null
