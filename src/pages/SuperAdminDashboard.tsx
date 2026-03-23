@@ -949,7 +949,7 @@ const SuperAdminDashboard = () => {
 
         <Card className="shadow-soft" data-tutorial-target="superadmin-subscriber">
           <CardHeader>
-            <CardTitle className="text-base">Assinantes - visao detalhada e assinatura</CardTitle>
+            <CardTitle className="text-base">Assinantes - visão detalhada e assinatura</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
