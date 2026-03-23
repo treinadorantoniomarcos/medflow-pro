@@ -60,7 +60,6 @@ const SubscriptionPlans = () => {
     }));
   }, [catalogPlans]);
 
-
   const handleChoosePlan = (planKey: string) => {
     storePreferredPlan(planKey);
     navigate(`/register?plan=${encodeURIComponent(planKey)}`);
@@ -97,7 +96,9 @@ const SubscriptionPlans = () => {
                 <div>
                   <p className="text-3xl font-extrabold text-foreground">R$ {plan.monthlyPrice.toFixed(2)}</p>
                   <p className="text-xs text-muted-foreground">
-                    por mês | vigência de {SUBSCRIPTION_TERM_LABEL}{plan.trialDays ? ` | ${plan.trialDays} dias de cortesia` : ""}{plan.isCourtesy ? " | pacote cortesia" : ""}
+                    por mês | vigência de {SUBSCRIPTION_TERM_LABEL}
+                    {plan.trialDays ? ` | ${plan.trialDays} dias de cortesia` : ""}
+                    {plan.isCourtesy ? " | pacote cortesia" : ""}
                   </p>
                 </div>
               </CardHeader>
@@ -146,12 +147,17 @@ const SubscriptionPlans = () => {
             <p className="mx-auto max-w-2xl text-sm text-muted-foreground">
               Operações com mais de 11 profissionais saem do pacote padrão e entram em um projeto customizado, com escopo comercial e técnico sob medida.
             </p>
-            <p className="text-sm font-medium text-foreground">Solicite um orçamento com o time comercial para definir implantação, capacidade e governança.</p>
+            <p className="text-sm font-medium text-foreground">
+              Solicite um orçamento com o time comercial para definir implantação, capacidade e governança.
+            </p>
           </CardContent>
         </Card>
 
         <div className="text-center text-sm text-muted-foreground">
-          Já tem conta? <Link to="/login" className="font-semibold text-primary hover:underline">Entre para concluir a assinatura</Link>
+          Já tem conta?{" "}
+          <Link to="/login" className="font-semibold text-primary hover:underline">
+            Entre para concluir a assinatura
+          </Link>
         </div>
       </div>
     </div>
