@@ -175,7 +175,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
   return (
     <Card className="shadow-soft">
       <CardHeader>
-        <CardTitle className="text-base">Catalogo de Pacotes e Cortesias</CardTitle>
+        <CardTitle className="text-base">Catálogo de Pacotes e Cortesias</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
