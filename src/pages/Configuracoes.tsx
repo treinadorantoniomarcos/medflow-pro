@@ -250,7 +250,7 @@ const Configuracoes = () => {
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Nenhum slug configurado para a clÃ­nica. Entre em contato para configurar.
+                  Nenhum slug configurado para a clínica. Entre em contato para configurar.
                 </p>
               )}
             </CardContent>
