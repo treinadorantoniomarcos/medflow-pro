@@ -356,7 +356,7 @@ const PublicBooking = () => {
 
               <div className="space-y-2">
                 {professionals.filter((p) => p.accepting_bookings).length === 0 ? (
-                  <p className="text-center text-sm text-muted-foreground py-8">Nenhum profissional disponÃ­vel no momento.</p>
+                  <p className="text-center text-sm text-muted-foreground py-8">Nenhum profissional disponível no momento.</p>
                 ) : (
                   professionals.map((p) => {
                     const closed = !p.accepting_bookings;
