@@ -550,11 +550,11 @@ const Configuracoes = () => {
               ) : queue.length === 0 ? (
                 <div className="py-8 text-center">
                   <Bell className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Nenhuma notificaÃ§Ã£o na fila ainda.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    NotificaÃ§Ãµes aparecerÃ£o aqui quando consultas forem agendadas.
+                   <p className="text-sm text-muted-foreground">
+                     Nenhuma notificação na fila ainda.
+                   </p>
+                   <p className="text-xs text-muted-foreground">
+                     Notificações aparecerão aqui quando consultas forem agendadas.
                   </p>
                 </div>
               ) : (
