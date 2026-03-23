@@ -523,7 +523,7 @@ const PublicBooking = () => {
                     />
                   </div>
                   {patientPhone.length > 0 && patientPhone.replace(/\D/g, "").length < 10 && (
-                    <p className="text-xs text-destructive">Informe um nÃºmero de WhatsApp vÃ¡lido</p>
+                    <p className="text-xs text-destructive">Informe um número de WhatsApp válido</p>
                   )}
                 </div>
 
