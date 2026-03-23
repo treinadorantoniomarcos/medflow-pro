@@ -340,6 +340,24 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          checkout_url: string | null
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          checkout_url?: string | null
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          checkout_url?: string | null
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       professional_availability_blocks: {
         Row: {
           audio_note_path: string | null
