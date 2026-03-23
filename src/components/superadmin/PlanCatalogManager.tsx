@@ -104,7 +104,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
 
   const savePlan = async () => {
     if (!hasFormMinimum) {
-      toast.error("Preencha codigo e nome do pacote.");
+      toast.error("Preencha código e nome do pacote.");
       return;
     }
 
