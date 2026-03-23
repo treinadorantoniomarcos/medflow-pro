@@ -535,8 +535,8 @@ const Configuracoes = () => {
               <div className="flex items-center gap-3">
                 <Bell className="h-5 w-5 text-primary" />
                 <div>
-                  <CardTitle className="text-base">Fila de NotificaÃ§Ãµes</CardTitle>
-                  <CardDescription>Ãšltimas notificaÃ§Ãµes enfileiradas</CardDescription>
+                   <CardTitle className="text-base">Fila de Notificações</CardTitle>
+                   <CardDescription>Últimas notificações enfileiradas</CardDescription>
                 </div>
               </div>
             </CardHeader>
