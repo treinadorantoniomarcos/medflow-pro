@@ -1331,7 +1331,7 @@ const SuperAdminDashboard = () => {
               <div className="rounded-xl border border-border bg-secondary/40 p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <Link2 className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold text-foreground">Divulgação para clínicas e profissionais</p>
+                   <p className="text-sm font-semibold text-foreground">Divulgação para clínicas e profissionais</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a pagina publica de planos.
