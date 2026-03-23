@@ -1324,7 +1324,7 @@ const SuperAdminDashboard = () => {
 
         <Card className="hidden shadow-soft" data-tutorial-target="superadmin-share">
           <CardHeader>
-            <CardTitle className="text-base">Link publico de assinatura</CardTitle>
+            <CardTitle className="text-base">Link público de assinatura</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6 lg:grid-cols-[1fr_220px]">
             <div className="space-y-4">
