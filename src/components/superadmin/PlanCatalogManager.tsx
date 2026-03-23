@@ -272,7 +272,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
                   {plan.name} ({plan.code})
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  R$ {toBrl(plan.monthly_price_cents)} | vigencia {SUBSCRIPTION_TERM_LABEL} | cortesia {plan.trial_days} dias
+                  R$ {toBrl(plan.monthly_price_cents)} | vigência {SUBSCRIPTION_TERM_LABEL} | cortesia {plan.trial_days} dias
                 </p>
               </div>
 
