@@ -156,6 +156,57 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_quote_requests: {
+        Row: {
+          additional_info: string | null
+          admin_count: number
+          app_type: string | null
+          avg_clients: number
+          company_name: string
+          contact_name: string
+          created_at: string
+          email: string
+          full_address: string | null
+          id: string
+          professional_count: number
+          status: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          additional_info?: string | null
+          admin_count?: number
+          app_type?: string | null
+          avg_clients?: number
+          company_name: string
+          contact_name: string
+          created_at?: string
+          email: string
+          full_address?: string | null
+          id?: string
+          professional_count?: number
+          status?: string
+          updated_at?: string
+          whatsapp: string
+        }
+        Update: {
+          additional_info?: string | null
+          admin_count?: number
+          app_type?: string | null
+          avg_clients?: number
+          company_name?: string
+          contact_name?: string
+          created_at?: string
+          email?: string
+          full_address?: string | null
+          id?: string
+          professional_count?: number
+          status?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           attachment_mime_type: string | null
