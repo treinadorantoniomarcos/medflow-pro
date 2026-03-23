@@ -221,6 +221,7 @@ const SuperAdminDashboard = () => {
   const [inviteRole, setInviteRole] = useState<"admin" | "super_admin">("admin");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
+  const [copiedCheckoutLink, setCopiedCheckoutLink] = useState(false);
   const [copiedCopyKey, setCopiedCopyKey] = useState<string | null>(null);
   const [subscriberDetailOpen, setSubscriberDetailOpen] = useState(false);
   const [selectedSubscriberId, setSelectedSubscriberId] = useState<string | null>(null);
