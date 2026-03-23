@@ -443,7 +443,7 @@ const Configuracoes = () => {
                   <div className="flex items-center justify-between rounded-lg border border-border p-4">
                     <div className="space-y-0.5">
                       <Label htmlFor="whatsapp-toggle" className="text-sm font-semibold">
-                        Ativar lembretes automÃ¡ticos
+                        Ativar lembretes automáticos
                       </Label>
                       <p className="text-xs text-muted-foreground">
                         Ao ativar, lembretes serão enfileirados no app e no WhatsApp em D-1 e 2h antes da consulta
