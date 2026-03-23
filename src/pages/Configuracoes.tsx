@@ -390,7 +390,7 @@ const Configuracoes = () => {
                               }}
                             >
                               <Share2 className="h-4 w-4 mr-2 text-primary" />
-                              Mais opÃ§Ãµes
+                              Mais opções
                             </Button>
                           )}
                         </div>
