@@ -238,7 +238,7 @@ const Configuracoes = () => {
                             onClick={handleShareNative}
                           >
                             <Share2 className="h-4 w-4 mr-2 text-primary" />
-                            Mais opÃ§Ãµes (Instagram, etc.)
+                            Mais opções (Instagram, etc.)
                           </Button>
                         )}
                       </div>
