@@ -31,12 +31,12 @@ export const START_TRIAL_DAYS = 7;
 
 export const planMarketingContent: Record<string, PlanMarketingContent> = {
   start: {
-    summary: "Operação essencial para um profissional começar a agenda online com organização e confirmação básica.",
+    summary: "Operação essencial para um profissional iniciar a agenda online com organização e confirmação básica.",
     audience: "Ideal para um único profissional de saúde, em atendimento autônomo ou em um consultório enxuto.",
     features: [
       "Licença para 1 profissional",
       "Contrato com vigência de 12 meses",
-      "Agenda diaria com cadastro de pacientes",
+      "Agenda diária com cadastro de pacientes",
       "Confirmação simples e status da consulta",
       "Link de agendamento para divulgar em redes sociais",
     ],
@@ -67,7 +67,7 @@ export const planMarketingContent: Record<string, PlanMarketingContent> = {
   },
   courtesy: {
     summary: "Cortesia temporária para onboarding assistido e ativação acompanhada.",
-    audience: "Uso interno ou comercial assistido, sem foco em autoatendimento.",
+    audience: "Uso interno ou comercial assistido, sem foco em autosserviço.",
     features: [
       "Período temporário de experimentação",
       "Configuração inicial acompanhada",

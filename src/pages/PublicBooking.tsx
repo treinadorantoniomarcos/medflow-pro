@@ -126,7 +126,7 @@ const PublicBooking = () => {
 
     const dateStr = format(selectedDate, "dd/MM/yyyy");
     const message = [
-      `Confirmação de agendamento`,
+      `Confirmacao de agendamento`,
       ``,
       `Paciente: ${patientName}`,
       `Profissional: ${selectedProfessional.name}`,
@@ -139,7 +139,7 @@ const PublicBooking = () => {
 
     const url = buildWhatsAppUrl(patientPhone, message);
     if (!url) {
-      toast.error("Número de WhatsApp inválido.");
+      toast.error("Numero de WhatsApp invalido.");
       return;
     }
 
@@ -489,7 +489,7 @@ const PublicBooking = () => {
                 <User className="h-8 w-8 mx-auto text-primary" />
                 <h2 className="text-xl font-bold text-foreground">Seus dados</h2>
                 <p className="text-sm text-muted-foreground">
-                  {selectedProfessional?.name} - {selectedDate && format(selectedDate, "dd/MM")} às {selectedTime}
+                  {selectedProfessional?.name} â€” {selectedDate && format(selectedDate, "dd/MM")} às {selectedTime}
                 </p>
               </div>
 
@@ -547,9 +547,9 @@ const PublicBooking = () => {
 
                 {/* Audio note */}
                 <div className="space-y-2">
-                  <Label>Observação em áudio</Label>
-                  <AudioRecorder onRecordingComplete={handleAudioRecording} maxDurationSeconds={60} />
-                  <p className="text-xs text-muted-foreground">Grave uma mensagem de até 60s para o profissional (opcional)</p>
+                   <Label>Observação em áudio</Label>
+                   <AudioRecorder onRecordingComplete={handleAudioRecording} maxDurationSeconds={60} />
+                   <p className="text-xs text-muted-foreground">Grave uma mensagem de até 60s para o profissional (opcional)</p>
                 </div>
 
                 {/* Summary */}

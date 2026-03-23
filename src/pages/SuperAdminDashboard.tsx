@@ -1,4 +1,4 @@
-﻿
+
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -125,19 +125,19 @@ const appIntegrations = [
   {
     name: "WhatsApp Business",
     status: "conectado",
-    description: "Confirmações, lembretes e recuperação de no-show por mensageria.",
-    href: "https://business.facebook.com",
-  },
-  {
+     description: "Confirmações, lembretes e recuperação de no-show por mensageria.",
+     href: "https://business.facebook.com",
+   },
+   {
     name: "Google Calendar",
     status: "pendente",
-    description: "Sincronização de agenda externa para a equipe clínica.",
+     description: "Sincronização de agenda externa para a equipe clínica.",
     href: "https://calendar.google.com",
   },
   {
     name: "Stripe Billing",
     status: "pendente",
-    description: "Cobrança recorrente e conciliação de assinaturas.",
+     description: "Cobrança recorrente e conciliação de assinaturas.",
     href: "https://dashboard.stripe.com",
   },
 ];
@@ -886,8 +886,8 @@ const SuperAdminDashboard = () => {
           <MetricCard value={totals.clinics} label="Assinantes (clínicas)" icon={Building2} />
           <MetricCard value={totals.professionals} label="Profissionais" icon={Stethoscope} variant="accent" />
           <MetricCard value={totals.patients} label="Pacientes" icon={UserRound} variant="success" />
-          <MetricCard value={totals.appointmentsMonth} label="Consultas no mes" icon={CalendarCheck2} />
-          <MetricCard value={totals.noShowMonth} label="No-show no mes" icon={AlertTriangle} variant="warning" />
+           <MetricCard value={totals.appointmentsMonth} label="Consultas no mês" icon={CalendarCheck2} />
+           <MetricCard value={totals.noShowMonth} label="No-show no mês" icon={AlertTriangle} variant="warning" />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-5">
@@ -904,7 +904,7 @@ const SuperAdminDashboard = () => {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="shadow-soft">
             <CardHeader>
-              <CardTitle className="text-base">Tendencia mensal (6 meses)</CardTitle>
+              <CardTitle className="text-base">Tendência mensal (6 meses)</CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[250px] w-full">
@@ -924,7 +924,7 @@ const SuperAdminDashboard = () => {
 
           <Card className="shadow-soft">
             <CardHeader>
-              <CardTitle className="text-base">Top assinantes por volume (mes)</CardTitle>
+              <CardTitle className="text-base">Top assinantes por volume (mês)</CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[250px] w-full">
@@ -949,21 +949,21 @@ const SuperAdminDashboard = () => {
 
         <Card className="shadow-soft" data-tutorial-target="superadmin-subscriber">
           <CardHeader>
-            <CardTitle className="text-base">Assinantes - visao detalhada e assinatura</CardTitle>
+            <CardTitle className="text-base">Assinantes - visão detalhada e assinatura</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="pb-2 pr-4">Clinica</th>
-                    <th className="pb-2 pr-4">Plano</th>
-                    <th className="pb-2 pr-4">Status</th>
-                    <th className="pb-2 pr-4">Equipe</th>
-                    <th className="pb-2 pr-4">Pacientes</th>
-                    <th className="pb-2 pr-4">Consultas (mes)</th>
-                    <th className="pb-2 pr-4">No-show (mes)</th>
-                    <th className="pb-2 pr-4">Acoes</th>
+                     <th className="pb-2 pr-4">Clínica</th>
+                     <th className="pb-2 pr-4">Plano</th>
+                     <th className="pb-2 pr-4">Status</th>
+                     <th className="pb-2 pr-4">Equipe</th>
+                     <th className="pb-2 pr-4">Pacientes</th>
+                     <th className="pb-2 pr-4">Consultas (mês)</th>
+                     <th className="pb-2 pr-4">No-show (mês)</th>
+                     <th className="pb-2 pr-4">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1324,17 +1324,17 @@ const SuperAdminDashboard = () => {
 
         <Card className="hidden shadow-soft" data-tutorial-target="superadmin-share">
           <CardHeader>
-            <CardTitle className="text-base">Link publico de assinatura</CardTitle>
+            <CardTitle className="text-base">Link público de assinatura</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6 lg:grid-cols-[1fr_220px]">
             <div className="space-y-4">
               <div className="rounded-xl border border-border bg-secondary/40 p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <Link2 className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold text-foreground">Divulgação para clínicas e profissionais</p>
+                   <p className="text-sm font-semibold text-foreground">Divulgação para clínicas e profissionais</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a pagina publica de planos.
+                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a página pública de planos.
                 </p>
               </div>
 
@@ -1384,7 +1384,7 @@ const SuperAdminDashboard = () => {
                 />
               </div>
             <p className="text-center text-xs text-muted-foreground">
-                Escaneie para abrir a pagina publica de assinatura ou o checkout configurado.
+                Escaneie para abrir a página pública de assinatura ou o checkout configurado.
               </p>
             </div>
           </CardContent>
@@ -1392,7 +1392,7 @@ const SuperAdminDashboard = () => {
 
         <Card className="shadow-soft" data-tutorial-target="superadmin-plans">
           <CardHeader>
-            <CardTitle className="text-base">Descrições dos pacotes para divulgação</CardTitle>
+             <CardTitle className="text-base">Descrições dos pacotes para divulgação</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {planMarketingCatalog.map((plan) => {
@@ -1409,7 +1409,7 @@ const SuperAdminDashboard = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Texto único para divulgação</p>
+                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Texto único para divulgação</p>
                     <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.text}</div>
                     <Button
                       variant="outline"
@@ -1431,14 +1431,14 @@ const SuperAdminDashboard = () => {
             })}
 
             <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Acima de 11 profissionais, divulgar como plataforma customizada, com solicitação de orçamento.
+               Acima de 11 profissionais, divulgar como plataforma customizada, com solicitação de orçamento.
             </div>
           </CardContent>
         </Card>
 
         <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle className="text-base">Aplicativos para gestão</CardTitle>
+             <CardTitle className="text-base">Aplicativos para gestão</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-3">
             {appIntegrations.map((app) => (

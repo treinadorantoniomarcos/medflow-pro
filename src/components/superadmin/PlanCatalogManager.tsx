@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,7 +104,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
 
   const savePlan = async () => {
     if (!hasFormMinimum) {
-      toast.error("Preencha codigo e nome do pacote.");
+      toast.error("Preencha código e nome do pacote.");
       return;
     }
 
@@ -167,7 +167,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
       return;
     }
 
-    toast.success("Pacote excluido");
+    toast.success("Pacote excluído");
     if (form.id === plan.id) resetForm();
     refreshPlans();
   };
@@ -180,7 +180,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
       <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-1">
-            <Label>Codigo</Label>
+            <Label>Código</Label>
             <Input
               value={form.code}
               onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
@@ -207,12 +207,12 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
 
         <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-1">
-            <Label>Vigência</Label>
-            <Input
-              readOnly
-              value={form.period_days}
-            />
-            <p className="text-xs text-muted-foreground">Assinaturas padronizadas em {SUBSCRIPTION_TERM_LABEL}.</p>
+             <Label>Vigência</Label>
+             <Input
+               readOnly
+               value={form.period_days}
+             />
+             <p className="text-xs text-muted-foreground">Assinaturas padronizadas em {SUBSCRIPTION_TERM_LABEL}.</p>
           </div>
           <div className="space-y-1">
             <Label>Cortesia (dias)</Label>
@@ -272,7 +272,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
                   {plan.name} ({plan.code})
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  R$ {toBrl(plan.monthly_price_cents)} | Vigência {SUBSCRIPTION_TERM_LABEL} | cortesia {plan.trial_days} dias
+                  R$ {toBrl(plan.monthly_price_cents)} | vigência {SUBSCRIPTION_TERM_LABEL} | cortesia {plan.trial_days} dias
                 </p>
               </div>
 
@@ -293,5 +293,3 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
 };
 
 export default PlanCatalogManager;
-
-

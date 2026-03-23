@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
@@ -565,7 +565,7 @@ const MinhaAgenda = () => {
     if (error) {
       toast.error("Erro ao salvar horário");
     } else {
-      toast.success(nextValue ? `horário ${time} liberado` : `horário ${time} fechado`);
+      toast.success(nextValue ? `Horário ${time} liberado` : `Horário ${time} fechado`);
       queryClient.invalidateQueries({ queryKey: ["slot-overrides"] });
     }
 
@@ -934,7 +934,7 @@ const MinhaAgenda = () => {
           <div className="mb-4 flex flex-wrap gap-2">
             <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">Liberado</Badge>
             <Badge className="border-rose-200 bg-rose-100 text-rose-700">Bloqueado</Badge>
-            <Badge className="border-amber-200 bg-amber-100 text-amber-700">não analisado</Badge>
+            <Badge className="border-amber-200 bg-amber-100 text-amber-700">Não analisado</Badge>
           </div>
           {isAdminScope && (
             <div className="mb-4 space-y-3 rounded-lg border border-border bg-secondary/20 p-3">
@@ -981,7 +981,7 @@ const MinhaAgenda = () => {
           )}
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="bulk-action">ação</Label>
+              <Label htmlFor="bulk-action">Ação</Label>
               <Select value={bulkAction} onValueChange={(value) => setBulkAction(value as BulkActionType)}>
                 <SelectTrigger id="bulk-action">
                   <SelectValue />
@@ -993,7 +993,7 @@ const MinhaAgenda = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="block-start">início</Label>
+              <Label htmlFor="block-start">Início</Label>
               <Input
                 id="block-start"
                 type="datetime-local"
@@ -1025,7 +1025,7 @@ const MinhaAgenda = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bulk-unit">período</Label>
+              <Label htmlFor="bulk-unit">Período</Label>
               <Select value={bulkUnit} onValueChange={(value) => setBulkUnit(value as BulkUnit)}>
                 <SelectTrigger id="bulk-unit" disabled={!!blockEnd}>
                   <SelectValue />
@@ -1082,7 +1082,7 @@ const MinhaAgenda = () => {
 
           <div className="mt-4 space-y-2">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <p className="text-xs font-semibold text-muted-foreground">períodos da agenda</p>
+              <p className="text-xs font-semibold text-muted-foreground">Períodos da agenda</p>
               <div className="grid gap-2 sm:grid-cols-4 lg:w-[860px]">
                 <Input
                   type="date"
@@ -1108,7 +1108,7 @@ const MinhaAgenda = () => {
                     <SelectItem value="all">Todos os status</SelectItem>
                     <SelectItem value="open">Liberado</SelectItem>
                     <SelectItem value="blocked">Bloqueado</SelectItem>
-                    <SelectItem value="pending">não analisado</SelectItem>
+                    <SelectItem value="pending">Não analisado</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={pendingDayTypeFilter} onValueChange={(value) => setPendingDayTypeFilter(value as DayTypeFilter)}>
@@ -1151,7 +1151,7 @@ const MinhaAgenda = () => {
                       {visiblePendingPeriod.label} | <span className={getDayTypeAccentClass(getDayType(new Date(visiblePendingPeriod.start_at)))}>{getReadableDayTypeLabel(getDayType(new Date(visiblePendingPeriod.start_at)))}</span>
                     </p>
                   </div>
-                  <Badge className="border-amber-200 bg-amber-100 text-amber-700">não analisado</Badge>
+                  <Badge className="border-amber-200 bg-amber-100 text-amber-700">Não analisado</Badge>
                 </div>
               </div>
             )}
@@ -1262,6 +1262,3 @@ const StatCard = ({ label, value, loading }: { label: string; value: number; loa
 );
 
 export default MinhaAgenda;
-
-
-

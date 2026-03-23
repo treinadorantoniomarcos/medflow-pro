@@ -470,7 +470,7 @@ const Configuracoes = () => {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Os lembretes estão sendo enfileirados. Para envio real via WhatsApp,
+                         Os lembretes estão sendo enfileirados. Para envio real via WhatsApp,
                         é necessário configurar a API do WhatsApp Business da Meta. Entre em contato
                         para configurar a integração completa.
                       </p>
@@ -535,8 +535,8 @@ const Configuracoes = () => {
               <div className="flex items-center gap-3">
                 <Bell className="h-5 w-5 text-primary" />
                 <div>
-                  <CardTitle className="text-base">Fila de Notificações</CardTitle>
-                  <CardDescription>Últimas notificações enfileiradas</CardDescription>
+                   <CardTitle className="text-base">Fila de Notificações</CardTitle>
+                   <CardDescription>Últimas notificações enfileiradas</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -550,11 +550,11 @@ const Configuracoes = () => {
               ) : queue.length === 0 ? (
                 <div className="py-8 text-center">
                   <Bell className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Nenhuma notificação na fila ainda.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Notificações aparecerão aqui quando consultas forem agendadas.
+                   <p className="text-sm text-muted-foreground">
+                     Nenhuma notificação na fila ainda.
+                   </p>
+                   <p className="text-xs text-muted-foreground">
+                     Notificações aparecerão aqui quando consultas forem agendadas.
                   </p>
                 </div>
               ) : (
@@ -604,6 +604,5 @@ const Configuracoes = () => {
 };
 
 export default Configuracoes;
-
 
 
