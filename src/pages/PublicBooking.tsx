@@ -425,7 +425,7 @@ const PublicBooking = () => {
 
               <div className="text-center space-y-1">
                 <CalendarDays className="h-8 w-8 mx-auto text-primary" />
-                <h2 className="text-xl font-bold text-foreground">Escolha a data e horÃ¡rio</h2>
+                <h2 className="text-xl font-bold text-foreground">Escolha a data e horário</h2>
                 <p className="text-sm text-muted-foreground">
                   Profissional: <span className="font-medium text-foreground">{selectedProfessional?.name}</span>
                 </p>
