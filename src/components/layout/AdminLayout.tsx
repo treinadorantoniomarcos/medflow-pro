@@ -162,7 +162,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           </Button>
         </div>
 
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (

@@ -510,6 +510,7 @@ const SuperAdminDashboard = () => {
       adminFullName: row.access_request.admin_full_name ?? "",
       adminEmail: row.access_request.admin_email ?? "",
       adminWhatsapp: row.access_request.admin_whatsapp ?? "",
+      platformCheckoutUrl: row.platform?.checkout_url ?? "",
       accessStatus: row.access_request.status ?? "",
       plan: row.subscription.plan,
       subscriptionStatus: row.subscription.status,

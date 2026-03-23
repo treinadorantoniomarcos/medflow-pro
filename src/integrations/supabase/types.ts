@@ -156,24 +156,6 @@ export type Database = {
         }
         Relationships: []
       }
-      platform_settings: {
-        Row: {
-          checkout_url: string | null
-          id: number
-          updated_at: string
-        }
-        Insert: {
-          checkout_url?: string | null
-          id?: number
-          updated_at?: string
-        }
-        Update: {
-          checkout_url?: string | null
-          id?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       messages: {
         Row: {
           attachment_mime_type: string | null
@@ -357,6 +339,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_settings: {
+        Row: {
+          checkout_url: string | null
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          checkout_url?: string | null
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          checkout_url?: string | null
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       professional_availability_blocks: {
         Row: {
