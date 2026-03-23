@@ -872,7 +872,7 @@ const MinhaAgenda = () => {
           )}
           {!isAdminScope && managedProfessionalName && (
             <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2 text-sm text-muted-foreground">
-              Pesquisa e gestÃ£o aplicadas automaticamente Ã  agenda de <span className="font-medium text-foreground">{managedProfessionalName}</span>.
+              Pesquisa e gestão aplicadas automaticamente à agenda de <span className="font-medium text-foreground">{managedProfessionalName}</span>.
             </div>
           )}
           {!isAdminScope && !effectiveManagedProfessional && (

@@ -573,7 +573,7 @@ const Configuracoes = () => {
                             </p>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span>
-                                {format(new Date(item.appointment_date), "dd/MM 'Ã s' HH:mm", { locale: ptBR })}
+                                {format(new Date(item.appointment_date), "dd/MM 'às' HH:mm", { locale: ptBR })}
                               </span>
                               <span>â€¢</span>
                               <span className="truncate">{item.professional_name}</span>

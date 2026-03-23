@@ -116,7 +116,7 @@ const PublicBooking = () => {
     try {
       await navigator.share({
         title: `Agendamento - ${clinic?.name}`,
-        text: `Consulta com ${selectedProfessional.name} em ${dateStr} Ã s ${selectedTime} - ${clinic?.name}`,
+        text: `Consulta com ${selectedProfessional.name} em ${dateStr} às ${selectedTime} - ${clinic?.name}`,
       });
     } catch { /* user cancelled */ }
   };
@@ -489,7 +489,7 @@ const PublicBooking = () => {
                 <User className="h-8 w-8 mx-auto text-primary" />
                 <h2 className="text-xl font-bold text-foreground">Seus dados</h2>
                 <p className="text-sm text-muted-foreground">
-                  {selectedProfessional?.name} â€” {selectedDate && format(selectedDate, "dd/MM")} Ã s {selectedTime}
+                  {selectedProfessional?.name} â€” {selectedDate && format(selectedDate, "dd/MM")} às {selectedTime}
                 </p>
               </div>
 
