@@ -1438,7 +1438,7 @@ const SuperAdminDashboard = () => {
 
         <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle className="text-base">Aplicativos para gestão</CardTitle>
+             <CardTitle className="text-base">Aplicativos para gestão</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-3">
             {appIntegrations.map((app) => (
