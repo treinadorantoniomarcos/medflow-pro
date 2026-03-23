@@ -221,6 +221,7 @@ const SuperAdminDashboard = () => {
   const [inviteRole, setInviteRole] = useState<"admin" | "super_admin">("admin");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
+  const [copiedCheckoutLink, setCopiedCheckoutLink] = useState(false);
   const [copiedCopyKey, setCopiedCopyKey] = useState<string | null>(null);
   const [subscriberDetailOpen, setSubscriberDetailOpen] = useState(false);
   const [selectedSubscriberId, setSelectedSubscriberId] = useState<string | null>(null);
@@ -1259,7 +1260,7 @@ const SuperAdminDashboard = () => {
                 <p className="text-sm font-semibold text-foreground">Checkout oficial da Kiwify ou landing page externa</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                Use este campo para definir o link de venda que a equipe vai divulgar em campanhas e botões de assinatura.
+                Este é o link único que leva o lead direto para escolher o pacote antes de assinar. Use em campanhas, botões de venda e materiais comerciais.
               </p>
             </div>
 
@@ -1267,7 +1268,7 @@ const SuperAdminDashboard = () => {
               <Input
                 value={platformCheckoutUrlDraft}
                 onChange={(e) => setPlatformCheckoutUrlDraft(e.target.value)}
-                placeholder="https://seu-dominio.com/assinar"
+                placeholder="https://dashboard.kiwify.com.br/products/..."
                 className="font-mono text-sm"
               />
               <Button
@@ -1296,30 +1297,23 @@ const SuperAdminDashboard = () => {
                 variant="outline"
                 className="gap-2"
                 onClick={async () => {
-                  const linkToCopy = platformCheckoutUrlDraft.trim() || subscriptionShareUrl;
-                  try {
-                    await navigator.clipboard.writeText(linkToCopy);
-                    setCopiedShareLink(true);
-                    toast.success("Link copiado");
-                    window.setTimeout(() => setCopiedShareLink(false), 2000);
-                  } catch (error) {
-                    toast.error("Nao foi possivel copiar o link", {
-                      description: error instanceof Error ? error.message : "Permissao do navegador indisponivel.",
-                    });
-                  }
+                  const urlToCopy = platformCheckoutUrlDraft.trim() || `${window.location.origin}/assinar`;
+                  await navigator.clipboard.writeText(urlToCopy);
+                  setCopiedCheckoutLink(true);
+                  toast.success("Link copiado!");
+                  window.setTimeout(() => setCopiedCheckoutLink(false), 2000);
                 }}
               >
-                {copiedShareLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copiedShareLink ? "Copiado" : "Copiar link"}
+                {copiedCheckoutLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copiedCheckoutLink ? "Copiado" : "Copiar"}
               </Button>
             </div>
 
             <div className="grid gap-2 text-sm text-muted-foreground">
               <p>
-                Destino:{" "}
-                <span className="font-medium text-foreground">{platformCheckoutUrlDraft.trim() || subscriptionShareUrl}</span>
+                Destino: <span className="font-medium text-foreground">{platformCheckoutUrlDraft || "/assinar"}</span>
               </p>
-              <p>Esse é o link único que leva o lead para a tela onde ele escolhe o pacote antes de assinar.</p>
+              <p>Se o campo estiver vazio, a plataforma continua com o link público padrão de assinatura.</p>
             </div>
           </CardContent>
         </Card>
