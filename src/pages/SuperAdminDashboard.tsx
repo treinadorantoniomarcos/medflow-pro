@@ -223,6 +223,7 @@ const SuperAdminDashboard = () => {
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [copiedCheckoutLink, setCopiedCheckoutLink] = useState(false);
   const [copiedCopyKey, setCopiedCopyKey] = useState<string | null>(null);
+  const [quoteStatusUpdating, setQuoteStatusUpdating] = useState<string | null>(null);
   const [subscriberDetailOpen, setSubscriberDetailOpen] = useState(false);
   const [selectedSubscriberId, setSelectedSubscriberId] = useState<string | null>(null);
   const [resettingPassword, setResettingPassword] = useState(false);
