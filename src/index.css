@@ -124,6 +124,11 @@
   }
 }
 
+html, body {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 @media print {
   body * {
     visibility: hidden;
