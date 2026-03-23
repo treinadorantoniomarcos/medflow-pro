@@ -924,7 +924,7 @@ const SuperAdminDashboard = () => {
 
           <Card className="shadow-soft">
             <CardHeader>
-              <CardTitle className="text-base">Top assinantes por volume (mes)</CardTitle>
+              <CardTitle className="text-base">Top assinantes por volume (mês)</CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[250px] w-full">
