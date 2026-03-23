@@ -886,8 +886,8 @@ const SuperAdminDashboard = () => {
           <MetricCard value={totals.clinics} label="Assinantes (clínicas)" icon={Building2} />
           <MetricCard value={totals.professionals} label="Profissionais" icon={Stethoscope} variant="accent" />
           <MetricCard value={totals.patients} label="Pacientes" icon={UserRound} variant="success" />
-          <MetricCard value={totals.appointmentsMonth} label="Consultas no mes" icon={CalendarCheck2} />
-          <MetricCard value={totals.noShowMonth} label="No-show no mes" icon={AlertTriangle} variant="warning" />
+           <MetricCard value={totals.appointmentsMonth} label="Consultas no mês" icon={CalendarCheck2} />
+           <MetricCard value={totals.noShowMonth} label="No-show no mês" icon={AlertTriangle} variant="warning" />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-5">
