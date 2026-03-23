@@ -116,11 +116,11 @@ const Mensagens = () => {
 
   return (
     <AdminLayout>
-      <div className="flex h-[calc(100vh-7rem)] gap-4">
+      <div className="flex min-h-0 flex-1 gap-4">
         <motion.div
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
-          className="hidden w-[240px] shrink-0 flex-col rounded-lg border border-border bg-card shadow-soft md:flex"
+          className="hidden min-h-0 w-[240px] shrink-0 flex-col rounded-lg border border-border bg-card shadow-soft md:flex"
           data-tutorial-target="message-recipient"
         >
           <div className="flex items-center gap-2 border-b border-border p-3">
@@ -186,7 +186,7 @@ const Mensagens = () => {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-soft"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-soft"
         >
           <div className="border-b border-border p-3">
             <div className="flex items-center justify-between gap-3">
@@ -210,7 +210,7 @@ const Mensagens = () => {
             </p>
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4">
             {isLoading ? (
               Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className={cn("flex gap-2", index % 2 === 0 ? "" : "justify-end")}>
