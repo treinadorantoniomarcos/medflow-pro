@@ -1384,7 +1384,7 @@ const SuperAdminDashboard = () => {
                 />
               </div>
             <p className="text-center text-xs text-muted-foreground">
-                Escaneie para abrir a pagina publica de assinatura ou o checkout configurado.
+                Escaneie para abrir a página pública de assinatura ou o checkout configurado.
               </p>
             </div>
           </CardContent>
