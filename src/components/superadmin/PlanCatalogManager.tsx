@@ -180,7 +180,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
       <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-1">
-            <Label>Codigo</Label>
+            <Label>Código</Label>
             <Input
               value={form.code}
               onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
