@@ -303,6 +303,50 @@ const SuperAdminDashboard = () => {
     },
   });
 
+  const { data: quoteRequests = [], refetch: refetchQuotes } = useQuery({
+    queryKey: ["super-admin-quote-requests"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("custom_quote_requests" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        company_name: string;
+        contact_name: string;
+        email: string;
+        whatsapp: string;
+        full_address: string | null;
+        admin_count: number;
+        professional_count: number;
+        avg_clients: number;
+        app_type: string | null;
+        additional_info: string | null;
+        status: string;
+        created_at: string;
+      }>;
+    },
+  });
+
+  const updateQuoteStatus = async (quoteId: string, newStatus: string) => {
+    setQuoteStatusUpdating(quoteId);
+    const { error } = await supabase
+      .from("custom_quote_requests" as any)
+      .update({ status: newStatus } as any)
+      .eq("id", quoteId);
+    setQuoteStatusUpdating(null);
+
+    if (error) {
+      toast.error("Falha ao atualizar status", { description: error.message });
+      return;
+    }
+
+    toast.success(`Status atualizado para ${newStatus}`);
+    refetchQuotes();
+  };
+
   const subscriberRows = useMemo(() => {
     if (!data) return [];
 
