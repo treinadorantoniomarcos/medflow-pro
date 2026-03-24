@@ -213,8 +213,9 @@ const SubscriptionPlans = () => {
         </div>
 
         {/* Custom quote request card */}
-        <Card className="border-dashed border-border shadow-soft">
-          <CardContent className="p-6">
+        {!planOverride && (
+          <Card className="border-dashed border-border shadow-soft">
+            <CardContent className="p-6">
             <div className="mb-4 text-center">
               <p className="text-sm font-semibold text-primary">Acima de 11 profissionais</p>
               <h2 className="mt-1 text-2xl font-extrabold text-foreground">Plataforma customizada</h2>
@@ -347,8 +348,9 @@ const SubscriptionPlans = () => {
                 </p>
               </div>
             )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="text-center text-sm text-muted-foreground">
           Já tem conta? <Link to="/login" className="font-semibold text-primary hover:underline">Entre para concluir a assinatura</Link>
