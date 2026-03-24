@@ -18,6 +18,8 @@ const SuperAdminPlatform = () => {
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const subscriptionShareUrl = getSubscriptionShareUrl(window.location.origin);
   const [copiedPlan, setCopiedPlan] = useState<string | null>(null);
+  const [planLinksDraft, setPlanLinksDraft] = useState<Record<string, string>>({});
+  const [savingPlanLinks, setSavingPlanLinks] = useState(false);
 
   const { data: platformSettings } = useQuery({
     queryKey: ["super-admin-platform-settings"],
@@ -36,6 +38,10 @@ const SuperAdminPlatform = () => {
     setPlatformCheckoutUrlDraft(platformSettings?.checkout_url ?? "");
   }, [platformSettings?.checkout_url]);
 
+  useEffect(() => {
+    setPlanLinksDraft(platformSettings?.plan_links ?? {});
+  }, [platformSettings?.plan_links]);
+
   const { data: planRows = [] } = useQuery({
     queryKey: ["subscription-plans"],
     queryFn: async () => {
@@ -49,13 +55,27 @@ const SuperAdminPlatform = () => {
     },
   });
 
-  const copyPlanLink = async (planCode: string) => {
-    const baseUrl = platformCheckoutUrlDraft.trim() || subscriptionShareUrl;
-    const url = `${baseUrl}?plan=${planCode}`;
+  const copyPlanLink = async (planCode: string, url: string) => {
     await navigator.clipboard.writeText(url);
     setCopiedPlan(planCode);
     window.setTimeout(() => setCopiedPlan(null), 2500);
     toast.success("Link copiado");
+  };
+
+  const savePlanLinks = async () => {
+    setSavingPlanLinks(true);
+    const { error } = await supabase
+      .from("platform_settings")
+      .upsert({ id: 1, plan_links: planLinksDraft }, { onConflict: "id" });
+    setSavingPlanLinks(false);
+
+    if (error) {
+      toast.error("Falha ao salvar links por plano", { description: error.message });
+      return;
+    }
+
+    toast.success("Links de planos salvos");
+    queryClient.invalidateQueries({ queryKey: ["super-admin-platform-settings"] });
   };
 
   return (
@@ -207,8 +227,16 @@ const SuperAdminPlatform = () => {
         </Card>
 
         <Card className="shadow-soft">
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between gap-2">
             <CardTitle className="text-base">Links individuais por plano</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={savePlanLinks}
+              disabled={savingPlanLinks}
+            >
+              {savingPlanLinks ? "Salvando..." : "Salvar links"}
+            </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -221,7 +249,9 @@ const SuperAdminPlatform = () => {
               <div className="space-y-3">
                 {planRows.map((plan) => {
                   const name = plan.name || plan.code;
-                  const link = `${platformCheckoutUrlDraft.trim() || subscriptionShareUrl}?plan=${plan.code}`;
+                  const defaultLink = `${platformCheckoutUrlDraft.trim() || subscriptionShareUrl}?plan=${plan.code}`;
+                  const overrideLink = (planLinksDraft[plan.code] ?? "").trim();
+                  const effectiveLink = overrideLink || defaultLink;
                   return (
                     <div key={plan.code} className="space-y-2 rounded-lg border border-border p-3">
                       <div className="flex items-center justify-between gap-3">
@@ -231,10 +261,10 @@ const SuperAdminPlatform = () => {
                             variant="outline"
                             size="sm"
                             className="gap-2"
-                            onClick={() => copyPlanLink(plan.code)}
+                            onClick={() => copyPlanLink(plan.code, effectiveLink)}
                           >
-                            {copiedPlan === plan.code ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                            {copiedPlan === plan.code ? "Copiado" : "Copiar"}
+                              {copiedPlan === plan.code ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                              {copiedPlan === plan.code ? "Copiado" : "Copiar"}
                           </Button>
                           <Button
                             variant="ghost"
@@ -245,7 +275,22 @@ const SuperAdminPlatform = () => {
                           </Button>
                         </div>
                       </div>
-                      <Input readOnly value={link} className="font-mono text-xs" onFocus={(e) => e.target.select()} />
+                      <Input
+                        readOnly
+                        value={effectiveLink}
+                        className="font-mono text-xs"
+                        onFocus={(e) => e.target.select()}
+                      />
+                      <Input
+                        value={planLinksDraft[plan.code] ?? ""}
+                        onChange={(e) =>
+                          setPlanLinksDraft((prev) => ({ ...prev, [plan.code]: e.target.value }))
+                        }
+                        placeholder="Cole o link do Kiwify para este plano (opcional)"
+                        className="text-xs"
+                      />
+                      <p className="text-xs text-muted-foreground">Link padrão usado quando o campo acima estiver vazio:</p>
+                      <p className="text-xs text-muted-foreground break-words">{defaultLink}</p>
                     </div>
                   );
                 })}

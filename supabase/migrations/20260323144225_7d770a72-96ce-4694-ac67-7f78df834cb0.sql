@@ -2,6 +2,7 @@
 CREATE TABLE IF NOT EXISTS public.platform_settings (
   id integer PRIMARY KEY DEFAULT 1,
   checkout_url text,
+  plan_links jsonb NOT NULL DEFAULT '{}'::jsonb,
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT single_row CHECK (id = 1)
 );
@@ -35,4 +36,4 @@ CREATE TRIGGER set_platform_settings_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.set_updated_at();
 
-INSERT INTO public.platform_settings (id, checkout_url) VALUES (1, null) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.platform_settings (id, checkout_url, plan_links) VALUES (1, null, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;
