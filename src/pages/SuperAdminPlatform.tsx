@@ -218,26 +218,34 @@ const SuperAdminPlatform = () => {
             {planRows.length === 0 ? (
               <p className="text-sm text-muted-foreground">Carregando planos...</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {planRows.map((plan) => {
                   const name = plan.name || plan.code;
+                  const link = `${platformCheckoutUrlDraft.trim() || subscriptionShareUrl}?plan=${plan.code}`;
                   return (
-                    <div key={plan.code} className="flex flex-col gap-1 rounded-lg border border-border p-3">
+                    <div key={plan.code} className="space-y-2 rounded-lg border border-border p-3">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-foreground">{name}</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          onClick={() => copyPlanLink(plan.code)}
-                        >
-                          {copiedPlan === plan.code ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                          {copiedPlan === plan.code ? "Copiado" : "Copiar link"}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => copyPlanLink(plan.code)}
+                          >
+                            {copiedPlan === plan.code ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            {copiedPlan === plan.code ? "Copiado" : "Copiar"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open("https://dashboard.kiwify.com.br/products", "_blank")}
+                          >
+                            Colar na Kiwify
+                          </Button>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground break-words">
-                        {(platformCheckoutUrlDraft.trim() || subscriptionShareUrl) + `?plan=${plan.code}`}
-                      </p>
+                      <Input readOnly value={link} className="font-mono text-xs" onFocus={(e) => e.target.select()} />
                     </div>
                   );
                 })}
