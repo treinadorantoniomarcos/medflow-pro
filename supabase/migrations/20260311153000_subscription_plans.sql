@@ -41,7 +41,7 @@ VALUES
   ('start', 'Start', 'Agenda e operacao essencial', 19900, 30, 0, false, true),
   ('pro', 'Pro', 'Agenda + automacoes + financeiro', 39900, 30, 0, false, true),
   ('signature', 'Signature', 'Operacao completa com controle premium', 79900, 30, 0, false, true),
-  ('courtesy', 'Cortesia', 'Plano gratuito temporario para onboarding assistido', 0, 30, 30, true, true)
+  ('courtesy', 'Cortesia', '21 dias de cortesia assistida para onboarding', 0, 30, 21, true, true)
 ON CONFLICT (code) DO UPDATE
 SET
   name = EXCLUDED.name,

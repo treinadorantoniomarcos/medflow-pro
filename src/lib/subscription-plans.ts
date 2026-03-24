@@ -64,10 +64,10 @@ export const planMarketingContent: Record<string, PlanMarketingContent> = {
     highlight: "Escala premium",
   },
   courtesy: {
-    summary: "Cortesia temporária para onboarding assistido e ativação acompanhada.",
+    summary: "Cortesia temporária para onboarding assistido e ativação acompanhada em 21 dias.",
     audience: "Uso interno ou comercial assistido, sem foco em autosserviço.",
     features: [
-      "Período temporário de experimentação",
+      "Período temporário de experimentação (21 dias)",
       "Configuração inicial acompanhada",
       "Ativação controlada pelo time da plataforma",
     ],
@@ -104,6 +104,16 @@ export const fallbackPlanOptions: PlanOption[] = [
     trialDays: 0,
     isCourtesy: false,
     marketing: planMarketingContent.signature,
+  },
+  {
+    key: "courtesy",
+    name: "Cortesia",
+    monthlyPrice: 0,
+    description: "Quantum de 21 dias de cortesia com ativação guiada",
+    periodDays: SUBSCRIPTION_TERM_DAYS,
+    trialDays: 21,
+    isCourtesy: true,
+    marketing: planMarketingContent.courtesy,
   },
 ];
 
