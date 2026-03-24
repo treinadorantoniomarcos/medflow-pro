@@ -1,17 +1,13 @@
 
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
   Building2,
   CalendarCheck2,
-  Check,
-  Copy,
   Download,
   FileText,
   FileSpreadsheet,
-  Link2,
-  Network,
   Stethoscope,
   UserRound,
   AlertTriangle,
@@ -19,7 +15,10 @@ import {
   UserPlus,
   Save,
   UserX,
-  QrCode,
+  Settings,
+  FileBarChart,
+  PackageOpen,
+  Plug,
 } from "lucide-react";
 import {
   Bar,
@@ -46,13 +45,6 @@ import {
   exportSuperAdminPDF,
   exportSuperAdminXLS,
 } from "@/lib/export-super-admin";
-import {
-  fallbackPlanOptions,
-  getPlanCommercialCopy,
-  getPlanMarketingContent,
-  getSubscriptionShareUrl,
-  type PlanOption,
-} from "@/lib/subscription-plans";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -69,8 +61,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import PlanCatalogManager from "@/components/superadmin/PlanCatalogManager";
-import { QRCodeSVG } from "qrcode.react";
+
 import HelpIcon from "@/components/tutorial/HelpIcon";
 
 type ClinicRow = {
@@ -105,10 +96,6 @@ type AppointmentRow = {
 type SubscriptionPlan = string;
 type SubscriptionStatus = "trialing" | "active" | "past_due" | "paused" | "canceled";
 
-type PlatformSettingsRow = {
-  checkout_url: string | null;
-  updated_at: string;
-};
 
 type PlanRow = {
   id: string;
@@ -121,27 +108,6 @@ type PlanRow = {
   is_courtesy: boolean;
   is_active: boolean;
 };
-
-const appIntegrations = [
-  {
-    name: "WhatsApp Business",
-    status: "conectado",
-     description: "Confirmações, lembretes e recuperação de no-show por mensageria.",
-     href: "https://business.facebook.com",
-   },
-   {
-    name: "Google Calendar",
-    status: "pendente",
-     description: "Sincronização de agenda externa para a equipe clínica.",
-    href: "https://calendar.google.com",
-  },
-  {
-    name: "Stripe Billing",
-    status: "pendente",
-     description: "Cobrança recorrente e conciliação de assinaturas.",
-    href: "https://dashboard.stripe.com",
-  },
-];
 
 const chartConfig = {
   consultas: {
@@ -168,13 +134,6 @@ const statusBadgeClass: Record<SubscriptionStatus, string> = {
   past_due: "bg-amber-100 text-amber-700",
   paused: "bg-slate-200 text-slate-700",
   canceled: "bg-rose-100 text-rose-700",
-};
-
-const planCapacityLabel = (planCode: string) => {
-  if (planCode === "start") return "1 profissional";
-  if (planCode === "pro") return "Até 3 profissionais";
-  if (planCode === "signature") return "4 a 10 profissionais";
-  return "Plano ativo";
 };
 
 const monthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -221,10 +180,7 @@ const SuperAdminDashboard = () => {
   const [invitePhone, setInvitePhone] = useState("");
   const [inviteRole, setInviteRole] = useState<"admin" | "super_admin">("admin");
   const [inviteLoading, setInviteLoading] = useState(false);
-  const [copiedShareLink, setCopiedShareLink] = useState(false);
-  const [copiedCheckoutLink, setCopiedCheckoutLink] = useState(false);
-  const [copiedCopyKey, setCopiedCopyKey] = useState<string | null>(null);
-  const [quoteStatusUpdating, setQuoteStatusUpdating] = useState<string | null>(null);
+  
   const [subscriberDetailOpen, setSubscriberDetailOpen] = useState(false);
   const [selectedSubscriberId, setSelectedSubscriberId] = useState<string | null>(null);
   const [resettingPassword, setResettingPassword] = useState(false);
@@ -243,9 +199,7 @@ const SuperAdminDashboard = () => {
 
   const [billingDraft, setBillingDraft] = useState<Record<string, { plan: SubscriptionPlan; status: SubscriptionStatus }>>({});
   const [savingTenantId, setSavingTenantId] = useState<string | null>(null);
-  const [platformCheckoutUrlDraft, setPlatformCheckoutUrlDraft] = useState("");
-  const [savingPlatformSettings, setSavingPlatformSettings] = useState(false);
-  const subscriptionShareUrl = getSubscriptionShareUrl(window.location.origin);
+  
 
   const { data, isLoading } = useQuery({
     queryKey: ["super-admin-dataset-v3"],
@@ -290,63 +244,7 @@ const SuperAdminDashboard = () => {
     },
   });
 
-  const { data: platformSettings } = useQuery({
-    queryKey: ["super-admin-platform-settings"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("platform_settings")
-        .select("checkout_url, updated_at")
-        .eq("id", 1)
-        .single();
 
-      if (error) throw error;
-      return data as PlatformSettingsRow;
-    },
-  });
-
-  const { data: quoteRequests = [], refetch: refetchQuotes } = useQuery({
-    queryKey: ["super-admin-quote-requests"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("custom_quote_requests" as any)
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return (data ?? []) as unknown as Array<{
-        id: string;
-        company_name: string;
-        contact_name: string;
-        email: string;
-        whatsapp: string;
-        full_address: string | null;
-        admin_count: number;
-        professional_count: number;
-        avg_clients: number;
-        app_type: string | null;
-        additional_info: string | null;
-        status: string;
-        created_at: string;
-      }>;
-    },
-  });
-
-  const updateQuoteStatus = async (quoteId: string, newStatus: string) => {
-    setQuoteStatusUpdating(quoteId);
-    const { error } = await supabase
-      .from("custom_quote_requests" as any)
-      .update({ status: newStatus } as any)
-      .eq("id", quoteId);
-    setQuoteStatusUpdating(null);
-
-    if (error) {
-      toast.error("Falha ao atualizar status", { description: error.message });
-      return;
-    }
-
-    toast.success(`Status atualizado para ${newStatus}`);
-    refetchQuotes();
-  };
 
   const subscriberRows = useMemo(() => {
     if (!data) return [];
@@ -377,9 +275,6 @@ const SuperAdminDashboard = () => {
         settings: clinic.settings ?? {},
         subscription,
         access_request: readAccessRequest(clinic.settings),
-        platform: {
-          checkout_url: platformSettings?.checkout_url ?? null,
-        },
         owners: roles.filter((r) => r.role === "owner").length,
         admins: roles.filter((r) => r.role === "admin").length,
         professionals: roles.filter((r) => r.role === "professional").length,
@@ -391,11 +286,6 @@ const SuperAdminDashboard = () => {
     });
   }, [data]);
 
-  const configuredPlatformCheckoutUrl = platformSettings?.checkout_url ?? "";
-
-  useEffect(() => {
-    setPlatformCheckoutUrlDraft(configuredPlatformCheckoutUrl);
-  }, [configuredPlatformCheckoutUrl]);
 
   const monthlyTrend = useMemo(() => {
     if (!data) return [];
@@ -461,20 +351,6 @@ const SuperAdminDashboard = () => {
     return data.plans.filter((plan) => plan.is_active);
   }, [data?.plans]);
 
-  const planMarketingCatalog = useMemo<PlanOption[]>(() => {
-    if (!availablePlans.length) return fallbackPlanOptions;
-
-    return availablePlans.map((plan) => ({
-      key: plan.code,
-      name: plan.name,
-      monthlyPrice: plan.monthly_price_cents / 100,
-      description: `${planCapacityLabel(plan.code)} | ${plan.description ?? "Pacote ativo para assinatura"}`,
-      periodDays: plan.period_days,
-      trialDays: plan.trial_days,
-      isCourtesy: plan.is_courtesy,
-      marketing: getPlanMarketingContent(plan.code),
-    }));
-  }, [availablePlans]);
 
   const tenantAccessRows = useMemo(() => {
     if (!data || !selectedTenantIdSafe) return [];
@@ -557,7 +433,7 @@ const SuperAdminDashboard = () => {
       adminFullName: row.access_request.admin_full_name ?? "",
       adminEmail: row.access_request.admin_email ?? "",
       adminWhatsapp: row.access_request.admin_whatsapp ?? "",
-      platformCheckoutUrl: row.platform?.checkout_url ?? "",
+      platformCheckoutUrl: "",
       accessStatus: row.access_request.status ?? "",
       plan: row.subscription.plan,
       subscriptionStatus: row.subscription.status,
@@ -790,7 +666,7 @@ const SuperAdminDashboard = () => {
                   <ShieldCheck className="mr-1.5 h-4 w-4" /> Liberar acessos
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+              <DialogContent className="sm:max-w-[640px]">
                 <DialogHeader>
                   <DialogTitle>Gestão de acesso dos assinantes</DialogTitle>
                   <DialogDescription>
@@ -926,45 +802,6 @@ const SuperAdminDashboard = () => {
               <Download className="mr-1.5 h-4 w-4" /> CSV
             </Button>
           </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Card className="shadow-soft">
-            <CardContent className="flex h-full flex-col gap-2 p-4">
-              <p className="text-sm font-semibold text-foreground">Plataforma</p>
-              <p className="text-xs text-muted-foreground">Checkout único, link público e QR Code.</p>
-              <Button asChild variant="outline" size="sm" className="mt-auto w-full">
-                <Link to="/super-admin/plataforma">Abrir página</Link>
-              </Button>
-            </CardContent>
-          </Card>
-          <Card className="shadow-soft">
-            <CardContent className="flex h-full flex-col gap-2 p-4">
-              <p className="text-sm font-semibold text-foreground">Solicitações customizadas</p>
-              <p className="text-xs text-muted-foreground">Pedidos acima de 11 profissionais.</p>
-              <Button asChild variant="outline" size="sm" className="mt-auto w-full">
-                <Link to="/super-admin/orcamentos">Abrir página</Link>
-              </Button>
-            </CardContent>
-          </Card>
-          <Card className="shadow-soft">
-            <CardContent className="flex h-full flex-col gap-2 p-4">
-              <p className="text-sm font-semibold text-foreground">Catálogo de planos</p>
-              <p className="text-xs text-muted-foreground">Preços, cortesia e textos comerciais.</p>
-              <Button asChild variant="outline" size="sm" className="mt-auto w-full">
-                <Link to="/super-admin/catalogo">Abrir página</Link>
-              </Button>
-            </CardContent>
-          </Card>
-          <Card className="shadow-soft">
-            <CardContent className="flex h-full flex-col gap-2 p-4">
-              <p className="text-sm font-semibold text-foreground">Integrações</p>
-              <p className="text-xs text-muted-foreground">Apps e conectores da operação.</p>
-              <Button asChild variant="outline" size="sm" className="mt-auto w-full">
-                <Link to="/super-admin/integracoes">Abrir página</Link>
-              </Button>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
@@ -1189,7 +1026,7 @@ const SuperAdminDashboard = () => {
         </Card>
 
         <Dialog open={subscriberDetailOpen} onOpenChange={setSubscriberDetailOpen}>
-          <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[720px]">
             <DialogHeader>
               <DialogTitle>Dados do assinante</DialogTitle>
               <DialogDescription>
@@ -1334,292 +1171,53 @@ const SuperAdminDashboard = () => {
           </DialogContent>
         </Dialog>
 
-        <Card className="hidden shadow-soft" data-tutorial-target="superadmin-platform-settings">
-          <CardHeader>
-            <CardTitle className="text-base">Configuração da plataforma</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-xl border border-border bg-secondary/40 p-4">
-              <div className="mb-2 flex items-center gap-2">
-                <Link2 className="h-4 w-4 text-primary" />
-                <p className="text-sm font-semibold text-foreground">Checkout oficial da Kiwify ou landing page externa</p>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Este é o link único que leva o lead direto para escolher o pacote antes de assinar. Use em campanhas, botões de venda e materiais comerciais.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                value={platformCheckoutUrlDraft}
-                onChange={(e) => setPlatformCheckoutUrlDraft(e.target.value)}
-                placeholder="https://dashboard.kiwify.com.br/products/..."
-                className="font-mono text-sm"
-              />
-              <Button
-                className="gap-2"
-                onClick={async () => {
-                  setSavingPlatformSettings(true);
-                  const { error } = await supabase
-                    .from("platform_settings")
-                    .upsert({ id: 1, checkout_url: platformCheckoutUrlDraft.trim() || null }, { onConflict: "id" });
-                  setSavingPlatformSettings(false);
-
-                  if (error) {
-                    toast.error("Falha ao salvar link da plataforma", { description: error.message });
-                    return;
-                  }
-
-                  toast.success("Link da plataforma salvo.");
-                  queryClient.invalidateQueries({ queryKey: ["super-admin-platform-settings"] });
-                }}
-                disabled={savingPlatformSettings}
-              >
-                <Save className="h-4 w-4" />
-                {savingPlatformSettings ? "Salvando..." : "Salvar link"}
-              </Button>
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={async () => {
-                  const urlToCopy = platformCheckoutUrlDraft.trim() || `${window.location.origin}/assinar`;
-                  await navigator.clipboard.writeText(urlToCopy);
-                  setCopiedCheckoutLink(true);
-                  toast.success("Link copiado!");
-                  window.setTimeout(() => setCopiedCheckoutLink(false), 2000);
-                }}
-              >
-                {copiedCheckoutLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copiedCheckoutLink ? "Copiado" : "Copiar"}
-              </Button>
-            </div>
-
-            <div className="grid gap-2 text-sm text-muted-foreground">
-              <p>
-                Destino: <span className="font-medium text-foreground">{platformCheckoutUrlDraft || "/assinar"}</span>
-              </p>
-              <p>Se o campo estiver vazio, a plataforma continua com o link público padrão de assinatura.</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="hidden">
-          <PlanCatalogManager
-            onPlansChanged={() => queryClient.invalidateQueries({ queryKey: ["super-admin-dataset-v3"] })}
-          />
+        {/* Quick navigation cards */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Link to="/super-admin/plataforma" className="group">
+            <Card className="shadow-soft transition-shadow hover:shadow-md">
+              <CardContent className="flex items-center gap-3 p-4">
+                <Settings className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold group-hover:underline">Plataforma</p>
+                  <p className="text-xs text-muted-foreground">Checkout e links de divulgação</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/super-admin/orcamentos" className="group">
+            <Card className="shadow-soft transition-shadow hover:shadow-md">
+              <CardContent className="flex items-center gap-3 p-4">
+                <FileBarChart className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold group-hover:underline">Orçamentos</p>
+                  <p className="text-xs text-muted-foreground">Solicitações customizadas</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/super-admin/catalogo" className="group">
+            <Card className="shadow-soft transition-shadow hover:shadow-md">
+              <CardContent className="flex items-center gap-3 p-4">
+                <PackageOpen className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold group-hover:underline">Catálogo de Planos</p>
+                  <p className="text-xs text-muted-foreground">Pacotes e cortesias</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/super-admin/integracoes" className="group">
+            <Card className="shadow-soft transition-shadow hover:shadow-md">
+              <CardContent className="flex items-center gap-3 p-4">
+                <Plug className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold group-hover:underline">Integrações</p>
+                  <p className="text-xs text-muted-foreground">Aplicativos conectados</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
-
-        {/* Quote requests */}
-        <Card className="hidden shadow-soft">
-          <CardHeader>
-            <CardTitle className="text-base">Solicitações de orçamento customizado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {quoteRequests.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma solicitação recebida.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-muted-foreground">
-                      <th className="pb-2 pr-4">Empresa</th>
-                      <th className="pb-2 pr-4">Contato</th>
-                      <th className="pb-2 pr-4">E-mail</th>
-                      <th className="pb-2 pr-4">WhatsApp</th>
-                      <th className="pb-2 pr-4">Profissionais</th>
-                      <th className="pb-2 pr-4">Tipo</th>
-                      <th className="pb-2 pr-4">Status</th>
-                      <th className="pb-2 pr-4">Data</th>
-                      <th className="pb-2 pr-4">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quoteRequests.map((req) => (
-                      <tr key={req.id} className="border-b border-border/70 align-top">
-                        <td className="py-2 pr-4">
-                          <p className="font-medium">{req.company_name}</p>
-                          {req.full_address && <p className="text-xs text-muted-foreground">{req.full_address}</p>}
-                        </td>
-                        <td className="py-2 pr-4">{req.contact_name}</td>
-                        <td className="py-2 pr-4 text-xs">{req.email}</td>
-                        <td className="py-2 pr-4 text-xs">{req.whatsapp}</td>
-                        <td className="py-2 pr-4 text-center">{req.professional_count}</td>
-                        <td className="py-2 pr-4">{req.app_type ?? "—"}</td>
-                        <td className="py-2 pr-4">
-                          <Badge variant={req.status === "pending" ? "outline" : "default"}>
-                            {req.status === "pending" ? "Pendente" : req.status === "contacted" ? "Contatado" : req.status === "closed" ? "Fechado" : req.status}
-                          </Badge>
-                        </td>
-                        <td className="py-2 pr-4 text-xs">{new Date(req.created_at).toLocaleDateString("pt-BR")}</td>
-                        <td className="py-2 pr-4">
-                          <div className="flex flex-col gap-1">
-                            {req.status === "pending" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={quoteStatusUpdating === req.id}
-                                onClick={() => updateQuoteStatus(req.id, "contacted")}
-                              >
-                                Marcar contatado
-                              </Button>
-                            )}
-                            {req.status === "contacted" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={quoteStatusUpdating === req.id}
-                                onClick={() => updateQuoteStatus(req.id, "closed")}
-                              >
-                                Fechar
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="hidden shadow-soft" data-tutorial-target="superadmin-share">
-          <CardHeader>
-            <CardTitle className="text-base">Link público de assinatura</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-6 lg:grid-cols-[1fr_220px]">
-            <div className="space-y-4">
-              <div className="rounded-xl border border-border bg-secondary/40 p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <Link2 className="h-4 w-4 text-primary" />
-                   <p className="text-sm font-semibold text-foreground">Divulgação para clínicas e profissionais</p>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a página pública de planos.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input readOnly value={subscriptionShareUrl} className="font-mono text-sm" onFocus={(e) => e.target.select()} />
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(subscriptionShareUrl);
-                    setCopiedShareLink(true);
-                    toast.success("Link de assinatura copiado");
-                    window.setTimeout(() => setCopiedShareLink(false), 2000);
-                  }}
-                >
-                  {copiedShareLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  {copiedShareLink ? "Copiado" : "Copiar link"}
-                </Button>
-              </div>
-
-              <div className="grid gap-2 text-sm text-muted-foreground">
-                <p>
-                  Destino:{" "}
-                  <span className="font-medium text-foreground">{"/assinar"}</span>
-                </p>
-                <p>Uso recomendado: bio do Instagram, WhatsApp comercial, landing pages de campanha e materiais de vendas.</p>
-                <p className="text-xs">
-                  Se quiser vender pela Kiwify, salve o link do checkout no campo do assinante e copie o valor de saída daqui.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <QrCode className="h-4 w-4 text-primary" />
-                QR Code
-              </div>
-              <div className="rounded-lg border border-border bg-card p-3">
-                <QRCodeSVG
-                  value={subscriptionShareUrl}
-                  size={160}
-                  level="M"
-                  includeMargin={false}
-                  bgColor="transparent"
-                  fgColor="currentColor"
-                  className="text-foreground"
-                />
-              </div>
-            <p className="text-center text-xs text-muted-foreground">
-                Escaneie para abrir a página pública de assinatura ou o checkout configurado.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hidden shadow-soft" data-tutorial-target="superadmin-plans">
-          <CardHeader>
-             <CardTitle className="text-base">Descrições dos pacotes para divulgação</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {planMarketingCatalog.map((plan) => {
-              const copy = getPlanCommercialCopy(plan);
-
-              return (
-                <div key={plan.key} className="rounded-xl border border-border p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{plan.name}</p>
-                      <p className="text-xs text-muted-foreground">{plan.description}</p>
-                    </div>
-                    {plan.marketing.highlight && <Badge variant="outline">{plan.marketing.highlight}</Badge>}
-                  </div>
-
-                  <div className="space-y-2">
-                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Texto único para divulgação</p>
-                    <div className="min-h-28 whitespace-pre-line rounded-lg bg-secondary/30 p-3 text-sm text-foreground">{copy.text}</div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      onClick={async () => {
-                        await navigator.clipboard.writeText(copy.text);
-                        setCopiedCopyKey(plan.key);
-                        toast.success(`Texto do pacote ${plan.name} copiado`);
-                        window.setTimeout(() => setCopiedCopyKey(null), 2000);
-                      }}
-                    >
-                      {copiedCopyKey === plan.key ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      Copiar
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-
-            <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-               Acima de 11 profissionais, divulgar como plataforma customizada, com solicitação de orçamento.
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hidden shadow-soft">
-          <CardHeader>
-             <CardTitle className="text-base">Aplicativos para gestão</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-3">
-            {appIntegrations.map((app) => (
-              <div key={app.name} className="rounded-lg border border-border p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Network className="h-4 w-4 text-primary" />
-                    <p className="text-sm font-semibold">{app.name}</p>
-                  </div>
-                  <Badge variant={app.status === "conectado" ? "default" : "outline"}>{app.status}</Badge>
-                </div>
-                <p className="mb-3 text-xs text-muted-foreground">{app.description}</p>
-                <a href={app.href} target="_blank" rel="noreferrer" className="inline-flex items-center text-xs font-medium text-primary hover:underline">
-                  <Link2 className="mr-1 h-3.5 w-3.5" /> Abrir app
-                </a>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
       </div>
     </AdminLayout>
   );
