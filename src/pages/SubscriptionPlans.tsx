@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Send } from "lucide-react";
 import medfluxLogo from "@/assets/medflux-logo.png";
@@ -54,6 +54,13 @@ const SubscriptionPlans = () => {
     },
   });
 
+  const location = useLocation();
+
+  const planOverride = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("plan") ?? undefined;
+  }, [location.search]);
+
   const availablePlans = useMemo<PlanOption[]>(() => {
     if (catalogPlans.length === 0) return fallbackPlanOptions;
 
@@ -70,6 +77,12 @@ const SubscriptionPlans = () => {
       marketing: getPlanMarketingContent(plan.code),
     }));
   }, [catalogPlans]);
+
+  const displayedPlans = useMemo(() => {
+    if (!planOverride) return availablePlans;
+    const filtered = availablePlans.filter((plan) => plan.key === planOverride);
+    return filtered.length ? filtered : availablePlans;
+  }, [availablePlans, planOverride]);
 
   const handleChoosePlan = (planKey: string) => {
     storePreferredPlan(planKey);
@@ -139,8 +152,14 @@ const SubscriptionPlans = () => {
           </p>
         </div>
 
+        {planOverride && (
+          <p className="text-sm text-muted-foreground">
+            Mostrando apenas o pacote <span className="font-semibold text-foreground">{planOverride.toUpperCase()}</span>.
+          </p>
+        )}
+
         <div className="grid gap-4 lg:grid-cols-3">
-          {availablePlans.map((plan) => (
+          {displayedPlans.map((plan) => (
             <Card key={plan.key} className="relative flex h-full flex-col border-border shadow-soft">
               <CardHeader className="space-y-4">
                 <div className="flex items-start justify-between gap-3">
