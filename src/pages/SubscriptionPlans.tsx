@@ -22,6 +22,7 @@ import {
   SUBSCRIPTION_TERM_LABEL,
   fallbackPlanOptions,
   getPlanMarketingContent,
+  PRO_CHECKOUT_URL,
   storePreferredPlan,
   SIGNATURE_CHECKOUT_URL,
   type PlanOption,
@@ -103,13 +104,18 @@ const SubscriptionPlans = () => {
 
   const planLinks = (platformSettings?.plan_links ?? {}) as Record<string, string>;
   const affiliateInviteUrl = platformSettings?.affiliate_url?.trim() ?? "";
+  const proCheckoutUrl = planLinks.pro?.trim() || PRO_CHECKOUT_URL;
   const signatureCheckoutUrl = planLinks.signature?.trim() || SIGNATURE_CHECKOUT_URL;
 
   useEffect(() => {
+    if (planOverride === "pro" && proCheckoutUrl) {
+      window.location.replace(proCheckoutUrl);
+      return;
+    }
     if (planOverride === "signature" && signatureCheckoutUrl) {
       window.location.replace(signatureCheckoutUrl);
     }
-  }, [planOverride, signatureCheckoutUrl]);
+  }, [planOverride, proCheckoutUrl, signatureCheckoutUrl]);
 
   const handleChoosePlan = (planKey: string) => {
     storePreferredPlan(planKey);
@@ -238,7 +244,7 @@ const SubscriptionPlans = () => {
                     onClick={() => {
                       const directUrl =
                         (planLinks[plan.key.toLowerCase()] ?? "").trim() ||
-                        (plan.key === "signature" ? SIGNATURE_CHECKOUT_URL : "");
+                        (plan.key === "pro" ? PRO_CHECKOUT_URL : plan.key === "signature" ? SIGNATURE_CHECKOUT_URL : "");
                       if (directUrl) {
                         window.open(directUrl, "_blank");
                         return;

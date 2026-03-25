@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { SIGNATURE_CHECKOUT_URL, getSubscriptionShareUrl, getTrialSubscriptionShareUrl } from "@/lib/subscription-plans";
+import { PRO_CHECKOUT_URL, SIGNATURE_CHECKOUT_URL, getSubscriptionShareUrl, getTrialSubscriptionShareUrl } from "@/lib/subscription-plans";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -51,6 +51,9 @@ const SuperAdminPlatform = () => {
   useEffect(() => {
     setPlanLinksDraft((current) => {
       const next = { ...(platformSettings?.plan_links ?? current) };
+      if (!next.pro?.trim()) {
+        next.pro = PRO_CHECKOUT_URL;
+      }
       if (!next.signature?.trim()) {
         next.signature = SIGNATURE_CHECKOUT_URL;
       }
@@ -411,7 +414,9 @@ const SuperAdminPlatform = () => {
                 {planRows.map((plan) => {
                   const name = plan.name || plan.code;
                   const defaultLink =
-                    plan.code === "signature"
+                    plan.code === "pro"
+                      ? PRO_CHECKOUT_URL
+                      : plan.code === "signature"
                       ? SIGNATURE_CHECKOUT_URL
                       : `${platformCheckoutUrlDraft.trim() || subscriptionShareUrl}?plan=${plan.code}`;
                   const overrideLink = (planLinksDraft[plan.code] ?? "").trim();
@@ -450,7 +455,13 @@ const SuperAdminPlatform = () => {
                         onChange={(e) =>
                           setPlanLinksDraft((prev) => ({ ...prev, [plan.code]: e.target.value }))
                         }
-                        placeholder={plan.code === "signature" ? SIGNATURE_CHECKOUT_URL : "Cole o link do Kiwify para este plano (opcional)"}
+                        placeholder={
+                          plan.code === "pro"
+                            ? PRO_CHECKOUT_URL
+                            : plan.code === "signature"
+                              ? SIGNATURE_CHECKOUT_URL
+                              : "Cole o link do Kiwify para este plano (opcional)"
+                        }
                         className="text-xs"
                       />
                       <p className="text-xs text-muted-foreground">Link padrão usado quando o campo acima estiver vazio:</p>
