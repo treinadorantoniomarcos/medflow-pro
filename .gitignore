@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local generated artifacts
+docs/*.doc
+docs/*.dotx
+supabase/.temp/
