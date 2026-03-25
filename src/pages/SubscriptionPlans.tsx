@@ -252,11 +252,19 @@ const SubscriptionPlans = () => {
                       handleChoosePlan(plan.key);
                     }}
                   >
-                    {plan.key === "pro" ? "Assinar Pro agora" : "Selecionar este plano"}
+                    {plan.key === "pro"
+                      ? "Assinar Pro agora"
+                      : plan.key === "signature"
+                        ? "Assinar Signature agora"
+                        : "Iniciar experiência Start"}
                   </Button>
                   <Button asChild variant="ghost" className="w-full">
                     <Link to={`/register?plan=${encodeURIComponent(plan.key)}`}>
-                      {plan.key === "pro" ? "Criar conta no Pro" : "Criar conta nesta opção"}
+                      {plan.key === "pro"
+                        ? "Criar conta no Pro"
+                        : plan.key === "signature"
+                          ? "Criar conta no Signature"
+                          : "Criar conta no Start"}
                     </Link>
                   </Button>
                 </div>
