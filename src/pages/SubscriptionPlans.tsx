@@ -104,7 +104,7 @@ const SubscriptionPlans = () => {
 
   const planLinks = (platformSettings?.plan_links ?? {}) as Record<string, string>;
   const affiliateInviteUrl = platformSettings?.affiliate_url?.trim() ?? "";
-  const proCheckoutUrl = planLinks.pro?.trim() || PRO_CHECKOUT_URL;
+  const proCheckoutUrl = PRO_CHECKOUT_URL;
   const signatureCheckoutUrl = planLinks.signature?.trim() || SIGNATURE_CHECKOUT_URL;
 
   useEffect(() => {
@@ -243,8 +243,11 @@ const SubscriptionPlans = () => {
                     className="w-full"
                     onClick={() => {
                       const directUrl =
-                        (planLinks[plan.key.toLowerCase()] ?? "").trim() ||
-                        (plan.key === "pro" ? PRO_CHECKOUT_URL : plan.key === "signature" ? SIGNATURE_CHECKOUT_URL : "");
+                        plan.key === "pro"
+                          ? PRO_CHECKOUT_URL
+                          : plan.key === "signature"
+                            ? (planLinks[plan.key.toLowerCase()] ?? "").trim() || SIGNATURE_CHECKOUT_URL
+                            : (planLinks[plan.key.toLowerCase()] ?? "").trim();
                       if (directUrl) {
                         window.open(directUrl, "_blank");
                         return;

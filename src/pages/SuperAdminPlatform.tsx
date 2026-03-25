@@ -51,9 +51,7 @@ const SuperAdminPlatform = () => {
   useEffect(() => {
     setPlanLinksDraft((current) => {
       const next = { ...(platformSettings?.plan_links ?? current) };
-      if (!next.pro?.trim()) {
-        next.pro = PRO_CHECKOUT_URL;
-      }
+      next.pro = PRO_CHECKOUT_URL;
       if (!next.signature?.trim()) {
         next.signature = SIGNATURE_CHECKOUT_URL;
       }
@@ -420,7 +418,8 @@ const SuperAdminPlatform = () => {
                       ? SIGNATURE_CHECKOUT_URL
                       : `${platformCheckoutUrlDraft.trim() || subscriptionShareUrl}?plan=${plan.code}`;
                   const overrideLink = (planLinksDraft[plan.code] ?? "").trim();
-                  const effectiveLink = overrideLink || defaultLink;
+                  const fixedOverrideLink = plan.code === "pro" ? PRO_CHECKOUT_URL : overrideLink;
+                  const effectiveLink = fixedOverrideLink || defaultLink;
                   return (
                     <div key={plan.code} className="space-y-2 rounded-lg border border-border p-3">
                       <div className="flex items-center justify-between gap-3">
