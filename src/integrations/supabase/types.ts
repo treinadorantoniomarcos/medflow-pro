@@ -393,6 +393,7 @@ export type Database = {
       }
       platform_settings: {
         Row: {
+          affiliate_url: string | null
           checkout_url: string | null
           id: number
           plan_links: Json | null
@@ -400,6 +401,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          affiliate_url?: string | null
           checkout_url?: string | null
           id?: number
           plan_links?: Json | null
@@ -407,6 +409,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          affiliate_url?: string | null
           checkout_url?: string | null
           id?: number
           plan_links?: Json | null

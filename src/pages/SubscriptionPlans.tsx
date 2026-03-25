@@ -59,12 +59,12 @@ const SubscriptionPlans = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("platform_settings")
-        .select("plan_links")
+        .select("plan_links, affiliate_url")
         .eq("id", 1)
         .single();
 
       if (error) throw error;
-      return data as { plan_links: Record<string, string> | null };
+      return data as { plan_links: Record<string, string> | null; affiliate_url: string | null };
     },
   });
 
@@ -101,6 +101,7 @@ const SubscriptionPlans = () => {
   }, [availablePlans, planOverride]);
 
   const planLinks = (platformSettings?.plan_links ?? {}) as Record<string, string>;
+  const affiliateInviteUrl = platformSettings?.affiliate_url?.trim() ?? "";
 
   const handleChoosePlan = (planKey: string) => {
     storePreferredPlan(planKey);
@@ -382,6 +383,26 @@ const SubscriptionPlans = () => {
                 </p>
               </div>
             )}
+            </CardContent>
+          </Card>
+        )}
+
+        {!planOverride && !isUpgradeMode && affiliateInviteUrl && (
+          <Card className="border-primary/20 bg-primary/5 shadow-soft">
+            <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">Programa de afiliados</p>
+                <h2 className="text-2xl font-extrabold text-foreground">Convite oficial para parceiros</h2>
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  Se você representa uma rede, comunidade ou carteira de leads, acesse o convite oficial e faça parte do programa de afiliados.
+                </p>
+              </div>
+              <Button
+                className="w-full md:w-auto"
+                onClick={() => window.open(affiliateInviteUrl, "_blank")}
+              >
+                Quero ser afiliado
+              </Button>
             </CardContent>
           </Card>
         )}

@@ -15,10 +15,12 @@ const SuperAdminPlatform = () => {
   const queryClient = useQueryClient();
   const [platformCheckoutUrlDraft, setPlatformCheckoutUrlDraft] = useState("");
   const [trialUrlDraft, setTrialUrlDraft] = useState("");
+  const [affiliateUrlDraft, setAffiliateUrlDraft] = useState("");
   const [savingPlatformSettings, setSavingPlatformSettings] = useState(false);
   const [copiedCheckoutLink, setCopiedCheckoutLink] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [copiedTrialLink, setCopiedTrialLink] = useState(false);
+  const [copiedAffiliateLink, setCopiedAffiliateLink] = useState(false);
   const subscriptionShareUrl = getSubscriptionShareUrl(window.location.origin);
   const trialShareUrl = getTrialSubscriptionShareUrl(window.location.origin);
   const [copiedPlan, setCopiedPlan] = useState<string | null>(null);
@@ -30,11 +32,11 @@ const SuperAdminPlatform = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("platform_settings")
-        .select("checkout_url, plan_links, trial_url, updated_at")
+        .select("checkout_url, plan_links, trial_url, affiliate_url, updated_at")
         .eq("id", 1)
         .single();
       if (error) throw error;
-      return data as { checkout_url: string | null; plan_links: Record<string, string> | null; trial_url: string | null; updated_at: string };
+      return data as { checkout_url: string | null; plan_links: Record<string, string> | null; trial_url: string | null; affiliate_url: string | null; updated_at: string };
     },
   });
 
@@ -49,6 +51,10 @@ const SuperAdminPlatform = () => {
   useEffect(() => {
     setTrialUrlDraft(platformSettings?.trial_url ?? "");
   }, [platformSettings?.trial_url]);
+
+  useEffect(() => {
+    setAffiliateUrlDraft(platformSettings?.affiliate_url ?? "");
+  }, [platformSettings?.affiliate_url]);
 
   const { data: planRows = [] } = useQuery({
     queryKey: ["subscription-plans"],
@@ -74,7 +80,7 @@ const SuperAdminPlatform = () => {
     setSavingPlanLinks(true);
     const { error } = await supabase
       .from("platform_settings")
-      .upsert({ id: 1, checkout_url: platformCheckoutUrlDraft.trim() || null, plan_links: planLinksDraft, trial_url: trialUrlDraft.trim() || null }, { onConflict: "id" });
+      .upsert({ id: 1, checkout_url: platformCheckoutUrlDraft.trim() || null, plan_links: planLinksDraft, trial_url: trialUrlDraft.trim() || null, affiliate_url: affiliateUrlDraft.trim() || null }, { onConflict: "id" });
     setSavingPlanLinks(false);
 
     if (error) {
@@ -136,6 +142,7 @@ const SuperAdminPlatform = () => {
                         checkout_url: platformCheckoutUrlDraft.trim() || null,
                         plan_links: planLinksDraft,
                         trial_url: trialUrlDraft.trim() || null,
+                        affiliate_url: affiliateUrlDraft.trim() || null,
                       },
                       { onConflict: "id" }
                     );
@@ -236,6 +243,70 @@ const SuperAdminPlatform = () => {
               </div>
               <p className="text-center text-xs text-muted-foreground">
                 Escaneie para abrir a página exclusiva da experiência Start.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-base">Link de convite de afiliado</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-6 lg:grid-cols-[1fr_220px]">
+            <div className="space-y-4">
+              <div className="rounded-xl border border-border bg-secondary/40 p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Link2 className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">Convite oficial para afiliados</p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Use este link para enviar convites de afiliação, cadastrar parceiros e distribuir o acesso oficial ao programa.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input readOnly value={affiliateUrlDraft.trim() || "https://dashboard.kiwify.com/join/affiliate/ns119BD7"} className="font-mono text-sm" onFocus={(e) => e.target.select()} />
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(affiliateUrlDraft.trim() || "https://dashboard.kiwify.com/join/affiliate/ns119BD7");
+                    setCopiedAffiliateLink(true);
+                    toast.success("Link de afiliado copiado");
+                    window.setTimeout(() => setCopiedAffiliateLink(false), 2000);
+                  }}
+                >
+                  {copiedAffiliateLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copiedAffiliateLink ? "Copiado" : "Copiar link"}
+                </Button>
+              </div>
+
+              <div className="grid gap-2 text-sm text-muted-foreground">
+                <p>
+                  Destino: <span className="font-medium text-foreground">{affiliateUrlDraft.trim() || "dashboard.kiwify.com/join/affiliate/ns119BD7"}</span>
+                </p>
+                <p>Recomendado para parceiros, campanha de afiliados e onboarding de divulgadores.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <QrCode className="h-4 w-4 text-primary" />
+                QR Code
+              </div>
+              <div className="rounded-lg border border-border bg-card p-3">
+                <QRCodeSVG
+                  value={affiliateUrlDraft.trim() || "https://dashboard.kiwify.com/join/affiliate/ns119BD7"}
+                  size={160}
+                  level="M"
+                  includeMargin={false}
+                  bgColor="transparent"
+                  fgColor="currentColor"
+                  className="text-foreground"
+                />
+              </div>
+              <p className="text-center text-xs text-muted-foreground">
+                Escaneie para abrir o convite oficial de afiliado.
               </p>
             </div>
           </CardContent>
