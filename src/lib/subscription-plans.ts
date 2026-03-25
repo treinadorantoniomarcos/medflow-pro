@@ -24,6 +24,7 @@ export type PlanOption = {
 export const PLAN_PREFERENCE_KEY = "medflow-preferred-plan";
 export const SUBSCRIPTION_SHARE_PATH = "/assinar";
 export const TRIAL_SHARE_PATH = "/degustacao";
+export const SIGNATURE_CHECKOUT_URL = "https://pay.kiwify.com.br/2GZhB9R";
 export const SUBSCRIPTION_TERM_DAYS = 365;
 export const SUBSCRIPTION_TERM_LABEL = "12 meses";
 export const START_TRIAL_DAYS = 21;

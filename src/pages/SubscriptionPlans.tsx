@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Send } from "lucide-react";
@@ -23,6 +23,7 @@ import {
   fallbackPlanOptions,
   getPlanMarketingContent,
   storePreferredPlan,
+  SIGNATURE_CHECKOUT_URL,
   type PlanOption,
 } from "@/lib/subscription-plans";
 
@@ -102,6 +103,13 @@ const SubscriptionPlans = () => {
 
   const planLinks = (platformSettings?.plan_links ?? {}) as Record<string, string>;
   const affiliateInviteUrl = platformSettings?.affiliate_url?.trim() ?? "";
+  const signatureCheckoutUrl = planLinks.signature?.trim() || SIGNATURE_CHECKOUT_URL;
+
+  useEffect(() => {
+    if (planOverride === "signature" && signatureCheckoutUrl) {
+      window.location.replace(signatureCheckoutUrl);
+    }
+  }, [planOverride, signatureCheckoutUrl]);
 
   const handleChoosePlan = (planKey: string) => {
     storePreferredPlan(planKey);
@@ -228,7 +236,9 @@ const SubscriptionPlans = () => {
                   <Button
                     className="w-full"
                     onClick={() => {
-                      const directUrl = (planLinks[plan.key.toLowerCase()] ?? "").trim();
+                      const directUrl =
+                        (planLinks[plan.key.toLowerCase()] ?? "").trim() ||
+                        (plan.key === "signature" ? SIGNATURE_CHECKOUT_URL : "");
                       if (directUrl) {
                         window.open(directUrl, "_blank");
                         return;
