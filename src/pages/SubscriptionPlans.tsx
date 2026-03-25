@@ -72,7 +72,8 @@ const SubscriptionPlans = () => {
 
   const planOverride = useMemo(() => {
     const params = new URLSearchParams(location.search);
-    return params.get("plan") ?? undefined;
+    const value = params.get("plan");
+    return value ? value.trim().toLowerCase() : undefined;
   }, [location.search]);
 
   const isUpgradeMode = useMemo(() => {
@@ -116,6 +117,11 @@ const SubscriptionPlans = () => {
       window.location.replace(signatureCheckoutUrl);
     }
   }, [planOverride, proCheckoutUrl, signatureCheckoutUrl]);
+
+  if (planOverride === "pro") {
+    window.location.replace(PRO_CHECKOUT_URL);
+    return null;
+  }
 
   const handleChoosePlan = (planKey: string) => {
     storePreferredPlan(planKey);

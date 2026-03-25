@@ -411,14 +411,15 @@ const SuperAdminPlatform = () => {
               <div className="space-y-3">
                 {planRows.map((plan) => {
                   const name = plan.name || plan.code;
+                  const isProPlan = plan.code === "pro";
                   const defaultLink =
-                    plan.code === "pro"
+                    isProPlan
                       ? PRO_CHECKOUT_URL
                       : plan.code === "signature"
                       ? SIGNATURE_CHECKOUT_URL
                       : `${platformCheckoutUrlDraft.trim() || subscriptionShareUrl}?plan=${plan.code}`;
                   const overrideLink = (planLinksDraft[plan.code] ?? "").trim();
-                  const fixedOverrideLink = plan.code === "pro" ? PRO_CHECKOUT_URL : overrideLink;
+                  const fixedOverrideLink = isProPlan ? PRO_CHECKOUT_URL : overrideLink;
                   const effectiveLink = fixedOverrideLink || defaultLink;
                   return (
                     <div key={plan.code} className="space-y-2 rounded-lg border border-border p-3">
@@ -450,18 +451,20 @@ const SuperAdminPlatform = () => {
                         onFocus={(e) => e.target.select()}
                       />
                       <Input
-                        value={planLinksDraft[plan.code] ?? ""}
-                        onChange={(e) =>
-                          setPlanLinksDraft((prev) => ({ ...prev, [plan.code]: e.target.value }))
-                        }
+                        value={isProPlan ? PRO_CHECKOUT_URL : planLinksDraft[plan.code] ?? ""}
+                        onChange={(e) => {
+                          if (isProPlan) return;
+                          setPlanLinksDraft((prev) => ({ ...prev, [plan.code]: e.target.value }));
+                        }}
                         placeholder={
-                          plan.code === "pro"
+                          isProPlan
                             ? PRO_CHECKOUT_URL
                             : plan.code === "signature"
                               ? SIGNATURE_CHECKOUT_URL
                               : "Cole o link do Kiwify para este plano (opcional)"
                         }
                         className="text-xs"
+                        readOnly={isProPlan}
                       />
                       <p className="text-xs text-muted-foreground">Link padrão usado quando o campo acima estiver vazio:</p>
                       <p className="text-xs text-muted-foreground break-words">{defaultLink}</p>
