@@ -395,16 +395,22 @@ export type Database = {
         Row: {
           checkout_url: string | null
           id: number
+          plan_links: Json | null
+          trial_url: string | null
           updated_at: string
         }
         Insert: {
           checkout_url?: string | null
           id?: number
+          plan_links?: Json | null
+          trial_url?: string | null
           updated_at?: string
         }
         Update: {
           checkout_url?: string | null
           id?: number
+          plan_links?: Json | null
+          trial_url?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -33,19 +33,19 @@ type CatalogPlan = {
   monthly_price_cents: number;
   period_days: number;
   trial_days: number;
-  is_courtesy: boolean;
   is_active: boolean;
 };
 
 const SubscriptionPlans = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { data: catalogPlans = [] } = useQuery({
     queryKey: ["public-subscription-plans"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscription_plans")
-        .select("code, name, description, monthly_price_cents, period_days, trial_days, is_courtesy, is_active")
+        .select("code, name, description, monthly_price_cents, period_days, trial_days, is_active")
         .eq("is_active", true)
         .order("monthly_price_cents", { ascending: true });
 
@@ -54,11 +54,28 @@ const SubscriptionPlans = () => {
     },
   });
 
-  const location = useLocation();
+  const { data: platformSettings } = useQuery({
+    queryKey: ["public-platform-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("platform_settings")
+        .select("plan_links")
+        .eq("id", 1)
+        .single();
+
+      if (error) throw error;
+      return data as { plan_links: Record<string, string> | null };
+    },
+  });
 
   const planOverride = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return params.get("plan") ?? undefined;
+  }, [location.search]);
+
+  const isUpgradeMode = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("mode") === "upgrade";
   }, [location.search]);
 
   const availablePlans = useMemo<PlanOption[]>(() => {
@@ -70,10 +87,9 @@ const SubscriptionPlans = () => {
       monthlyPrice: plan.monthly_price_cents / 100,
       description:
         plan.description ??
-        `Período de ${plan.period_days} dias${plan.trial_days > 0 ? ` | cortesia de ${plan.trial_days} dias` : ""}`,
+        `Período de ${plan.period_days} dias${plan.trial_days > 0 ? ` | experiência de ${plan.trial_days} dias` : ""}`,
       periodDays: plan.period_days,
       trialDays: plan.trial_days,
-      isCourtesy: plan.is_courtesy,
       marketing: getPlanMarketingContent(plan.code),
     }));
   }, [catalogPlans]);
@@ -83,6 +99,8 @@ const SubscriptionPlans = () => {
     const filtered = availablePlans.filter((plan) => plan.key === planOverride);
     return filtered.length ? filtered : availablePlans;
   }, [availablePlans, planOverride]);
+
+  const planLinks = (platformSettings?.plan_links ?? {}) as Record<string, string>;
 
   const handleChoosePlan = (planKey: string) => {
     storePreferredPlan(planKey);
@@ -132,7 +150,7 @@ const SubscriptionPlans = () => {
     }
 
     setQuoteSent(true);
-    toast.success("Solicitação enviada com sucesso! Entraremos em contato em até 48 horas.");
+    toast.success("Solicitação recebida com sucesso! Entraremos em contato em até 48 horas úteis.");
   };
 
   return (
@@ -142,19 +160,25 @@ const SubscriptionPlans = () => {
           <div className="flex items-center gap-3">
             <img src={medfluxLogo} alt="MedFlux Pro" className="h-14 w-14 rounded-2xl" />
             <div>
-              <p className="text-sm font-semibold text-primary">Assinatura para clínicas e profissionais</p>
-              <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Escolha o pacote ideal para sua operação</h1>
+              <p className="text-sm font-semibold text-primary">Assinatura premium para clínicas e profissionais</p>
+              <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Escolha a solução ideal para a sua operação</h1>
             </div>
           </div>
 
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            Compare os planos do MedFlux Pro e escolha o pacote mais adequado ao porte da sua operação.
-          </p>
-        </div>
+        <p className="max-w-3xl text-sm text-muted-foreground">
+          Compare as opções do MedFlux Pro e escolha a alternativa mais adequada ao porte e ao momento da sua operação.
+        </p>
+      </div>
+
+        {isUpgradeMode && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 shadow-sm dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
+            Sua experiência premium de 21 dias chegou ao fim. Escolha um dos 3 planos abaixo e retome a operação com toda a base já registrada.
+          </div>
+        )}
 
         {planOverride && (
           <p className="text-sm text-muted-foreground">
-            Mostrando apenas o pacote <span className="font-semibold text-foreground">{planOverride.toUpperCase()}</span>.
+            Mostrando apenas o plano <span className="font-semibold text-foreground">{planOverride.toUpperCase()}</span>.
           </p>
         )}
 
@@ -172,7 +196,7 @@ const SubscriptionPlans = () => {
                 <div>
                   <p className="text-3xl font-extrabold text-foreground">R$ {plan.monthlyPrice.toFixed(2)}</p>
                   <p className="text-xs text-muted-foreground">
-                    por mês | vigência de {SUBSCRIPTION_TERM_LABEL}{plan.trialDays ? ` | ${plan.trialDays} dias de cortesia` : ""}{plan.isCourtesy ? " | pacote cortesia" : ""}
+                    por mês | vigência de {SUBSCRIPTION_TERM_LABEL}{plan.trialDays ? ` | ${plan.trialDays} dias de experiência` : ""}
                   </p>
                 </div>
               </CardHeader>
@@ -183,8 +207,8 @@ const SubscriptionPlans = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-foreground">Resumo</p>
-                  <p className="text-sm text-muted-foreground">{plan.marketing.summary}</p>
+                <p className="text-sm font-semibold text-foreground">Resumo</p>
+                <p className="text-sm text-muted-foreground">{plan.marketing.summary}</p>
                 </div>
 
                 <div className="space-y-2">
@@ -200,11 +224,21 @@ const SubscriptionPlans = () => {
                 </div>
 
                 <div className="mt-auto space-y-2">
-                  <Button className="w-full" onClick={() => handleChoosePlan(plan.key)}>
-                    Assinar este pacote
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      const directUrl = (planLinks[plan.key.toLowerCase()] ?? "").trim();
+                      if (directUrl) {
+                        window.open(directUrl, "_blank");
+                        return;
+                      }
+                      handleChoosePlan(plan.key);
+                    }}
+                  >
+                    Selecionar este plano
                   </Button>
                   <Button asChild variant="ghost" className="w-full">
-                    <Link to={`/register?plan=${encodeURIComponent(plan.key)}`}>Criar conta e continuar</Link>
+                    <Link to={`/register?plan=${encodeURIComponent(plan.key)}`}>Criar conta nesta opção</Link>
                   </Button>
                 </div>
               </CardContent>
@@ -213,29 +247,29 @@ const SubscriptionPlans = () => {
         </div>
 
         {/* Custom quote request card */}
-        {!planOverride && (
+        {!planOverride && !isUpgradeMode && (
           <Card className="border-dashed border-border shadow-soft">
             <CardContent className="p-6">
             <div className="mb-4 text-center">
-              <p className="text-sm font-semibold text-primary">Acima de 11 profissionais</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-foreground">Plataforma customizada</h2>
+                <p className="text-sm font-semibold text-primary">Operações com mais de 11 profissionais</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-foreground">Proposta executiva personalizada</h2>
               <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
-                Operações com mais de 11 profissionais saem do pacote padrão e entram em um projeto customizado, com escopo comercial e técnico sob medida.
+                Operações com mais de 11 profissionais seguem para uma proposta comercial executiva, construída para a realidade operacional da sua clínica.
               </p>
             </div>
 
             {quoteSent ? (
               <div className="rounded-xl border border-border bg-secondary/30 p-6 text-center">
                 <Check className="mx-auto mb-3 h-10 w-10 text-primary" />
-                <h3 className="text-lg font-bold text-foreground">Solicitação enviada!</h3>
+                <h3 className="text-lg font-bold text-foreground">Solicitação recebida!</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Nosso time comercial entrará em contato em até 48 horas para definir implantação, capacidade e governança.
+                  Nosso time comercial entrará em contato em até 48 horas úteis para alinhar implantação, capacidade e governança.
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
                 <p className="text-center text-sm font-medium text-foreground">
-                  Preencha os dados abaixo para solicitar um orçamento personalizado.
+                  Preencha os dados abaixo para solicitar uma proposta comercial personalizada.
                 </p>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -340,11 +374,11 @@ const SubscriptionPlans = () => {
 
                 <Button className="w-full" onClick={handleQuoteSubmit} disabled={sendingQuote}>
                   <Send className="mr-2 h-4 w-4" />
-                  {sendingQuote ? "Enviando..." : "Solicitar orçamento personalizado"}
+                  {sendingQuote ? "Enviando..." : "Solicitar proposta personalizada"}
                 </Button>
 
                 <p className="text-center text-xs text-muted-foreground">
-                  Nosso time comercial entrará em contato em até 48 horas para definir implantação, capacidade e governança.
+                  Nosso time comercial entrará em contato em até 48 horas úteis para alinhar implantação, capacidade e governança.
                 </p>
               </div>
             )}
@@ -353,7 +387,7 @@ const SubscriptionPlans = () => {
         )}
 
         <div className="text-center text-sm text-muted-foreground">
-          Já tem conta? <Link to="/login" className="font-semibold text-primary hover:underline">Entre para concluir a assinatura</Link>
+          Já tem conta? <Link to="/login" className="font-semibold text-primary hover:underline">Entre para concluir sua assinatura</Link>
         </div>
       </div>
     </div>

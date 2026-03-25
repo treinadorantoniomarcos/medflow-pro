@@ -45,6 +45,7 @@ import {
   exportSuperAdminPDF,
   exportSuperAdminXLS,
 } from "@/lib/export-super-admin";
+import { SUBSCRIPTION_TERM_DAYS } from "@/lib/subscription-plans";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -105,7 +106,6 @@ type PlanRow = {
   monthly_price_cents: number;
   period_days: number;
   trial_days: number;
-  is_courtesy: boolean;
   is_active: boolean;
 };
 
@@ -221,7 +221,7 @@ const SuperAdminDashboard = () => {
           .limit(20000),
         supabase
           .from("subscription_plans")
-          .select("id, code, name, description, monthly_price_cents, period_days, trial_days, is_courtesy, is_active")
+          .select("id, code, name, description, monthly_price_cents, period_days, trial_days, is_active")
           .order("monthly_price_cents", { ascending: true }),
       ]);
 
@@ -529,7 +529,7 @@ const SuperAdminDashboard = () => {
 
     const nowIso = new Date().toISOString();
     const nextPeriod = new Date();
-    nextPeriod.setMonth(nextPeriod.getMonth() + 1);
+    nextPeriod.setDate(nextPeriod.getDate() + SUBSCRIPTION_TERM_DAYS);
 
     const updatedSettings = {
       ...(row.settings ?? {}),
@@ -1201,7 +1201,7 @@ const SuperAdminDashboard = () => {
                 <PackageOpen className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-sm font-semibold group-hover:underline">Catálogo de Planos</p>
-                  <p className="text-xs text-muted-foreground">Pacotes e cortesias</p>
+                  <p className="text-xs text-muted-foreground">Planos Start, Pro e Signature</p>
                 </div>
               </CardContent>
             </Card>

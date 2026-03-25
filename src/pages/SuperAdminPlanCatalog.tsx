@@ -15,8 +15,8 @@ const SuperAdminPlanCatalog = () => {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Catálogo de Planos</h1>
-            <p className="text-sm text-muted-foreground">Gerencie pacotes e cortesias disponíveis para assinatura.</p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Catálogo de Planos e Experiência</h1>
+            <p className="text-sm text-muted-foreground">Gerencie os planos Start, Pro e Signature, além da experiência gratuita de 21 dias.</p>
           </div>
         </div>
 

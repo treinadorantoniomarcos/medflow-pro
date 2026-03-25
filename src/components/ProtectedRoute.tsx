@@ -77,7 +77,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   if (!user) return <Navigate to="/login" replace />;
   if (needsOnboarding) return <Navigate to="/onboarding" replace />;
   if (accessState?.expiredTrial) {
-    return <Navigate to="/onboarding?mode=upgrade" replace />;
+    return <Navigate to="/assinar?mode=upgrade" replace />;
   }
   if (accessState?.blocked) {
     const pendingRelease = accessState.status === "paused";

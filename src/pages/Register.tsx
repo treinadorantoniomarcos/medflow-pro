@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,13 @@ import { START_TRIAL_DAYS, getPlanMarketingContent } from "@/lib/subscription-pl
 
 const Register = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const isTrialLanding = location.pathname === "/degustacao" || new URLSearchParams(location.search).get("mode") === "trial";
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,8 +53,8 @@ const Register = () => {
     } else {
       toast.success("Conta criada com sucesso!", {
         description: data.session
-          ? "Sua degustação do pacote Start será iniciada agora."
-          : "Verifique seu e-mail. Após a confirmação, você seguirá para a degustação do pacote Start.",
+          ? "Sua experiência Start será iniciada agora."
+          : "Verifique seu e-mail. Após a confirmação, você seguirá para a experiência Start.",
       });
       navigate(data.session ? "/onboarding" : "/login");
     }
@@ -67,21 +69,23 @@ const Register = () => {
             <img src={medfluxLogo} alt="MedFlux Pro" className="h-14 w-14" />
           </div>
           <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
-            Criar Conta
+            {isTrialLanding ? "Experiência Start - 21 dias" : "Criar conta"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Comece a usar o MedFlux Pro
+            {isTrialLanding ? "Acesso exclusivo para iniciar a experiência gratuita do Start." : "Comece a usar o MedFlux Pro"}
           </p>
         </CardHeader>
         <CardContent>
           <div className="mb-5 rounded-xl border border-primary/20 bg-primary/5 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Degustação inicial</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              {isTrialLanding ? "Experiência exclusiva" : "Degustação inicial"}
+            </p>
             <div className="mt-2 flex items-start justify-between gap-3">
               <div>
-                <p className="text-base font-bold text-foreground">Pacote Start</p>
+                <p className="text-base font-bold text-foreground">Plano Start</p>
                 <p className="text-sm text-muted-foreground">{getPlanMarketingContent("start").summary}</p>
               </div>
-              <p className="text-sm font-semibold text-foreground">{START_TRIAL_DAYS} dias de cortesia</p>
+                <p className="text-sm font-semibold text-foreground">{START_TRIAL_DAYS} dias de experiência</p>
             </div>
             <div className="mt-3 space-y-2">
               {getPlanMarketingContent("start").features.slice(0, 3).map((feature) => (
@@ -149,7 +153,7 @@ const Register = () => {
 
             <Button type="submit" className="w-full gap-2" disabled={loading}>
               <UserPlus className="h-4 w-4" />
-              {loading ? "Criando..." : "Criar conta"}
+              {loading ? "Criando..." : isTrialLanding ? "Criar conta e iniciar experiência" : "Criar conta"}
             </Button>
           </form>
 

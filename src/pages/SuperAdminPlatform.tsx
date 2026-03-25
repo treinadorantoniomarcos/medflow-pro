@@ -1,22 +1,26 @@
 import { useEffect, useState } from "react";
+import { ArrowLeft, Check, Copy, Link2, QrCode, Save } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, Link2, QrCode, Save } from "lucide-react";
+import { Link } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { getSubscriptionShareUrl } from "@/lib/subscription-plans";
+import { getSubscriptionShareUrl, getTrialSubscriptionShareUrl } from "@/lib/subscription-plans";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 
 const SuperAdminPlatform = () => {
   const queryClient = useQueryClient();
   const [platformCheckoutUrlDraft, setPlatformCheckoutUrlDraft] = useState("");
+  const [trialUrlDraft, setTrialUrlDraft] = useState("");
   const [savingPlatformSettings, setSavingPlatformSettings] = useState(false);
   const [copiedCheckoutLink, setCopiedCheckoutLink] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
+  const [copiedTrialLink, setCopiedTrialLink] = useState(false);
   const subscriptionShareUrl = getSubscriptionShareUrl(window.location.origin);
+  const trialShareUrl = getTrialSubscriptionShareUrl(window.location.origin);
   const [copiedPlan, setCopiedPlan] = useState<string | null>(null);
   const [planLinksDraft, setPlanLinksDraft] = useState<Record<string, string>>({});
   const [savingPlanLinks, setSavingPlanLinks] = useState(false);
@@ -26,11 +30,11 @@ const SuperAdminPlatform = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("platform_settings")
-        .select("checkout_url, updated_at")
+        .select("checkout_url, plan_links, trial_url, updated_at")
         .eq("id", 1)
         .single();
       if (error) throw error;
-      return data as { checkout_url: string | null; updated_at: string };
+      return data as { checkout_url: string | null; plan_links: Record<string, string> | null; trial_url: string | null; updated_at: string };
     },
   });
 
@@ -41,6 +45,10 @@ const SuperAdminPlatform = () => {
   useEffect(() => {
     setPlanLinksDraft(platformSettings?.plan_links ?? {});
   }, [platformSettings?.plan_links]);
+
+  useEffect(() => {
+    setTrialUrlDraft(platformSettings?.trial_url ?? "");
+  }, [platformSettings?.trial_url]);
 
   const { data: planRows = [] } = useQuery({
     queryKey: ["subscription-plans"],
@@ -66,15 +74,15 @@ const SuperAdminPlatform = () => {
     setSavingPlanLinks(true);
     const { error } = await supabase
       .from("platform_settings")
-      .upsert({ id: 1, plan_links: planLinksDraft }, { onConflict: "id" });
+      .upsert({ id: 1, checkout_url: platformCheckoutUrlDraft.trim() || null, plan_links: planLinksDraft, trial_url: trialUrlDraft.trim() || null }, { onConflict: "id" });
     setSavingPlanLinks(false);
 
     if (error) {
-      toast.error("Falha ao salvar links por plano", { description: error.message });
+      toast.error("Falha ao salvar links comerciais", { description: error.message });
       return;
     }
 
-    toast.success("Links de planos salvos");
+    toast.success("Links comerciais salvos");
     queryClient.invalidateQueries({ queryKey: ["super-admin-platform-settings"] });
   };
 
@@ -89,23 +97,23 @@ const SuperAdminPlatform = () => {
           </Link>
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Configuração da Plataforma</h1>
-            <p className="text-sm text-muted-foreground">Links de checkout e divulgação pública.</p>
+            <p className="text-sm text-muted-foreground">Painel de links de assinatura, experiência e conversão comercial.</p>
           </div>
         </div>
 
         {/* Checkout link */}
         <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle className="text-base">Checkout oficial da Kiwify ou landing page externa</CardTitle>
+            <CardTitle className="text-base">Checkout principal da Kiwify ou página de aquisição</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-xl border border-border bg-secondary/40 p-4">
               <div className="mb-2 flex items-center gap-2">
                 <Link2 className="h-4 w-4 text-primary" />
-                <p className="text-sm font-semibold text-foreground">Link único de checkout</p>
+                <p className="text-sm font-semibold text-foreground">Canal prioritário de conversão</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                Este é o link único que leva o lead direto para escolher o pacote antes de assinar. Use em campanhas, botões de venda e materiais comerciais.
+                Este é o canal prioritário de conversão: o lead entra, escolhe o plano e segue para a assinatura. Use em campanhas, botões comerciais e materiais de aquisição.
               </p>
             </div>
 
@@ -122,19 +130,27 @@ const SuperAdminPlatform = () => {
                   setSavingPlatformSettings(true);
                   const { error } = await supabase
                     .from("platform_settings")
-                    .upsert({ id: 1, checkout_url: platformCheckoutUrlDraft.trim() || null }, { onConflict: "id" });
+                    .upsert(
+                      {
+                        id: 1,
+                        checkout_url: platformCheckoutUrlDraft.trim() || null,
+                        plan_links: planLinksDraft,
+                        trial_url: trialUrlDraft.trim() || null,
+                      },
+                      { onConflict: "id" }
+                    );
                   setSavingPlatformSettings(false);
                   if (error) {
                     toast.error("Falha ao salvar link da plataforma", { description: error.message });
                     return;
                   }
-                  toast.success("Link da plataforma salvo.");
+                  toast.success("Configuração comercial atualizada.");
                   queryClient.invalidateQueries({ queryKey: ["super-admin-platform-settings"] });
                 }}
                 disabled={savingPlatformSettings}
               >
                 <Save className="h-4 w-4" />
-                {savingPlatformSettings ? "Salvando..." : "Salvar link"}
+                {savingPlatformSettings ? "Salvando..." : "Atualizar configuração comercial"}
               </Button>
               <Button
                 variant="outline"
@@ -161,10 +177,74 @@ const SuperAdminPlatform = () => {
           </CardContent>
         </Card>
 
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-base">Link exclusivo da experiência Start</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-6 lg:grid-cols-[1fr_220px]">
+            <div className="space-y-4">
+              <div className="rounded-xl border border-border bg-secondary/40 p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Link2 className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">Acesso direto à experiência Start de 21 dias</p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Use este link para levar o lead diretamente à criação de conta com a experiência gratuita premium do Start.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input readOnly value={trialUrlDraft.trim() || trialShareUrl} className="font-mono text-sm" onFocus={(e) => e.target.select()} />
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(trialUrlDraft.trim() || trialShareUrl);
+                    setCopiedTrialLink(true);
+                    toast.success("Link da experiência copiado");
+                    window.setTimeout(() => setCopiedTrialLink(false), 2000);
+                  }}
+                >
+                  {copiedTrialLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copiedTrialLink ? "Copiado" : "Copiar link"}
+                </Button>
+              </div>
+
+              <div className="grid gap-2 text-sm text-muted-foreground">
+                <p>
+                  Destino: <span className="font-medium text-foreground">{trialUrlDraft.trim() || "/degustacao"}</span>
+                </p>
+                <p>Recomendado para campanhas, WhatsApp comercial, QR Code e atendimento consultivo.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <QrCode className="h-4 w-4 text-primary" />
+                QR Code
+              </div>
+              <div className="rounded-lg border border-border bg-card p-3">
+                <QRCodeSVG
+                  value={trialUrlDraft.trim() || trialShareUrl}
+                  size={160}
+                  level="M"
+                  includeMargin={false}
+                  bgColor="transparent"
+                  fgColor="currentColor"
+                  className="text-foreground"
+                />
+              </div>
+              <p className="text-center text-xs text-muted-foreground">
+                Escaneie para abrir a página exclusiva da experiência Start.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Public share link + QR */}
         <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle className="text-base">Link público de assinatura</CardTitle>
+            <CardTitle className="text-base">Página pública dos planos</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6 lg:grid-cols-[1fr_220px]">
             <div className="space-y-4">
@@ -173,9 +253,9 @@ const SuperAdminPlatform = () => {
                   <Link2 className="h-4 w-4 text-primary" />
                   <p className="text-sm font-semibold text-foreground">Divulgação para clínicas e profissionais</p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente para a página pública de planos.
-                </p>
+              <p className="text-sm text-muted-foreground">
+                  Disponibilize este link nas redes sociais, no comercial e em campanhas para levar novos assinantes diretamente à página pública de planos.
+              </p>
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -220,7 +300,7 @@ const SuperAdminPlatform = () => {
                 />
               </div>
               <p className="text-center text-xs text-muted-foreground">
-                Escaneie para abrir a página pública de assinatura ou o checkout configurado.
+                Escaneie para abrir a página pública de planos ou o checkout configurado.
               </p>
             </div>
           </CardContent>
@@ -228,20 +308,20 @@ const SuperAdminPlatform = () => {
 
         <Card className="shadow-soft">
           <CardHeader className="flex items-center justify-between gap-2">
-            <CardTitle className="text-base">Links individuais por plano</CardTitle>
+            <CardTitle className="text-base">Links individuais dos 3 planos</CardTitle>
             <Button
               variant="outline"
               size="sm"
               onClick={savePlanLinks}
               disabled={savingPlanLinks}
             >
-              {savingPlanLinks ? "Salvando..." : "Salvar links"}
+              {savingPlanLinks ? "Salvando..." : "Atualizar links comerciais"}
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Gere um link exclusivo para cada pacote e cole dentro da Kiwify com o botão abaixo.
-              Os links usam o checkout configurado (ou a página pública) com `?plan={code}`.
+              Gere um link exclusivo para cada plano e cadastre na Kiwify usando o botão ao lado.
+              Os links usam o checkout configurado, ou a página pública, com `?plan={code}`.
             </p>
             {planRows.length === 0 ? (
               <p className="text-sm text-muted-foreground">Carregando planos...</p>
@@ -271,7 +351,7 @@ const SuperAdminPlatform = () => {
                             size="sm"
                             onClick={() => window.open("https://dashboard.kiwify.com.br/products", "_blank")}
                           >
-                            Colar na Kiwify
+                            Abrir na Kiwify
                           </Button>
                         </div>
                       </div>

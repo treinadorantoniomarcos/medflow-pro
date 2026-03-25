@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { ALLOWED_TRIAL_DAYS, SUBSCRIPTION_TERM_DAYS, SUBSCRIPTION_TERM_LABEL } from "@/lib/subscription-plans";
+import { START_TRIAL_DAYS, SUBSCRIPTION_TERM_DAYS, SUBSCRIPTION_TERM_LABEL } from "@/lib/subscription-plans";
 
 type PlanRow = {
   id: string;
@@ -18,7 +18,6 @@ type PlanRow = {
   monthly_price_cents: number;
   period_days: number;
   trial_days: number;
-  is_courtesy: boolean;
   is_active: boolean;
 };
 
@@ -30,7 +29,6 @@ type PlanFormState = {
   monthly_price_brl: string;
   period_days: string;
   trial_days: string;
-  is_courtesy: boolean;
   is_active: boolean;
 };
 
@@ -42,7 +40,6 @@ const emptyForm: PlanFormState = {
   monthly_price_brl: "0,00",
   period_days: String(SUBSCRIPTION_TERM_DAYS),
   trial_days: "0",
-  is_courtesy: false,
   is_active: true,
 };
 
@@ -68,7 +65,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscription_plans")
-        .select("id, code, name, description, monthly_price_cents, period_days, trial_days, is_courtesy, is_active")
+        .select("id, code, name, description, monthly_price_cents, period_days, trial_days, is_active")
         .order("monthly_price_cents", { ascending: true });
 
       if (error) throw error;
@@ -92,7 +89,6 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
       monthly_price_brl: toBrl(plan.monthly_price_cents),
       period_days: String(plan.period_days),
       trial_days: String(plan.trial_days),
-      is_courtesy: plan.is_courtesy,
       is_active: plan.is_active,
     });
   };
@@ -104,26 +100,31 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
 
   const savePlan = async () => {
     if (!hasFormMinimum) {
-      toast.error("Preencha código e nome do pacote.");
+      toast.error("Preencha o código e o nome do plano.");
       return;
     }
 
     const parsedTrialDays = Math.max(0, Number(form.trial_days) || 0);
-    if (parsedTrialDays !== 0 && !ALLOWED_TRIAL_DAYS.includes(parsedTrialDays as 7 | 15 | 30)) {
-      toast.error("A cortesia deve ser de 7, 15 ou 30 dias.");
+    const planCode = form.code.trim().toLowerCase();
+    if (planCode === "start" && parsedTrialDays !== 0 && parsedTrialDays !== START_TRIAL_DAYS) {
+      toast.error(`O Start deve usar 21 dias de experiência ou 0 para desativar a oferta temporariamente.`);
+      return;
+    }
+
+    if (planCode !== "start" && parsedTrialDays !== 0) {
+      toast.error("Somente o plano Start pode ter experiência. Os demais planos devem ficar com 0 dias.");
       return;
     }
 
     setSaving(true);
 
     const payload = {
-      code: form.code.trim().toLowerCase(),
+      code: planCode,
       name: form.name.trim(),
       description: form.description.trim() || null,
       monthly_price_cents: parseBrlToCents(form.monthly_price_brl),
       period_days: SUBSCRIPTION_TERM_DAYS,
       trial_days: parsedTrialDays,
-      is_courtesy: form.is_courtesy,
       is_active: form.is_active,
     };
 
@@ -135,11 +136,11 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
     setSaving(false);
 
     if (error) {
-      toast.error("Falha ao salvar pacote", { description: error.message });
+      toast.error("Falha ao salvar plano", { description: error.message });
       return;
     }
 
-    toast.success(form.id ? "Pacote atualizado" : "Pacote criado");
+    toast.success(form.id ? "Plano atualizado" : "Plano criado");
     resetForm();
     refreshPlans();
   };
@@ -155,7 +156,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
       return;
     }
 
-    toast.success(plan.is_active ? "Pacote bloqueado" : "Pacote liberado");
+    toast.success(plan.is_active ? "Plano bloqueado" : "Plano liberado");
     refreshPlans();
   };
 
@@ -163,11 +164,11 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
     const { error } = await supabase.from("subscription_plans").delete().eq("id", plan.id);
 
     if (error) {
-      toast.error("Falha ao excluir pacote", { description: error.message });
+      toast.error("Falha ao excluir plano", { description: error.message });
       return;
     }
 
-    toast.success("Pacote excluído");
+    toast.success("Plano excluído");
     if (form.id === plan.id) resetForm();
     refreshPlans();
   };
@@ -175,7 +176,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
   return (
     <Card className="shadow-soft">
       <CardHeader>
-        <CardTitle className="text-base">Catálogo de Pacotes e Cortesias</CardTitle>
+        <CardTitle className="text-base">Catálogo de Planos e Experiência</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
@@ -215,7 +216,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
              <p className="text-xs text-muted-foreground">Assinaturas padronizadas em {SUBSCRIPTION_TERM_LABEL}.</p>
           </div>
           <div className="space-y-1">
-            <Label>Cortesia (dias)</Label>
+            <Label>Experiência (dias)</Label>
             <Input
               type="number"
               min={0}
@@ -223,14 +224,14 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
               value={form.trial_days}
               onChange={(e) => setForm((prev) => ({ ...prev, trial_days: e.target.value }))}
             />
-            <p className="text-xs text-muted-foreground">Valores permitidos: 7, 15 ou 30 dias. Use 0 para sem cortesia.</p>
+            <p className="text-xs text-muted-foreground">Use 21 dias no Start. Os demais planos devem permanecer com 0 dias.</p>
           </div>
           <div className="space-y-1">
             <Label>Descrição</Label>
             <Input
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Resumo do pacote"
+              placeholder="Resumo do plano"
             />
           </div>
         </div>
@@ -238,31 +239,24 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-2">
             <Switch
-              checked={form.is_courtesy}
-              onCheckedChange={(checked) => setForm((prev) => ({ ...prev, is_courtesy: checked }))}
-            />
-            <Label>Pacote cortesia</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch
               checked={form.is_active}
               onCheckedChange={(checked) => setForm((prev) => ({ ...prev, is_active: checked }))}
             />
-            <Label>Pacote liberado</Label>
+            <Label>Plano ativo</Label>
           </div>
 
           <div className="ml-auto flex gap-2">
             <Button variant="outline" onClick={resetForm}>Limpar</Button>
             <Button onClick={savePlan} disabled={!hasFormMinimum || saving}>
-              {saving ? "Salvando..." : form.id ? "Atualizar pacote" : "Criar pacote"}
+              {saving ? "Salvando..." : form.id ? "Atualizar plano" : "Criar plano"}
             </Button>
           </div>
         </div>
 
         <div className="space-y-2">
-          {isLoading && <p className="text-sm text-muted-foreground">Carregando pacotes...</p>}
+          {isLoading && <p className="text-sm text-muted-foreground">Carregando planos...</p>}
           {!isLoading && plans.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nenhum pacote cadastrado.</p>
+            <p className="text-sm text-muted-foreground">Nenhum plano cadastrado.</p>
           )}
 
           {plans.map((plan) => (
@@ -272,11 +266,10 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
                   {plan.name} ({plan.code})
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  R$ {toBrl(plan.monthly_price_cents)} | vigência {SUBSCRIPTION_TERM_LABEL} | cortesia {plan.trial_days} dias
+                  R$ {toBrl(plan.monthly_price_cents)} | vigência {SUBSCRIPTION_TERM_LABEL} | experiência {plan.trial_days} dias
                 </p>
               </div>
 
-              {plan.is_courtesy && <Badge variant="secondary">Cortesia</Badge>}
               <Badge variant={plan.is_active ? "default" : "outline"}>{plan.is_active ? "Liberado" : "Bloqueado"}</Badge>
 
               <Button size="sm" variant="outline" onClick={() => hydrateForm(plan)}>Editar</Button>

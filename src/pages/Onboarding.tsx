@@ -39,7 +39,6 @@ type CatalogPlan = {
   monthly_price_cents: number;
   period_days: number;
   trial_days: number;
-  is_courtesy: boolean;
   is_active: boolean;
 };
 
@@ -70,7 +69,7 @@ const Onboarding = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscription_plans")
-        .select("id, code, name, description, monthly_price_cents, period_days, trial_days, is_courtesy, is_active")
+        .select("id, code, name, description, monthly_price_cents, period_days, trial_days, is_active")
         .eq("is_active", true)
         .order("monthly_price_cents", { ascending: true });
 
@@ -82,7 +81,6 @@ const Onboarding = () => {
   const paidPlans = useMemo<PlanOption[]>(() => {
     const source = catalogPlans.length > 0
       ? catalogPlans
-          .filter((plan) => !plan.is_courtesy)
           .map((plan) => ({
             key: plan.code,
             name: plan.name,
@@ -90,12 +88,11 @@ const Onboarding = () => {
             description: plan.description ?? `Vigência de ${SUBSCRIPTION_TERM_LABEL}`,
             periodDays: plan.period_days,
             trialDays: plan.trial_days,
-            isCourtesy: plan.is_courtesy,
             marketing: getPlanMarketingContent(plan.code),
           }))
       : paidPlanOptions;
 
-    return source.filter((plan) => plan.key !== "courtesy");
+    return source;
   }, [catalogPlans]);
 
   const selectedPlanData = useMemo(
@@ -182,8 +179,8 @@ const Onboarding = () => {
       if (settingsError) throw settingsError;
 
       await refreshProfile();
-      toast.success("Degustação Start liberada", {
-        description: `Você recebeu ${START_TRIAL_DAYS} dias de cortesia para testar o pacote Start.`,
+      toast.success("Experiência Start liberada", {
+        description: `Você recebeu ${START_TRIAL_DAYS} dias de experiência para testar o plano Start.`,
       });
       navigate("/");
     } catch (err: any) {
@@ -266,13 +263,13 @@ const Onboarding = () => {
           <div className="flex items-center justify-center gap-2 mb-2">
             <Sparkles className="h-5 w-5 text-accent" />
             <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
-              {isUpgradeFlow ? "Escolha seu plano pago" : "Degustação Start"}
+              {isUpgradeFlow ? "Escolha um plano" : "Experiência Start - 21 dias"}
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
             {isUpgradeFlow
-              ? `Assinatura por ${SUBSCRIPTION_TERM_LABEL} após o encerramento da cortesia`
-              : `${START_TRIAL_DAYS} dias de cortesia para 1 profissional`}
+              ? `Escolha um plano com vigência contratual de ${SUBSCRIPTION_TERM_LABEL} após o encerramento da experiência`
+              : `${START_TRIAL_DAYS} dias de experiência para 1 profissional`}
           </p>
         </CardHeader>
 
@@ -282,10 +279,10 @@ const Onboarding = () => {
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                 <div className="flex items-center gap-2 text-primary">
                   <Building2 className="h-5 w-5" />
-                  <span className="text-sm font-semibold">Pacote Start em degustação</span>
+                  <span className="text-sm font-semibold">Experiência Start ativa</span>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  1 profissional | Agenda e operação essencial com cortesia de {START_TRIAL_DAYS} dias.
+                  1 profissional | agenda e operação essencial com {START_TRIAL_DAYS} dias de experiência.
                 </p>
                 <div className="mt-3 space-y-1">
                   {getPlanMarketingContent("start").features.map((feature) => (
@@ -380,7 +377,7 @@ const Onboarding = () => {
                   !adminFullName.trim()
                 }
               >
-                {loading ? "Liberando..." : `Iniciar degustação de ${START_TRIAL_DAYS} dias`}
+                {loading ? "Liberando..." : `Iniciar experiência de ${START_TRIAL_DAYS} dias`}
                 <Sparkles className="h-4 w-4" />
               </Button>
             </form>
@@ -391,7 +388,7 @@ const Onboarding = () => {
               {step === 1 && (
                 <div className="space-y-4 animate-fade-in">
                   <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-foreground">
-                    Sua degustação do pacote Start foi encerrada. Para continuar usando a plataforma, escolha um plano com vigência de {SUBSCRIPTION_TERM_LABEL}.
+                    Sua experiência Start chegou ao fim. Para continuar usando a plataforma, escolha um plano com vigência contratual de {SUBSCRIPTION_TERM_LABEL}.
                   </div>
 
                   <div className="grid gap-3">
@@ -430,7 +427,7 @@ const Onboarding = () => {
                   </div>
 
                   <Button type="submit" className="w-full" disabled={!selectedPlan}>
-                    Continuar para pagamento
+                    Avançar para pagamento
                   </Button>
                 </div>
               )}
@@ -439,7 +436,7 @@ const Onboarding = () => {
                 <div className="space-y-4 animate-fade-in">
                   <div className="flex items-center gap-2 text-primary mb-2">
                     <CreditCard className="h-5 w-5" />
-                    <span className="text-sm font-semibold">Pagamento do plano</span>
+                  <span className="text-sm font-semibold">Pagamento e ativação</span>
                   </div>
 
                   <div className="rounded-lg border border-border bg-muted/30 p-3">
@@ -447,7 +444,7 @@ const Onboarding = () => {
                       Plano {selectedPlanData.name} - R$ {selectedPlanData.monthlyPrice.toFixed(2)}/mês
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Contrato de {SUBSCRIPTION_TERM_LABEL} para continuidade da operação.
+                      Vigência contratual de {SUBSCRIPTION_TERM_LABEL} para continuidade da operação.
                     </p>
                   </div>
 
