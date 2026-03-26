@@ -39,7 +39,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Camera, Loader2, Users, CircleDot, CalendarDays, Plus, MoreVertical, UserX, UserCheck, Trash2 } from "lucide-react";
+import { Camera, Loader2, Users, CircleDot, CalendarDays, Plus, MoreVertical, UserX, UserCheck, Trash2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getProfessionalLimitConfig } from "@/lib/subscription-plans";
@@ -491,7 +491,40 @@ const TeamManagement = () => {
           </Dialog>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        <div className="rounded-2xl border border-primary/15 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                <CircleDot className="h-4 w-4" />
+                Crescimento da equipe
+              </div>
+              <h3 className="text-xl font-extrabold text-foreground">
+                {professionalLimit.headline}
+              </h3>
+              <p className="max-w-3xl text-sm text-muted-foreground">
+                {professionalLimit.description} Hoje você está com {currentProfessionalCount} de {professionalLimit.maxProfessionals} profissionais ativos no plano {professionalLimit.currentPlanLabel}.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                className="gap-2"
+                onClick={() => window.open(`${window.location.origin}${professionalLimit.upgradePath}`, "_blank")}
+              >
+                {professionalLimit.upgradeLabel}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => setInviteOpen(true)}
+              >
+                Revisar equipe
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2].map((i) => (
