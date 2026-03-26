@@ -19,6 +19,10 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
+  COURTESY_PLAN_DESCRIPTION,
+  COURTESY_PLAN_KEY,
+  COURTESY_PLAN_NAME,
+  START_TRIAL_DAYS,
   SUBSCRIPTION_TERM_LABEL,
   fallbackPlanOptions,
   getPlanMarketingContent,
@@ -86,13 +90,15 @@ const SubscriptionPlans = () => {
 
     return catalogPlans.map((plan) => ({
       key: plan.code,
-      name: plan.name,
+      name: plan.code === COURTESY_PLAN_KEY ? COURTESY_PLAN_NAME : plan.name,
       monthlyPrice: plan.monthly_price_cents / 100,
       description:
-        plan.description ??
+        plan.code === COURTESY_PLAN_KEY
+          ? COURTESY_PLAN_DESCRIPTION
+          : plan.description ??
         `Período de ${plan.period_days} dias${plan.trial_days > 0 ? ` | experiência de ${plan.trial_days} dias` : ""}`,
       periodDays: plan.period_days,
-      trialDays: plan.trial_days,
+      trialDays: plan.code === COURTESY_PLAN_KEY ? START_TRIAL_DAYS : plan.trial_days,
       marketing: getPlanMarketingContent(plan.code),
     }));
   }, [catalogPlans]);

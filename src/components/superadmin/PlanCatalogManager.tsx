@@ -8,7 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { START_TRIAL_DAYS, SUBSCRIPTION_TERM_DAYS, SUBSCRIPTION_TERM_LABEL } from "@/lib/subscription-plans";
+import {
+  COURTESY_PLAN_DESCRIPTION,
+  COURTESY_PLAN_KEY,
+  COURTESY_PLAN_NAME,
+  START_TRIAL_DAYS,
+  SUBSCRIPTION_TERM_DAYS,
+  SUBSCRIPTION_TERM_LABEL,
+} from "@/lib/subscription-plans";
 
 type PlanRow = {
   id: string;
@@ -84,11 +91,14 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
     setForm({
       id: plan.id,
       code: plan.code,
-      name: plan.name,
-      description: plan.description ?? "",
+      name: plan.code === COURTESY_PLAN_KEY ? COURTESY_PLAN_NAME : plan.name,
+      description:
+        plan.code === COURTESY_PLAN_KEY
+          ? COURTESY_PLAN_DESCRIPTION
+          : plan.description ?? "",
       monthly_price_brl: toBrl(plan.monthly_price_cents),
       period_days: String(plan.period_days),
-      trial_days: String(plan.trial_days),
+      trial_days: String(plan.code === COURTESY_PLAN_KEY ? START_TRIAL_DAYS : plan.trial_days),
       is_active: plan.is_active,
     });
   };
@@ -106,12 +116,13 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
 
     const parsedTrialDays = Math.max(0, Number(form.trial_days) || 0);
     const planCode = form.code.trim().toLowerCase();
-    if (planCode === "start" && parsedTrialDays !== 0 && parsedTrialDays !== START_TRIAL_DAYS) {
+    const trialPlanLike = planCode === "start" || planCode === COURTESY_PLAN_KEY;
+    if (trialPlanLike && parsedTrialDays !== 0 && parsedTrialDays !== START_TRIAL_DAYS) {
       toast.error(`O Start deve usar 21 dias de experiência ou 0 para desativar a oferta temporariamente.`);
       return;
     }
 
-    if (planCode !== "start" && parsedTrialDays !== 0) {
+    if (!trialPlanLike && parsedTrialDays !== 0) {
       toast.error("Somente o plano Start pode ter experiência. Os demais planos devem ficar com 0 dias.");
       return;
     }
@@ -263,10 +274,10 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
             <div key={plan.id} className="flex flex-wrap items-center gap-2 rounded border border-border p-3">
               <div className="min-w-[190px] flex-1">
                 <p className="text-sm font-semibold">
-                  {plan.name} ({plan.code})
+                  {plan.code === COURTESY_PLAN_KEY ? COURTESY_PLAN_NAME : plan.name} ({plan.code})
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  R$ {toBrl(plan.monthly_price_cents)} | vigência {SUBSCRIPTION_TERM_LABEL} | experiência {plan.trial_days} dias
+                  R$ {toBrl(plan.monthly_price_cents)} | vigência {SUBSCRIPTION_TERM_LABEL} | experiência {plan.code === COURTESY_PLAN_KEY ? START_TRIAL_DAYS : plan.trial_days} dias
                 </p>
               </div>
 
@@ -286,3 +297,7 @@ const PlanCatalogManager = ({ onPlansChanged }: PlanCatalogManagerProps) => {
 };
 
 export default PlanCatalogManager;
+
+
+
+

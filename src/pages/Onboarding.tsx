@@ -19,6 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  COURTESY_PLAN_DESCRIPTION,
+  COURTESY_PLAN_KEY,
+  COURTESY_PLAN_NAME,
   START_TRIAL_DAYS,
   SUBSCRIPTION_TERM_DAYS,
   SUBSCRIPTION_TERM_LABEL,
@@ -83,11 +86,14 @@ const Onboarding = () => {
       ? catalogPlans
           .map((plan) => ({
             key: plan.code,
-            name: plan.name,
+            name: plan.code === COURTESY_PLAN_KEY ? COURTESY_PLAN_NAME : plan.name,
             monthlyPrice: plan.monthly_price_cents / 100,
-            description: plan.description ?? `Vigência de ${SUBSCRIPTION_TERM_LABEL}`,
+            description:
+              plan.code === COURTESY_PLAN_KEY
+                ? COURTESY_PLAN_DESCRIPTION
+                : plan.description ?? `Vigência de ${SUBSCRIPTION_TERM_LABEL}`,
             periodDays: plan.period_days,
-            trialDays: plan.trial_days,
+            trialDays: plan.code === COURTESY_PLAN_KEY ? START_TRIAL_DAYS : plan.trial_days,
             marketing: getPlanMarketingContent(plan.code),
           }))
       : paidPlanOptions;

@@ -24,6 +24,10 @@ export type PlanOption = {
 export const PLAN_PREFERENCE_KEY = "medflow-preferred-plan";
 export const SUBSCRIPTION_SHARE_PATH = "/assinar";
 export const TRIAL_SHARE_PATH = "/degustacao";
+export const COURTESY_PLAN_KEY = "courtesy";
+export const COURTESY_PLAN_NAME = "Degustação inicial";
+export const COURTESY_PLAN_DESCRIPTION =
+  "Operação essencial para um profissional iniciar a agenda online com organização e confirmação básica.";
 // Pro remains permanently mapped to the approved Kiwify checkout.
 export const PRO_CHECKOUT_URL = "https://pay.kiwify.com.br/T9SzApY";
 export const SIGNATURE_CHECKOUT_URL = "https://pay.kiwify.com.br/2GZhB9R";
@@ -103,6 +107,10 @@ export const fallbackPlanOptions: PlanOption[] = [
 export const paidPlanOptions = fallbackPlanOptions;
 
 export const getPlanMarketingContent = (planKey: string): PlanMarketingContent => {
+  if (planKey === COURTESY_PLAN_KEY) {
+    return planMarketingContent.start;
+  }
+
   return (
     planMarketingContent[planKey] ?? {
       summary: "Plano configurado para uma operação por assinatura com posicionamento profissional.",
