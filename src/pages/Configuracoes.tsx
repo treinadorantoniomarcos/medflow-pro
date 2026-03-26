@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useClinicSettings, useUpdateClinicSettings, useNotificationsQueue } from "@/hooks/use-clinic-settings";
@@ -558,8 +557,7 @@ const Configuracoes = () => {
                   </p>
                 </div>
               ) : (
-                <ScrollArea className="max-h-[320px]">
-                  <div className="space-y-2">
+                <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
                     {queue.map((item) => {
                       const cfg = statusConfig[item.status] ?? statusConfig.pending;
                       return (
@@ -592,8 +590,7 @@ const Configuracoes = () => {
                         </div>
                       );
                     })}
-                  </div>
-                </ScrollArea>
+                </div>
               )}
             </CardContent>
           </Card>
