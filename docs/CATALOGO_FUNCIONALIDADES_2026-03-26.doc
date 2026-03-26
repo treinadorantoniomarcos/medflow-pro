@@ -1,0 +1,456 @@
+<html>
+<head>
+<meta charset="utf-8">
+<title>CATALOGO_FUNCIONALIDADES_2026-03-26</title>
+<style>
+  body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.45;padding:28px;color:#1f2937;}
+  h1{font-size:22pt;margin:0 0 10px 0;color:#0f172a;}
+  h2{font-size:15pt;margin:22px 0 8px 0;color:#0f172a;}
+  h3{font-size:12pt;margin:16px 0 6px 0;color:#111827;}
+  p{margin:0 0 10px 0;}
+  ul{margin:0 0 10px 24px;padding:0;}
+  li{margin:0 0 4px 0;}
+  .meta{color:#4b5563;margin-bottom:18px;}
+  .note{background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin:12px 0 18px 0;}
+</style>
+</head>
+<body>
+<h1>Catálogo de Funcionalidades - MedFlux Pro</h1>
+<p class="meta">Data de referência: 26/03/2026</p>
+<div class="note">
+  Este documento consolida as funcionalidades atualmente presentes na plataforma MedFlux Pro, cobrindo a experiência pública, o fluxo de assinatura, a operação da clínica, o painel do paciente e as rotinas de super-admin.
+</div>
+
+<h2>1. Visão geral da plataforma</h2>
+<p>O MedFlux Pro é uma plataforma SaaS multitenant para clínicas, consultórios e profissionais de saúde.</p>
+<ul>
+  <li>organizar a agenda da clínica e dos profissionais;</li>
+  <li>reduzir faltas e melhorar a confirmação de consultas;</li>
+  <li>centralizar pacientes, mensagens, notificações e relatórios;</li>
+  <li>permitir gestão comercial de planos, trials, checkouts e afiliados;</li>
+  <li>oferecer um super-admin com visão global da operação da plataforma.</li>
+</ul>
+
+<h2>2. Perfis de acesso</h2>
+<p>Perfis atualmente suportados:</p>
+<ul>
+  <li><code>patient</code></li>
+  <li><code>professional</code></li>
+  <li><code>receptionist</code></li>
+  <li><code>admin</code></li>
+  <li><code>owner</code></li>
+  <li><code>super_admin</code></li>
+</ul>
+<p>Regras gerais:</p>
+<ul>
+  <li>cada tenant possui isolamento por <code>tenant_id</code>;</li>
+  <li>as rotas e menus são protegidos por perfil;</li>
+  <li>o super-admin possui visão global da plataforma;</li>
+  <li>pacientes acessam a área própria com experiência reduzida e orientada.</li>
+</ul>
+
+<h2>3. Autenticação e conta</h2>
+<ul>
+  <li>login com email e senha;</li>
+  <li>login social com Google;</li>
+  <li>cadastro de nova conta;</li>
+  <li>recuperação de senha;</li>
+  <li>redefinição de senha;</li>
+  <li>redirecionamento automático para onboarding quando necessário;</li>
+  <li>controle de acesso por perfil e tenant.</li>
+</ul>
+<p>Fluxos públicos relacionados:</p>
+<ul>
+  <li><code>/login</code></li>
+  <li><code>/register</code></li>
+  <li><code>/degustacao</code></li>
+  <li><code>/forgot-password</code></li>
+  <li><code>/reset-password</code></li>
+  <li><code>/onboarding</code></li>
+</ul>
+
+<h2>4. Área comercial e funil de conversão</h2>
+<ul>
+  <li>página pública de planos em <code>/assinar</code>;</li>
+  <li>degustação gratuita de 21 dias para o plano Start;</li>
+  <li>página exclusiva de degustação em <code>/degustacao</code>;</li>
+  <li>redirecionamento do plano Start, Pro e Signature para os checkouts configurados;</li>
+  <li>exibição de vídeo de demonstração em todos os pacotes;</li>
+  <li>link de convite de afiliado;</li>
+  <li>suporte ao super-admin para editar links comerciais;</li>
+  <li>texto comercial premium nos CTAs e nas descrições dos planos;</li>
+  <li>trava de upgrade por limite de profissionais;</li>
+  <li>exibir o próximo plano recomendado quando o limite é atingido.</li>
+</ul>
+<p>Links comerciais atualmente usados:</p>
+<ul>
+  <li>degustação Start: <code>/degustacao</code></li>
+  <li>checkout Pro: <code>https://pay.kiwify.com.br/T9SzApY</code></li>
+  <li>checkout Signature: <code>https://pay.kiwify.com.br/2GZhB9R</code></li>
+  <li>convite de afiliado: <code>https://dashboard.kiwify.com/join/affiliate/ns119BD7</code></li>
+  <li>vídeo de demonstração: <code>https://drive.google.com/drive/u/1/folders/1U3KwW_Glpyx377jQksu-a2knubH78Zik</code></li>
+</ul>
+<p>Regras comerciais principais:</p>
+<ul>
+  <li>Start: 1 profissional;</li>
+  <li>Pro: até 3 profissionais;</li>
+  <li>Signature: até 10 profissionais;</li>
+  <li>ao tentar exceder o limite, a plataforma bloqueia e apresenta o próximo link de upgrade;</li>
+  <li>a assinatura preserva a agenda e os dados do período de degustação.</li>
+</ul>
+
+<h2>5. Onboarding e assinatura</h2>
+<ul>
+  <li>formulário de início de experiência Start;</li>
+  <li>captura de dados do profissional ou da clínica;</li>
+  <li>captura de documento, endereço, WhatsApp, email e nome do administrador;</li>
+  <li>ativação do plano Start com 21 dias de degustação;</li>
+  <li>página de escolha de plano quando a experiência termina;</li>
+  <li>fluxo de pagamento e ativação da assinatura;</li>
+  <li>confirmação manual de pagamento no fluxo atual;</li>
+  <li>persistência de dados de onboarding e assinatura dentro do tenant;</li>
+  <li>preservação da agenda já usada no período de degustação;</li>
+  <li>liberação de acesso após a contratação.</li>
+</ul>
+
+<h2>6. Planos e catálogo</h2>
+<ul>
+  <li>Start;</li>
+  <li>Pro;</li>
+  <li>Signature.</li>
+</ul>
+<p>Recursos do catálogo:</p>
+<ul>
+  <li>cadastro e edição do plano no super-admin;</li>
+  <li>descrição comercial por plano;</li>
+  <li>faixa de profissionais por plano;</li>
+  <li>vigência contratual de 12 meses;</li>
+  <li>vídeo de demonstração por plano;</li>
+  <li>CTA ajustado por plano;</li>
+  <li>links de checkout configuráveis;</li>
+  <li>link de trial configurável;</li>
+  <li>link de afiliado configurável.</li>
+</ul>
+<p>Descrição funcional dos planos:</p>
+<ul>
+  <li>Start: entrada premium para 1 profissional, com 21 dias de degustação;</li>
+  <li>Pro: estrutura para equipes pequenas, até 3 profissionais;</li>
+  <li>Signature: camada executiva, de 4 a 10 profissionais.</li>
+</ul>
+
+<h2>7. Agenda administrativa</h2>
+<p>Área acessível a owner, admin e recepção.</p>
+<ul>
+  <li>visualização da agenda em grade;</li>
+  <li>filtros por período;</li>
+  <li>filtros por profissional;</li>
+  <li>filtros por status de consulta;</li>
+  <li>criação de novo agendamento;</li>
+  <li>acompanhamento da ocupação da agenda;</li>
+  <li>exibição de status das consultas;</li>
+  <li>suporte a visualização de métricas operacionais da agenda;</li>
+  <li>modal de criação de consulta.</li>
+</ul>
+
+<h2>8. Agenda profissional</h2>
+<p>Área acessível a owner, admin e profissional em <code>Minha Agenda</code>.</p>
+<ul>
+  <li>visão da agenda própria do profissional;</li>
+  <li>confirmação de consulta;</li>
+  <li>início de atendimento;</li>
+  <li>conclusão de atendimento;</li>
+  <li>cancelamento de consulta;</li>
+  <li>leitura de consultas por período;</li>
+  <li>bloqueio de agenda por horário;</li>
+  <li>bloqueio de agenda por período;</li>
+  <li>liberação de agenda por período;</li>
+  <li>remoção de bloqueios;</li>
+  <li>controle de slots individuais por dia e horário;</li>
+  <li>áudio opcional na ação de bloqueio ou liberação;</li>
+  <li>estatísticas da agenda do profissional;</li>
+  <li>validação de disponibilidade com base em bloqueio, override e consulta ocupada.</li>
+</ul>
+
+<p>Regras de agenda:</p>
+<ul>
+  <li>agenda pode ser aberta ou fechada por profissional;</li>
+  <li>slot pode ser bloqueado ou liberado individualmente;</li>
+  <li>período pode ser bloqueado com motivo;</li>
+  <li>atendimento ocupado bloqueia o slot correspondente;</li>
+  <li>a interface considera bloqueios futuros e eventos já registrados.</li>
+</ul>
+
+<h2>9. Agendamento público</h2>
+<p>Rota pública por tenant: <code>/agendar/:slug</code></p>
+<ul>
+  <li>seleção de profissional;</li>
+  <li>seleção de data e horário;</li>
+  <li>cadastro do paciente;</li>
+  <li>confirmação do agendamento;</li>
+  <li>geração de comprovante visual;</li>
+  <li>compartilhamento do agendamento;</li>
+  <li>validação de indisponibilidade;</li>
+  <li>respeito à agenda fechada;</li>
+  <li>respeito a overrides de slot;</li>
+  <li>respeito a bloqueios de período;</li>
+  <li>bloqueio de horário já ocupado.</li>
+</ul>
+
+<h2>10. Pacientes</h2>
+<ul>
+  <li>cadastro de paciente;</li>
+  <li>listagem de pacientes por tenant;</li>
+  <li>busca por nome;</li>
+  <li>visualização de detalhes do paciente;</li>
+  <li>edição de dados cadastrais;</li>
+  <li>histórico de atendimentos do paciente;</li>
+  <li>exclusão de paciente com limpeza de cache e atualização imediata da lista;</li>
+  <li>acesso a dados pessoais, endereço, observações, CPF, email e telefone.</li>
+</ul>
+<p>Campos principais:</p>
+<ul>
+  <li>nome completo;</li>
+  <li>email;</li>
+  <li>telefone;</li>
+  <li>data de nascimento;</li>
+  <li>gênero;</li>
+  <li>CPF;</li>
+  <li>endereço;</li>
+  <li>observações;</li>
+  <li>status.</li>
+</ul>
+
+<h2>11. Mensagens</h2>
+<ul>
+  <li>troca de mensagens internas por tenant;</li>
+  <li>envio de mensagem por texto;</li>
+  <li>envio de arquivo/anexo;</li>
+  <li>envio de áudio;</li>
+  <li>agrupamento de mensagens por data;</li>
+  <li>auto-scroll para a conversa atual;</li>
+  <li>suporte a destinatários da equipe e do paciente, conforme permissão;</li>
+  <li>interface única de conversa.</li>
+</ul>
+
+<h2>12. Notificações e lembretes</h2>
+<ul>
+  <li>fila de notificações;</li>
+  <li>status de notificação pendente, pronta, enviada e falha;</li>
+  <li>lembretes no app;</li>
+  <li>lembretes por WhatsApp;</li>
+  <li>configuração de lembrete D-1 e H-2;</li>
+  <li>acompanhamento da fila em tempo real;</li>
+  <li>exibição de erros de disparo;</li>
+  <li>monitoramento de notificações da clínica.</li>
+</ul>
+
+<h2>13. Configurações da clínica</h2>
+<ul>
+  <li>link de agendamento online;</li>
+  <li>cópia de link;</li>
+  <li>QR Code do link de agendamento;</li>
+  <li>compartilhamento via WhatsApp;</li>
+  <li>compartilhamento por email;</li>
+  <li>compartilhamento nativo do dispositivo;</li>
+  <li>configuração de lembretes por aplicativo e WhatsApp;</li>
+  <li>ativação e desativação de lembretes automáticos;</li>
+  <li>visualização da fila de notificações;</li>
+  <li>gestão da equipe;</li>
+  <li>exibição do vídeo de demonstração;</li>
+  <li>acesso a informações de conversão e operação.</li>
+</ul>
+
+<h2>14. Gestão da equipe</h2>
+<ul>
+  <li>convite de novos profissionais;</li>
+  <li>gerenciamento de membros da equipe;</li>
+  <li>definição de perfil de acesso;</li>
+  <li>trava por limite de plano;</li>
+  <li>bloqueio e orientação de upgrade quando o limite é atingido;</li>
+  <li>redirecionamento para plano mais adequado;</li>
+  <li>suporte a criação e manutenção de acessos por tenant.</li>
+</ul>
+<p>Limites da equipe por plano:</p>
+<ul>
+  <li>Start: 1 profissional;</li>
+  <li>Pro: 3 profissionais;</li>
+  <li>Signature: 10 profissionais.</li>
+</ul>
+
+<h2>15. Relatórios</h2>
+<ul>
+  <li>consultas por período;</li>
+  <li>distribuição por status;</li>
+  <li>consultas por profissional;</li>
+  <li>exportação de dados;</li>
+  <li>apoio à análise operacional da clínica.</li>
+</ul>
+
+<h2>16. Suporte</h2>
+<ul>
+  <li>abertura de chamado pelo tenant;</li>
+  <li>visualização de chamados;</li>
+  <li>resposta do super-admin;</li>
+  <li>atualização de status do chamado;</li>
+  <li>notificação quando há resposta;</li>
+  <li>visão de suporte também para super-admin.</li>
+</ul>
+
+<h2>17. Área do paciente</h2>
+<ul>
+  <li>visualização da próxima consulta;</li>
+  <li>confirmação da consulta;</li>
+  <li>remarcação;</li>
+  <li>acesso ao histórico básico;</li>
+  <li>navegação facilitada para agendamento;</li>
+  <li>experiência simplificada para o paciente.</li>
+</ul>
+<p>Rotas relacionadas:</p>
+<ul>
+  <li><code>/paciente/home</code></li>
+  <li><code>/mensagens</code></li>
+  <li><code>/agendar/:slug</code></li>
+</ul>
+
+<h2>18. Super-admin</h2>
+<p>O super-admin concentra a operação global da plataforma.</p>
+<ul>
+  <li>dashboard global de assinantes;</li>
+  <li>KPIs da base de clínicas;</li>
+  <li>gráficos de tendência;</li>
+  <li>tabela detalhada por clínica;</li>
+  <li>edição de dados globais;</li>
+  <li>cadastro e edição de links comerciais;</li>
+  <li>configuração do checkout principal;</li>
+  <li>configuração do link da degustação;</li>
+  <li>configuração do link de afiliado;</li>
+  <li>configuração do link do vídeo de demonstração;</li>
+  <li>catálogo de planos;</li>
+  <li>gestão de orçamentos personalizados;</li>
+  <li>exportações em CSV, XLS, DOC e PDF;</li>
+  <li>acesso a integrações da plataforma;</li>
+  <li>visão global de assinatura e operação.</li>
+</ul>
+<p>Subáreas do super-admin:</p>
+<ul>
+  <li><code>/super-admin</code></li>
+  <li><code>/super-admin/plataforma</code></li>
+  <li><code>/super-admin/orcamentos</code></li>
+  <li><code>/super-admin/catalogo</code></li>
+  <li><code>/super-admin/integracoes</code></li>
+</ul>
+
+<h2>19. Integrações da plataforma</h2>
+<ul>
+  <li>WhatsApp Business;</li>
+  <li>Google Calendar;</li>
+  <li>Stripe Billing.</li>
+</ul>
+<p>Uso funcional:</p>
+<ul>
+  <li>WhatsApp Business para confirmações, lembretes e recuperação de no-show;</li>
+  <li>Google Calendar para sincronização externa de agenda;</li>
+  <li>Stripe Billing para cobrança recorrente e conciliação de assinaturas.</li>
+</ul>
+
+<h2>20. Segurança e multitenancy</h2>
+<ul>
+  <li>isolamento por <code>tenant_id</code>;</li>
+  <li>Row Level Security no banco;</li>
+  <li>permissão por papel;</li>
+  <li>rotas protegidas no front;</li>
+  <li>separação entre área pública, tenant e super-admin;</li>
+  <li>acesso controlado a dados de pacientes, agenda e suporte.</li>
+</ul>
+
+<h2>21. Edge functions</h2>
+<p>Edge functions presentes no projeto:</p>
+<ul>
+  <li><code>public-booking</code></li>
+  <li><code>process-notifications</code></li>
+  <li><code>invite-team-member</code></li>
+  <li><code>manage-team-member</code></li>
+  <li><code>super-admin-access</code></li>
+</ul>
+<p>Uso funcional:</p>
+<ul>
+  <li><code>public-booking</code>: consulta e reserva pública da agenda;</li>
+  <li><code>process-notifications</code>: processamento da fila de notificações;</li>
+  <li><code>invite-team-member</code>: convites para equipe;</li>
+  <li><code>manage-team-member</code>: atualização/gestão de membros;</li>
+  <li><code>super-admin-access</code>: suporte a acessos administrativos globais.</li>
+</ul>
+
+<h2>22. Rotas principais</h2>
+<p>Rotas públicas:</p>
+<ul>
+  <li><code>/login</code></li>
+  <li><code>/register</code></li>
+  <li><code>/degustacao</code></li>
+  <li><code>/forgot-password</code></li>
+  <li><code>/reset-password</code></li>
+  <li><code>/onboarding</code></li>
+  <li><code>/assinar</code></li>
+  <li><code>/agendar/:slug</code></li>
+</ul>
+<p>Rotas protegidas:</p>
+<ul>
+  <li><code>/</code></li>
+  <li><code>/agenda</code></li>
+  <li><code>/pacientes</code></li>
+  <li><code>/minha-agenda</code></li>
+  <li><code>/mensagens</code></li>
+  <li><code>/relatorios</code></li>
+  <li><code>/configuracoes</code></li>
+  <li><code>/suporte</code></li>
+  <li><code>/paciente/home</code></li>
+</ul>
+<p>Rotas de super-admin:</p>
+<ul>
+  <li><code>/super-admin</code></li>
+  <li><code>/super-admin/plataforma</code></li>
+  <li><code>/super-admin/orcamentos</code></li>
+  <li><code>/super-admin/catalogo</code></li>
+  <li><code>/super-admin/integracoes</code></li>
+</ul>
+
+<h2>23. Fluxos operacionais principais</h2>
+<h3>Fluxo 1 - Captação e assinatura</h3>
+<ul>
+  <li>o lead acessa a página pública de planos;</li>
+  <li>pode entrar em degustação;</li>
+  <li>assiste ao vídeo de demonstração;</li>
+  <li>escolhe o plano ideal;</li>
+  <li>segue para checkout ou ativação;</li>
+  <li>tem acesso liberado após a assinatura.</li>
+</ul>
+
+<h3>Fluxo 2 - Operação da clínica</h3>
+<ul>
+  <li>equipe agenda e confirma consultas;</li>
+  <li>profissional gerencia sua própria agenda;</li>
+  <li>pacientes são mantidos no cadastro;</li>
+  <li>mensagens e notificações acompanham o fluxo assistencial;</li>
+  <li>relatórios consolidam a operação.</li>
+</ul>
+
+<h3>Fluxo 3 - Super-admin</h3>
+<ul>
+  <li>acompanha clínicas ativas;</li>
+  <li>edita links comerciais;</li>
+  <li>mantém o catálogo de planos;</li>
+  <li>acompanha integrações e chamados;</li>
+  <li>exporta dados operacionais da base.</li>
+</ul>
+
+<h2>24. Observações de implantação</h2>
+<ul>
+  <li>migrations do banco;</li>
+  <li>edge functions publicadas;</li>
+  <li>secrets de integração configurados;</li>
+  <li>links comerciais atualizados no super-admin;</li>
+  <li>validação dos fluxos por perfil.</li>
+</ul>
+
+</body>
+</html>
