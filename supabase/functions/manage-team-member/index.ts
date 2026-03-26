@@ -12,6 +12,84 @@ interface ManagePayload {
   target_user_id: string;
 }
 
+type CommercialPlanKey = "start" | "pro" | "signature";
+
+type ProfessionalLimitConfig = {
+  currentPlan: CommercialPlanKey;
+  currentPlanLabel: string;
+  maxProfessionals: number;
+  nextPlanLabel: string;
+  upgradePath: string;
+  upgradeLabel: string;
+  headline: string;
+  description: string;
+};
+
+const normalizePlanKey = (value?: string | null): CommercialPlanKey => {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "pro" || normalized === "signature") return normalized;
+  return "start";
+};
+
+const getProfessionalLimitConfig = (planKey?: string | null): ProfessionalLimitConfig => {
+  const currentPlan = normalizePlanKey(planKey);
+
+  switch (currentPlan) {
+    case "pro":
+      return {
+        currentPlan,
+        currentPlanLabel: "Pro",
+        maxProfessionals: 3,
+        nextPlanLabel: "Signature",
+        upgradePath: "/assinar?plan=signature",
+        upgradeLabel: "Assinar Signature",
+        headline: "A partir do 4º profissional, faça upgrade para o Signature.",
+        description: "O plano Pro permite até 3 profissionais ativos.",
+      };
+    case "signature":
+      return {
+        currentPlan,
+        currentPlanLabel: "Signature",
+        maxProfessionals: 10,
+        nextPlanLabel: "Pacote Executivo",
+        upgradePath: "/assinar?mode=upgrade",
+        upgradeLabel: "Solicitar pacote executivo",
+        headline: "A partir do 11º profissional, solicite o pacote executivo.",
+        description: "O plano Signature permite até 10 profissionais ativos.",
+      };
+    case "start":
+    default:
+      return {
+        currentPlan: "start",
+        currentPlanLabel: "Start",
+        maxProfessionals: 1,
+        nextPlanLabel: "Pro",
+        upgradePath: "/assinar?plan=pro",
+        upgradeLabel: "Assinar Pro",
+        headline: "A partir do 2º profissional, faça upgrade para o Pro.",
+        description: "O plano Start permite até 1 profissional ativo.",
+      };
+  }
+};
+
+async function countActiveProfessionals(supabaseAdmin: any, tenantId: string) {
+  const [{ data: profiles, error: profilesError }, { data: roles, error: rolesError }] = await Promise.all([
+    supabaseAdmin.from("profiles").select("user_id, is_active").eq("tenant_id", tenantId),
+    supabaseAdmin.from("user_roles").select("user_id, role").eq("tenant_id", tenantId).eq("role", "professional"),
+  ]);
+
+  if (profilesError) throw profilesError;
+  if (rolesError) throw rolesError;
+
+  const activeUsers = new Set(
+    (profiles ?? [])
+      .filter((profile: any) => profile.is_active !== false)
+      .map((profile: any) => profile.user_id)
+  );
+
+  return (roles ?? []).filter((role: any) => activeUsers.has(role.user_id)).length;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -61,6 +139,13 @@ Deno.serve(async (req) => {
     }
 
     const tenantId = requesterProfile.tenant_id;
+
+    const { data: clinic } = await supabaseAdmin
+      .from("clinics")
+      .select("settings")
+      .eq("id", tenantId)
+      .maybeSingle();
+    const limitConfig = getProfessionalLimitConfig(clinic?.settings?.subscription?.plan);
 
     // Check requester is admin or owner
     const { data: requesterRole } = await supabaseAdmin
@@ -133,6 +218,37 @@ Deno.serve(async (req) => {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const { data: targetRoles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", target_user_id)
+      .eq("tenant_id", tenantId);
+    const targetIsProfessional = !(targetRoles ?? []).length || (targetRoles ?? []).some((row: any) => row.role === "professional");
+
+    if (action === "reactivate" && targetIsProfessional) {
+      const activeProfessionalCount = await countActiveProfessionals(supabaseAdmin, tenantId);
+      if (activeProfessionalCount >= limitConfig.maxProfessionals) {
+        return new Response(
+          JSON.stringify({
+            error: "professional_limit_reached",
+            detail: limitConfig.description,
+            current_professionals: activeProfessionalCount,
+            max_professionals: limitConfig.maxProfessionals,
+            current_plan: limitConfig.currentPlan,
+            current_plan_label: limitConfig.currentPlanLabel,
+            next_plan_label: limitConfig.nextPlanLabel,
+            upgrade_label: limitConfig.upgradeLabel,
+            upgrade_path: limitConfig.upgradePath,
+            headline: limitConfig.headline,
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
     }
 
     let auditAction = "";

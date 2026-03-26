@@ -34,6 +34,72 @@ export const SIGNATURE_CHECKOUT_URL = "https://pay.kiwify.com.br/2GZhB9R";
 export const SUBSCRIPTION_TERM_DAYS = 365;
 export const SUBSCRIPTION_TERM_LABEL = "12 meses";
 export const START_TRIAL_DAYS = 21;
+export const PROFESSIONAL_LIMITS = {
+  start: 1,
+  pro: 3,
+  signature: 10,
+} as const;
+export const UPGRADE_REQUEST_PATH = "/assinar?mode=upgrade";
+
+export type CommercialPlanKey = "start" | "pro" | "signature";
+
+export type ProfessionalLimitConfig = {
+  currentPlan: CommercialPlanKey;
+  currentPlanLabel: string;
+  maxProfessionals: number;
+  nextPlanLabel: string;
+  upgradePath: string;
+  upgradeLabel: string;
+  headline: string;
+  description: string;
+};
+
+export const normalizeCommercialPlanKey = (planKey?: string | null): CommercialPlanKey => {
+  const value = planKey?.trim().toLowerCase();
+  if (value === "pro" || value === "signature") return value;
+  return "start";
+};
+
+export const getProfessionalLimitConfig = (planKey?: string | null): ProfessionalLimitConfig => {
+  const currentPlan = normalizeCommercialPlanKey(planKey);
+
+  switch (currentPlan) {
+    case "pro":
+      return {
+        currentPlan,
+        currentPlanLabel: "Pro",
+        maxProfessionals: PROFESSIONAL_LIMITS.pro,
+        nextPlanLabel: "Signature",
+        upgradePath: "/assinar?plan=signature",
+        upgradeLabel: "Assinar Signature",
+        headline: "A partir do 4º profissional, faça upgrade para o Signature.",
+        description: "O plano Pro permite até 3 profissionais ativos.",
+      };
+    case "signature":
+      return {
+        currentPlan,
+        currentPlanLabel: "Signature",
+        maxProfessionals: PROFESSIONAL_LIMITS.signature,
+        nextPlanLabel: "Pacote Executivo",
+        upgradePath: UPGRADE_REQUEST_PATH,
+        upgradeLabel: "Solicitar pacote executivo",
+        headline: "A partir do 11º profissional, solicite o pacote executivo.",
+        description: "O plano Signature permite até 10 profissionais ativos.",
+      };
+    case "start":
+    default:
+      return {
+        currentPlan: "start",
+        currentPlanLabel: "Start",
+        maxProfessionals: PROFESSIONAL_LIMITS.start,
+        nextPlanLabel: "Pro",
+        upgradePath: "/assinar?plan=pro",
+        upgradeLabel: "Assinar Pro",
+        headline: "A partir do 2º profissional, faça upgrade para o Pro.",
+        description: "O plano Start permite até 1 profissional ativo.",
+      };
+  }
+};
 
 export const planMarketingContent: Record<string, PlanMarketingContent> = {
   start: {

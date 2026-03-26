@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +42,7 @@ import {
 import { Camera, Loader2, Users, CircleDot, CalendarDays, Plus, MoreVertical, UserX, UserCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getProfessionalLimitConfig } from "@/lib/subscription-plans";
 
 interface TeamMember {
   id: string;
@@ -76,6 +77,12 @@ const TeamManagement = () => {
   const [inviteServiceAddress, setInviteServiceAddress] = useState("");
   const [inviteRole, setInviteRole] = useState<"professional" | "receptionist" | "admin">("professional");
   const [inviteAccepting, setInviteAccepting] = useState(true);
+  const [limitNotice, setLimitNotice] = useState<{
+    headline: string;
+    description: string;
+    upgradeUrl: string;
+    upgradeLabel: string;
+  } | null>(null);
 
   const [confirmAction, setConfirmAction] = useState<{ member: TeamMember; action: "deactivate" | "reactivate" | "remove" } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -109,11 +116,59 @@ const TeamManagement = () => {
     },
   });
 
+  const { data: clinicSettings } = useQuery({
+    queryKey: ["team-clinic-settings", profile?.tenant_id],
+    enabled: !!profile?.tenant_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clinics")
+        .select("settings")
+        .eq("id", profile!.tenant_id)
+        .single();
+
+      if (error) throw error;
+      return (data?.settings as Record<string, any> | null) ?? {};
+    },
+  });
+
+  const currentProfessionalCount = useMemo(
+    () => members.filter((member) => member.role === "professional" && member.is_active !== false).length,
+    [members]
+  );
+
+  const professionalLimit = useMemo(
+    () => getProfessionalLimitConfig(clinicSettings?.subscription?.plan),
+    [clinicSettings?.subscription?.plan]
+  );
+
+  const professionalInviteBlocked = inviteRole === "professional" && currentProfessionalCount >= professionalLimit.maxProfessionals;
+  const currentSlotLabel = `${currentProfessionalCount}/${professionalLimit.maxProfessionals}`;
+
+  useEffect(() => {
+    if (!professionalInviteBlocked && limitNotice) {
+      setLimitNotice(null);
+    }
+  }, [professionalInviteBlocked, limitNotice]);
+
   const handleInviteMember = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!inviteName.trim() || !inviteEmail.trim()) {
       toast.error("Preencha nome e e-mail.");
+      return;
+    }
+
+    if (professionalInviteBlocked) {
+      const upgradeUrl = `${window.location.origin}${professionalLimit.upgradePath}`;
+      setLimitNotice({
+        headline: professionalLimit.headline,
+        description: `${professionalLimit.description} Você já está com ${currentSlotLabel} profissionais ativos.`,
+        upgradeUrl,
+        upgradeLabel: professionalLimit.upgradeLabel,
+      });
+      toast.error("Limite do plano atingido", {
+        description: `${professionalLimit.headline} ${professionalLimit.upgradeLabel}.`,
+      });
       return;
     }
 
@@ -133,6 +188,23 @@ const TeamManagement = () => {
       const rawMessage = String(error?.message ?? "");
       const detail = (data && data.detail) || error?.message || "Falha ao convidar profissional.";
       const code = data?.error;
+
+      if (code === "professional_limit_reached") {
+        const upgradeUrl = `${window.location.origin}${data.upgrade_path || professionalLimit.upgradePath}`;
+        setLimitNotice({
+          headline: data.headline || professionalLimit.headline,
+          description:
+            data.detail ||
+            `${professionalLimit.description} Você já está com ${data.current_professionals ?? currentProfessionalCount} profissionais ativos.`,
+          upgradeUrl,
+          upgradeLabel: data.upgrade_label || professionalLimit.upgradeLabel,
+        });
+        toast.error("Limite do plano atingido", {
+          description: `${data.headline || professionalLimit.headline} ${data.upgrade_label || professionalLimit.upgradeLabel}.`,
+        });
+        setInviteLoading(false);
+        return;
+      }
 
       if (rawMessage.toLowerCase().includes("functions") && rawMessage.toLowerCase().includes("404")) {
         toast.error("Funcao de convite nao publicada.", {
@@ -161,6 +233,7 @@ const TeamManagement = () => {
     setInviteAccepting(true);
     setInviteOpen(false);
     setInviteLoading(false);
+    setLimitNotice(null);
 
     queryClient.invalidateQueries({ queryKey: ["team-members"] });
   };
@@ -277,6 +350,9 @@ const TeamManagement = () => {
             <CardDescription>
               Gerencie profissionais, papeis e fotos exibidas no agendamento online.
             </CardDescription>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Profissionais ativos: {currentProfessionalCount}/{professionalLimit.maxProfessionals} no plano {professionalLimit.currentPlanLabel}.
+            </p>
           </div>
           <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
             <DialogTrigger asChild>
@@ -292,6 +368,19 @@ const TeamManagement = () => {
                   Cria acesso e vincula o profissional ao assinante atual.
                 </DialogDescription>
               </DialogHeader>
+              {limitNotice && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
+                  <p className="font-semibold">{limitNotice.headline}</p>
+                  <p className="mt-1">{limitNotice.description}</p>
+                  <Button
+                    type="button"
+                    className="mt-3"
+                    onClick={() => window.open(limitNotice.upgradeUrl, "_blank")}
+                  >
+                    {limitNotice.upgradeLabel}
+                  </Button>
+                </div>
+              )}
               <form className="space-y-3" onSubmit={handleInviteMember}>
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Nome completo</label>
@@ -359,12 +448,42 @@ const TeamManagement = () => {
                   </div>
                 </div>
 
+                {inviteRole === "professional" && (
+                  <div className="rounded-lg border border-border bg-secondary/40 p-3 text-xs text-muted-foreground">
+                    <p className="font-semibold text-foreground">
+                      {professionalInviteBlocked
+                        ? professionalLimit.headline
+                        : `Seu plano permite até ${professionalLimit.maxProfessionals} profissional ativo.`}
+                    </p>
+                    <p className="mt-1">
+                      {professionalInviteBlocked
+                        ? `Você já está com ${currentSlotLabel} profissionais ativos.`
+                        : `Restam ${professionalLimit.maxProfessionals - currentProfessionalCount} vaga(s) para profissionais neste plano.`}
+                    </p>
+                    {professionalInviteBlocked && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => window.open(`${window.location.origin}${professionalLimit.upgradePath}`, "_blank")}
+                      >
+                        {professionalLimit.upgradeLabel}
+                      </Button>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" onClick={() => setInviteOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={inviteLoading}>
-                    {inviteLoading ? "Enviando..." : "Enviar convite"}
+                  <Button type="submit" disabled={inviteLoading || professionalInviteBlocked}>
+                    {inviteLoading
+                      ? "Enviando..."
+                      : professionalInviteBlocked
+                        ? professionalLimit.upgradeLabel
+                        : "Enviar convite"}
                   </Button>
                 </div>
               </form>
