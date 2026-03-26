@@ -25,7 +25,9 @@ import {
   START_TRIAL_DAYS,
   SUBSCRIPTION_TERM_DAYS,
   SUBSCRIPTION_TERM_LABEL,
+  PLATFORM_DEMO_VIDEO_URL,
   fallbackPlanOptions,
+  getConfiguredPlatformDemoUrl,
   getPlanMarketingContent,
   paidPlanOptions,
   type PlanKey,
@@ -43,6 +45,10 @@ type CatalogPlan = {
   period_days: number;
   trial_days: number;
   is_active: boolean;
+};
+
+type PlatformSettings = {
+  video_url: string | null;
 };
 
 const Onboarding = () => {
@@ -80,6 +86,25 @@ const Onboarding = () => {
       return (data ?? []) as CatalogPlan[];
     },
   });
+
+  const { data: platformSettings } = useQuery({
+    queryKey: ["onboarding-platform-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("platform_settings")
+        .select("video_url")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return (data ?? null) as PlatformSettings | null;
+    },
+  });
+
+  const demoVideoUrl = useMemo(
+    () => getConfiguredPlatformDemoUrl(platformSettings?.video_url ?? PLATFORM_DEMO_VIDEO_URL),
+    [platformSettings?.video_url]
+  );
 
   const paidPlans = useMemo<PlanOption[]>(() => {
     const source = catalogPlans.length > 0
@@ -280,6 +305,25 @@ const Onboarding = () => {
         </CardHeader>
 
         <CardContent>
+          <div className="mb-5 rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Vídeo de demonstração</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Veja a plataforma em funcionamento antes de concluir o cadastro ou a assinatura.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(demoVideoUrl, "_blank", "noopener,noreferrer")}
+              >
+                Assistir
+              </Button>
+            </div>
+          </div>
+
           {!isUpgradeFlow && (
             <form onSubmit={finishTrialSignup} className="space-y-5">
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
