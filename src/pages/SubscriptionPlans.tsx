@@ -23,8 +23,10 @@ import {
   COURTESY_PLAN_KEY,
   COURTESY_PLAN_NAME,
   START_TRIAL_DAYS,
+  PLATFORM_DEMO_VIDEO_URL,
   SUBSCRIPTION_TERM_LABEL,
   fallbackPlanOptions,
+  getConfiguredPlatformDemoUrl,
   getPlanMarketingContent,
   PRO_CHECKOUT_URL,
   storePreferredPlan,
@@ -65,12 +67,12 @@ const SubscriptionPlans = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("platform_settings")
-        .select("plan_links, affiliate_url")
+        .select("plan_links, affiliate_url, video_url")
         .eq("id", 1)
         .single();
 
       if (error) throw error;
-      return data as { plan_links: Record<string, string> | null; affiliate_url: string | null };
+      return data as { plan_links: Record<string, string> | null; affiliate_url: string | null; video_url: string | null };
     },
   });
 
@@ -111,6 +113,7 @@ const SubscriptionPlans = () => {
 
   const planLinks = (platformSettings?.plan_links ?? {}) as Record<string, string>;
   const affiliateInviteUrl = platformSettings?.affiliate_url?.trim() ?? "";
+  const demoVideoUrl = getConfiguredPlatformDemoUrl(platformSettings?.video_url);
   const proCheckoutUrl = PRO_CHECKOUT_URL;
   const signatureCheckoutUrl = planLinks.signature?.trim() || SIGNATURE_CHECKOUT_URL;
 
@@ -281,6 +284,13 @@ const SubscriptionPlans = () => {
                           ? "Criar conta no Signature"
                           : "Criar conta no Start"}
                     </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(demoVideoUrl || PLATFORM_DEMO_VIDEO_URL, "_blank")}
+                  >
+                    Ver vídeo de demonstração
                   </Button>
                 </div>
               </CardContent>

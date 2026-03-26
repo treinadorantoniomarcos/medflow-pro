@@ -7,7 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { PRO_CHECKOUT_URL, SIGNATURE_CHECKOUT_URL, getSubscriptionShareUrl, getTrialSubscriptionShareUrl } from "@/lib/subscription-plans";
+import {
+  PRO_CHECKOUT_URL,
+  SIGNATURE_CHECKOUT_URL,
+  getConfiguredPlatformDemoUrl,
+  getSubscriptionShareUrl,
+  getTrialSubscriptionShareUrl,
+} from "@/lib/subscription-plans";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -16,6 +22,7 @@ const SuperAdminPlatform = () => {
   const [platformCheckoutUrlDraft, setPlatformCheckoutUrlDraft] = useState("");
   const [trialUrlDraft, setTrialUrlDraft] = useState("");
   const [affiliateUrlDraft, setAffiliateUrlDraft] = useState("");
+  const [demoVideoUrlDraft, setDemoVideoUrlDraft] = useState("");
   const [savingPlatformSettings, setSavingPlatformSettings] = useState(false);
   const [copiedCheckoutLink, setCopiedCheckoutLink] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
@@ -23,6 +30,7 @@ const SuperAdminPlatform = () => {
   const [copiedAffiliateLink, setCopiedAffiliateLink] = useState(false);
   const subscriptionShareUrl = getSubscriptionShareUrl(window.location.origin);
   const trialShareUrl = getTrialSubscriptionShareUrl(window.location.origin);
+  const demoVideoUrl = getConfiguredPlatformDemoUrl(platformSettings?.video_url);
   const [copiedPlan, setCopiedPlan] = useState<string | null>(null);
   const [planLinksDraft, setPlanLinksDraft] = useState<Record<string, string>>({});
   const [savingPlanLinks, setSavingPlanLinks] = useState(false);
@@ -32,11 +40,11 @@ const SuperAdminPlatform = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("platform_settings")
-        .select("checkout_url, plan_links, trial_url, affiliate_url, updated_at")
+        .select("checkout_url, plan_links, trial_url, affiliate_url, video_url, updated_at")
         .eq("id", 1)
         .single();
       if (error) throw error;
-      return data as { checkout_url: string | null; plan_links: Record<string, string> | null; trial_url: string | null; affiliate_url: string | null; updated_at: string };
+      return data as { checkout_url: string | null; plan_links: Record<string, string> | null; trial_url: string | null; affiliate_url: string | null; video_url: string | null; updated_at: string };
     },
   });
 
@@ -67,6 +75,10 @@ const SuperAdminPlatform = () => {
     setAffiliateUrlDraft(platformSettings?.affiliate_url ?? "");
   }, [platformSettings?.affiliate_url]);
 
+  useEffect(() => {
+    setDemoVideoUrlDraft(platformSettings?.video_url ?? "");
+  }, [platformSettings?.video_url]);
+
   const { data: planRows = [] } = useQuery({
     queryKey: ["subscription-plans"],
     queryFn: async () => {
@@ -91,7 +103,7 @@ const SuperAdminPlatform = () => {
     setSavingPlanLinks(true);
     const { error } = await supabase
       .from("platform_settings")
-      .upsert({ id: 1, checkout_url: platformCheckoutUrlDraft.trim() || null, plan_links: planLinksDraft, trial_url: trialUrlDraft.trim() || null, affiliate_url: affiliateUrlDraft.trim() || null }, { onConflict: "id" });
+      .upsert({ id: 1, checkout_url: platformCheckoutUrlDraft.trim() || null, plan_links: planLinksDraft, trial_url: trialUrlDraft.trim() || null, affiliate_url: affiliateUrlDraft.trim() || null, video_url: demoVideoUrlDraft.trim() || null }, { onConflict: "id" });
     setSavingPlanLinks(false);
 
     if (error) {
@@ -154,6 +166,7 @@ const SuperAdminPlatform = () => {
                         plan_links: planLinksDraft,
                         trial_url: trialUrlDraft.trim() || null,
                         affiliate_url: affiliateUrlDraft.trim() || null,
+                        video_url: demoVideoUrlDraft.trim() || null,
                       },
                       { onConflict: "id" }
                     );
@@ -254,6 +267,104 @@ const SuperAdminPlatform = () => {
               </div>
               <p className="text-center text-xs text-muted-foreground">
                 Escaneie para abrir a página exclusiva da experiência Start.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-base">Vídeo de demonstração da plataforma</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-6 lg:grid-cols-[1fr_220px]">
+            <div className="space-y-4">
+              <div className="rounded-xl border border-border bg-secondary/40 p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Link2 className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">Apresentação comercial em vídeo</p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Use este link para apresentar a plataforma em qualquer pacote, acelerar a compreensão do produto e apoiar conversões comerciais.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  value={demoVideoUrlDraft.trim() || demoVideoUrl}
+                  onChange={(e) => setDemoVideoUrlDraft(e.target.value)}
+                  placeholder={demoVideoUrl}
+                  className="font-mono text-sm"
+                />
+                <Button
+                  className="gap-2"
+                  onClick={async () => {
+                    setSavingPlatformSettings(true);
+                    const { error } = await supabase
+                      .from("platform_settings")
+                      .upsert(
+                        {
+                          id: 1,
+                          checkout_url: platformCheckoutUrlDraft.trim() || null,
+                          plan_links: planLinksDraft,
+                          trial_url: trialUrlDraft.trim() || null,
+                          affiliate_url: affiliateUrlDraft.trim() || null,
+                          video_url: demoVideoUrlDraft.trim() || null,
+                        },
+                        { onConflict: "id" }
+                      );
+                    setSavingPlatformSettings(false);
+                    if (error) {
+                      toast.error("Falha ao salvar vídeo de demonstração", { description: error.message });
+                      return;
+                    }
+                    toast.success("Vídeo de demonstração atualizado.");
+                    queryClient.invalidateQueries({ queryKey: ["super-admin-platform-settings"] });
+                  }}
+                  disabled={savingPlatformSettings}
+                >
+                  <Save className="h-4 w-4" />
+                  {savingPlatformSettings ? "Salvando..." : "Atualizar vídeo"}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={async () => {
+                    const urlToCopy = demoVideoUrlDraft.trim() || demoVideoUrl;
+                    await navigator.clipboard.writeText(urlToCopy);
+                    toast.success("Link do vídeo copiado!");
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                  Copiar link
+                </Button>
+              </div>
+
+              <div className="grid gap-2 text-sm text-muted-foreground">
+                <p>
+                  Destino: <span className="font-medium text-foreground">{demoVideoUrlDraft.trim() || demoVideoUrl}</span>
+                </p>
+                <p>Recomendado para onboarding comercial, apresentações e materiais de vendas.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <QrCode className="h-4 w-4 text-primary" />
+                QR Code
+              </div>
+              <div className="rounded-lg border border-border bg-card p-3">
+                <QRCodeSVG
+                  value={demoVideoUrlDraft.trim() || demoVideoUrl}
+                  size={160}
+                  level="M"
+                  includeMargin={false}
+                  bgColor="transparent"
+                  fgColor="currentColor"
+                  className="text-foreground"
+                />
+              </div>
+              <p className="text-center text-xs text-muted-foreground">
+                Escaneie para abrir o vídeo de demonstração.
               </p>
             </div>
           </CardContent>

@@ -397,6 +397,7 @@ export type Database = {
           checkout_url: string | null
           id: number
           plan_links: Json | null
+          video_url: string | null
           trial_url: string | null
           updated_at: string
         }
@@ -405,6 +406,7 @@ export type Database = {
           checkout_url?: string | null
           id?: number
           plan_links?: Json | null
+          video_url?: string | null
           trial_url?: string | null
           updated_at?: string
         }
@@ -413,6 +415,7 @@ export type Database = {
           checkout_url?: string | null
           id?: number
           plan_links?: Json | null
+          video_url?: string | null
           trial_url?: string | null
           updated_at?: string
         }
