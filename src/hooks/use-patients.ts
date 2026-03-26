@@ -147,6 +147,10 @@ export const useDeletePatient = () => {
       return id;
     },
     onSuccess: (id) => {
+      queryClient.setQueriesData<Patient[]>(
+        { queryKey: ["patients"] },
+        (current) => current?.filter((patient) => patient.id !== id) ?? current
+      );
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
     },
