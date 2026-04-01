@@ -96,6 +96,15 @@ type AppointmentRow = {
 
 type SubscriptionPlan = string;
 type SubscriptionStatus = "trialing" | "active" | "past_due" | "paused" | "canceled";
+type SubscriptionDisplayStatus = SubscriptionStatus | "expired_trial";
+
+type SubscriptionAccessState = {
+  status: string | null;
+  expired_trial: boolean;
+  blocked: boolean;
+  current_period_end: string | null;
+  grace_until: string | null;
+};
 
 
 type PlanRow = {
@@ -120,7 +129,8 @@ const chartConfig = {
   },
 };
 
-const statusLabels: Record<SubscriptionStatus, string> = {
+const statusLabels: Record<SubscriptionDisplayStatus, string> = {
+  expired_trial: "Trial expirado",
   trialing: "Trialing",
   active: "Active",
   past_due: "Past due",
@@ -128,7 +138,8 @@ const statusLabels: Record<SubscriptionStatus, string> = {
   canceled: "Canceled",
 };
 
-const statusBadgeClass: Record<SubscriptionStatus, string> = {
+const statusBadgeClass: Record<SubscriptionDisplayStatus, string> = {
+  expired_trial: "bg-rose-100 text-rose-700",
   trialing: "bg-blue-100 text-blue-700",
   active: "bg-emerald-100 text-emerald-700",
   past_due: "bg-amber-100 text-amber-700",
@@ -169,6 +180,14 @@ const readAccessRequest = (settings: Record<string, any> | null | undefined) => 
     submitted_at: typeof request.submitted_at === "string" ? request.submitted_at : null,
   };
 };
+
+const readAccessState = (raw: Record<string, any> | null | undefined): SubscriptionAccessState => ({
+  status: typeof raw?.status === "string" ? raw.status : null,
+  expired_trial: Boolean(raw?.expired_trial),
+  blocked: Boolean(raw?.blocked),
+  current_period_end: typeof raw?.current_period_end === "string" ? raw.current_period_end : null,
+  grace_until: typeof raw?.grace_until === "string" ? raw.grace_until : null,
+});
 
 const SuperAdminDashboard = () => {
   const queryClient = useQueryClient();
@@ -236,11 +255,30 @@ const SuperAdminDashboard = () => {
       const profiles = (profilesResp.data ?? []) as ProfileRow[];
       const appointments = (appointmentsResp.data ?? []) as AppointmentRow[];
       const plans = (plansResp.data ?? []) as PlanRow[];
+      const accessStateEntries = await Promise.all(
+        clinics.map(async (clinic) => {
+          const { data: accessState, error } = await supabase.rpc("get_subscription_access_state_for_tenant", {
+            target_tenant_id: clinic.id,
+          });
+
+          if (error) throw error;
+
+          return [clinic.id, readAccessState(accessState as Record<string, any> | null | undefined)] as const;
+        })
+      );
 
       const monthPrefix = monthKey(monthStart);
       const monthlyAppointments = appointments.filter((apt) => apt.starts_at.startsWith(monthPrefix));
 
-      return { clinics, roles, profiles, appointments, monthlyAppointments, plans };
+      return {
+        clinics,
+        roles,
+        profiles,
+        appointments,
+        monthlyAppointments,
+        plans,
+        accessStateByTenant: new Map(accessStateEntries),
+      };
     },
   });
 
@@ -267,6 +305,8 @@ const SuperAdminDashboard = () => {
       const roles = byTenantRoles.get(clinic.id) ?? [];
       const monthly = byTenantMonthlyApts.get(clinic.id) ?? [];
       const subscription = readSubscription(clinic.settings);
+      const accessState = data.accessStateByTenant.get(clinic.id) ?? null;
+      const displayStatus: SubscriptionDisplayStatus = accessState?.expired_trial ? "expired_trial" : subscription.status;
 
       return {
         clinic_id: clinic.id,
@@ -274,6 +314,8 @@ const SuperAdminDashboard = () => {
         slug: clinic.slug ?? "sem-slug",
         settings: clinic.settings ?? {},
         subscription,
+        access_state: accessState,
+        display_status: displayStatus,
         access_request: readAccessRequest(clinic.settings),
         owners: roles.filter((r) => r.role === "owner").length,
         admins: roles.filter((r) => r.role === "admin").length,
@@ -328,10 +370,10 @@ const SuperAdminDashboard = () => {
   const subscriptionCounts = useMemo(() => {
     return subscriberRows.reduce(
       (acc, row) => {
-        acc[row.subscription.status] += 1;
+        acc[row.display_status] += 1;
         return acc;
       },
-      { trialing: 0, active: 0, past_due: 0, paused: 0, canceled: 0 } as Record<SubscriptionStatus, number>
+      { expired_trial: 0, trialing: 0, active: 0, past_due: 0, paused: 0, canceled: 0 } as Record<SubscriptionDisplayStatus, number>
     );
   }, [subscriberRows]);
 
@@ -812,8 +854,8 @@ const SuperAdminDashboard = () => {
            <MetricCard value={totals.noShowMonth} label="No-show no mês" icon={AlertTriangle} variant="warning" />
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-5">
-          {(Object.keys(subscriptionCounts) as SubscriptionStatus[]).map((statusKey) => (
+        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          {(Object.keys(subscriptionCounts) as SubscriptionDisplayStatus[]).map((statusKey) => (
             <Card key={statusKey} className="shadow-soft">
               <CardContent className="p-3">
                 <p className="text-xs text-muted-foreground">{statusLabels[statusKey]}</p>
@@ -901,6 +943,7 @@ const SuperAdminDashboard = () => {
                       plan: row.subscription.plan,
                       status: row.subscription.status,
                     };
+                    const displayStatus = row.display_status;
 
                     return (
                       <tr key={row.clinic_id} className="border-b border-border/70 align-top">
@@ -965,6 +1008,7 @@ const SuperAdminDashboard = () => {
                         </td>
                         <td className="py-2 pr-4">
                           <div className="space-y-2">
+                            <Badge className={statusBadgeClass[displayStatus]}>{statusLabels[displayStatus]}</Badge>
                             <Select
                               value={rowDraft.status}
                               onValueChange={(value) => updateBillingDraft(row.clinic_id, { status: value as SubscriptionStatus })}
@@ -972,15 +1016,14 @@ const SuperAdminDashboard = () => {
                               <SelectTrigger className="w-[145px]">
                                 <SelectValue />
                               </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="trialing">Trialing</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="past_due">Past due</SelectItem>
-                                <SelectItem value="paused">Paused</SelectItem>
-                                <SelectItem value="canceled">Canceled</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Badge className={statusBadgeClass[rowDraft.status]}>{statusLabels[rowDraft.status]}</Badge>
+                            <SelectContent>
+                              <SelectItem value="trialing">Trialing</SelectItem>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="past_due">Past due</SelectItem>
+                              <SelectItem value="paused">Paused</SelectItem>
+                              <SelectItem value="canceled">Canceled</SelectItem>
+                            </SelectContent>
+                          </Select>
                           </div>
                         </td>
                         <td className="py-2 pr-4">{row.owners + row.admins + row.professionals}</td>
@@ -1138,20 +1181,32 @@ const SuperAdminDashboard = () => {
             </div>
 
             {selectedSubscriberId && (
-              <div className="rounded-lg border border-border bg-secondary/20 p-3 text-sm">
-                {(() => {
-                  const row = subscriberRows.find((item) => item.clinic_id === selectedSubscriberId);
-                  if (!row) return null;
-                  return (
-                    <div className="grid gap-2 md:grid-cols-2">
-                      <p>Profissionais: <span className="font-medium text-foreground">{row.professionals}</span></p>
-                      <p>Pacientes: <span className="font-medium text-foreground">{row.patients}</span></p>
-                      <p>Consultas no mês: <span className="font-medium text-foreground">{row.month_appointments}</span></p>
-                      <p>No-show no mês: <span className="font-medium text-foreground">{row.month_no_show}</span></p>
-                    </div>
-                  );
-                })()}
-              </div>
+            <div className="rounded-lg border border-border bg-secondary/20 p-3 text-sm">
+              {(() => {
+                const row = subscriberRows.find((item) => item.clinic_id === selectedSubscriberId);
+                if (!row) return null;
+                return (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <p>Profissionais: <span className="font-medium text-foreground">{row.professionals}</span></p>
+                    <p>Pacientes: <span className="font-medium text-foreground">{row.patients}</span></p>
+                    <p>Consultas no mês: <span className="font-medium text-foreground">{row.month_appointments}</span></p>
+                    <p>No-show no mês: <span className="font-medium text-foreground">{row.month_no_show}</span></p>
+                    <p>
+                      Estado oficial:{" "}
+                      <span className="font-medium text-foreground">{statusLabels[row.display_status]}</span>
+                    </p>
+                    {row.access_state?.current_period_end && (
+                      <p>
+                        Vigência oficial:{" "}
+                        <span className="font-medium text-foreground">
+                          {new Date(row.access_state.current_period_end).toLocaleDateString("pt-BR")}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
             )}
 
             <div className="flex flex-wrap gap-2">

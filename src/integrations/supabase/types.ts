@@ -712,6 +712,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_subscription_access_state_for_tenant: {
+        Args: { target_tenant_id: string }
+        Returns: Json
+      }
       get_my_subscription_access_state: { Args: never; Returns: Json }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
