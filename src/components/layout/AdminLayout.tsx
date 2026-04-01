@@ -140,7 +140,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const roleGuide = userRole ? roleGuideMap[userRole] : null;
 
   return (
-    <div className="flex min-h-dvh overflow-x-hidden bg-background">
+    <div className="flex h-dvh overflow-x-hidden bg-background">
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col border-r border-border bg-card transition-transform duration-300 lg:static lg:translate-x-0",
