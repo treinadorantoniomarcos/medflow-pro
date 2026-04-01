@@ -24,7 +24,7 @@ export type PlanOption = {
 export const PLAN_PREFERENCE_KEY = "medflow-preferred-plan";
 export const SUBSCRIPTION_SHARE_PATH = "/assinar";
 export const TRIAL_SHARE_PATH = "/degustacao";
-export const PLATFORM_DEMO_VIDEO_URL = "https://drive.google.com/drive/u/1/folders/1U3KwW_Glpyx377jQksu-a2knubH78Zik";
+export const PLATFORM_DEMO_VIDEO_URL = "https://drive.google.com/file/d/1DCiWfe7JuWROGNnVShKxpNGWBNbzgt5Z/view?usp=sharing";
 export const COURTESY_PLAN_KEY = "courtesy";
 export const COURTESY_PLAN_NAME = "Experiência gratuita de 21 dias";
 export const COURTESY_PLAN_DESCRIPTION =
