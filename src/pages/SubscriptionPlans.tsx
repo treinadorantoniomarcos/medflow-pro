@@ -206,22 +206,33 @@ const SubscriptionPlans = () => {
           </div>
         )}
 
-        {planOverride && (
-          <p className="text-sm text-muted-foreground">
-            Mostrando apenas o plano <span className="font-semibold text-foreground">{planOverride.toUpperCase()}</span>.
-          </p>
-        )}
-
         <div className="grid gap-4 lg:grid-cols-3">
           {displayedPlans.map((plan) => (
-            <Card key={plan.key} className="relative flex h-full flex-col border-border shadow-soft">
+            <Card
+              key={plan.key}
+              className={`relative flex h-full flex-col border-border shadow-soft ${
+                plan.key === COURTESY_PLAN_KEY
+                  ? "border-emerald-200/70 bg-emerald-50/70 shadow-[0_12px_30px_rgba(16,185,129,0.12)] dark:border-emerald-900/40 dark:bg-emerald-950/20"
+                  : ""
+              }`}
+            >
               <CardHeader className="space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-xl font-bold text-foreground">{plan.name}</h2>
                     <p className="mt-1 text-sm text-muted-foreground">{plan.description}</p>
                   </div>
-                  {plan.marketing.highlight && <Badge>{plan.marketing.highlight}</Badge>}
+                  {plan.marketing.highlight && (
+                    <Badge
+                      className={
+                        plan.key === COURTESY_PLAN_KEY
+                          ? "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200"
+                          : ""
+                      }
+                    >
+                      {plan.marketing.highlight}
+                    </Badge>
+                  )}
                 </div>
                 <div>
                   <p className="text-3xl font-extrabold text-foreground">R$ {plan.monthlyPrice.toFixed(2)}</p>
