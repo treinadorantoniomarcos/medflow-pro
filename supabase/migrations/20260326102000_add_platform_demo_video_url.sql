@@ -8,7 +8,7 @@ values (
   '{}'::jsonb,
   null,
   'https://dashboard.kiwify.com/join/affiliate/ns119BD7',
-  'https://drive.google.com/file/d/1DCiWfe7JuWROGNnVShKxpNGWBNbzgt5Z/view?usp=sharing'
+  'https://drive.google.com/file/d/1DCiWfe7JuWROGNnVShKxpNGWBNbzgt5Z/preview'
 )
 on conflict (id) do update
 set video_url = coalesce(public.platform_settings.video_url, excluded.video_url);
