@@ -28,7 +28,7 @@ export const PLATFORM_DEMO_VIDEO_URL = "https://drive.google.com/drive/u/1/folde
 export const COURTESY_PLAN_KEY = "courtesy";
 export const COURTESY_PLAN_NAME = "Pacote de Cortesia - 21 dias";
 export const COURTESY_PLAN_DESCRIPTION =
-  "MedFlux Pro é uma plataforma completa para clínicas e profissionais da saúde que desejam elevar o padrão da operação. Ela centraliza agenda, pacientes, mensagens, confirmações e relatórios, oferecendo mais organização, controle e previsibilidade no atendimento. A experiência de cortesia dura 21 dias e inclui 1 administrador e 1 profissional.";
+  "Descubra o MedFlux Pro em uma experiência gratuita de 21 dias.";
 // Pro remains permanently mapped to the approved Kiwify checkout.
 export const PRO_CHECKOUT_URL = "https://pay.kiwify.com.br/T9SzApY";
 export const SIGNATURE_CHECKOUT_URL = "https://pay.kiwify.com.br/2GZhB9R";
