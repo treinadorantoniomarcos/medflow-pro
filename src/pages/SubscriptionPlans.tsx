@@ -106,10 +106,14 @@ const SubscriptionPlans = () => {
   }, [catalogPlans]);
 
   const displayedPlans = useMemo(() => {
-    if (!planOverride) return availablePlans;
-    const filtered = availablePlans.filter((plan) => plan.key === planOverride);
-    return filtered.length ? filtered : availablePlans;
-  }, [availablePlans, planOverride]);
+    const upgradePlans = isUpgradeMode
+      ? availablePlans.filter((plan) => plan.key !== COURTESY_PLAN_KEY)
+      : availablePlans;
+
+    if (!planOverride) return upgradePlans;
+    const filtered = upgradePlans.filter((plan) => plan.key === planOverride);
+    return filtered.length ? filtered : upgradePlans;
+  }, [availablePlans, planOverride, isUpgradeMode]);
 
   const planLinks = (platformSettings?.plan_links ?? {}) as Record<string, string>;
   const affiliateInviteUrl = platformSettings?.affiliate_url?.trim() ?? "";
