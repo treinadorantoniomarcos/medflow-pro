@@ -10,7 +10,12 @@ import { UserPlus, Eye, EyeOff, Check } from "lucide-react";
 import medfluxLogo from "@/assets/medflux-logo.png";
 import { validateStrongPassword } from "@/lib/password-policy";
 import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator";
-import { START_TRIAL_DAYS, getPlanMarketingContent } from "@/lib/subscription-plans";
+import {
+  COURTESY_PLAN_DESCRIPTION,
+  COURTESY_PLAN_NAME,
+  START_TRIAL_DAYS,
+  getPlanMarketingContent,
+} from "@/lib/subscription-plans";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -21,6 +26,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const isTrialLanding = location.pathname === "/degustacao" || new URLSearchParams(location.search).get("mode") === "trial";
+  const isCourtesyLanding = new URLSearchParams(location.search).get("plan") === "courtesy";
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,26 +75,43 @@ const Register = () => {
             <img src={medfluxLogo} alt="MedFlux Pro" className="h-14 w-14" />
           </div>
           <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
-            {isTrialLanding ? "Experiência Start - 21 dias" : "Criar conta"}
+            {isCourtesyLanding || isTrialLanding ? "Experiência gratuita de 21 dias" : "Criar conta"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {isTrialLanding ? "Acesso exclusivo para iniciar a experiência gratuita do Start." : "Comece a usar o MedFlux Pro"}
+            {isCourtesyLanding || isTrialLanding
+              ? "Acesso exclusivo para iniciar sua experiência gratuita com o MedFlux Pro."
+              : "Comece a usar o MedFlux Pro"}
           </p>
         </CardHeader>
         <CardContent>
-          <div className="mb-5 rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <div
+            className={`mb-5 rounded-xl border p-4 ${
+              isCourtesyLanding || isTrialLanding
+                ? "border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+                : "border-primary/20 bg-primary/5"
+            }`}
+          >
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              {isTrialLanding ? "Experiência exclusiva" : "Degustação inicial"}
+              {isCourtesyLanding || isTrialLanding ? "Experiência exclusiva" : "Degustação inicial"}
             </p>
             <div className="mt-2 flex items-start justify-between gap-3">
               <div>
-                <p className="text-base font-bold text-foreground">Plano Start</p>
-                <p className="text-sm text-muted-foreground">{getPlanMarketingContent("start").summary}</p>
+                <p className="text-base font-bold text-foreground">
+                  {isCourtesyLanding || isTrialLanding ? COURTESY_PLAN_NAME : "Plano Start"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isCourtesyLanding || isTrialLanding
+                    ? COURTESY_PLAN_DESCRIPTION
+                    : getPlanMarketingContent("start").summary}
+                </p>
               </div>
                 <p className="text-sm font-semibold text-foreground">{START_TRIAL_DAYS} dias de experiência</p>
             </div>
             <div className="mt-3 space-y-2">
-              {getPlanMarketingContent("start").features.slice(0, 3).map((feature) => (
+              {(isCourtesyLanding || isTrialLanding
+                ? getPlanMarketingContent("start").features
+                : getPlanMarketingContent("start").features
+              ).slice(0, 3).map((feature) => (
                 <div key={feature} className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Check className="h-3.5 w-3.5 text-primary" />
                   <span>{feature}</span>

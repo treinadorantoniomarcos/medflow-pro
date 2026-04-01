@@ -26,7 +26,7 @@ export const SUBSCRIPTION_SHARE_PATH = "/assinar";
 export const TRIAL_SHARE_PATH = "/degustacao";
 export const PLATFORM_DEMO_VIDEO_URL = "https://drive.google.com/drive/u/1/folders/1U3KwW_Glpyx377jQksu-a2knubH78Zik";
 export const COURTESY_PLAN_KEY = "courtesy";
-export const COURTESY_PLAN_NAME = "Pacote de Cortesia - 21 dias";
+export const COURTESY_PLAN_NAME = "Experiência gratuita de 21 dias";
 export const COURTESY_PLAN_DESCRIPTION =
   "Descubra o MedFlux Pro em uma experiência gratuita de 21 dias.";
 // Pro remains permanently mapped to the approved Kiwify checkout.

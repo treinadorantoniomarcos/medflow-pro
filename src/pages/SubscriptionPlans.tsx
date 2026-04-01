@@ -86,6 +86,7 @@ const SubscriptionPlans = () => {
     const params = new URLSearchParams(location.search);
     return params.get("mode") === "upgrade";
   }, [location.search]);
+  const isCourtesyMode = planOverride === COURTESY_PLAN_KEY;
 
   const availablePlans = useMemo<PlanOption[]>(() => {
     if (catalogPlans.length === 0) return fallbackPlanOptions;
@@ -190,17 +191,29 @@ const SubscriptionPlans = () => {
   return (
     <div className="min-h-screen bg-background px-4 py-10">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-        <div className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 shadow-soft">
+        <div
+          className={`flex flex-col gap-4 rounded-3xl border p-6 shadow-soft ${
+            isCourtesyMode
+              ? "border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+              : "border-border bg-card"
+          }`}
+        >
           <div className="flex items-center gap-3">
             <img src={medfluxLogo} alt="MedFlux Pro" className="h-14 w-14 rounded-2xl" />
             <div>
-              <p className="text-sm font-semibold text-primary">Assinatura premium para clínicas e profissionais</p>
-              <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Escolha a solução ideal para a sua operação</h1>
+              <p className="text-sm font-semibold text-primary">
+                {isCourtesyMode ? "Experiência gratuita para clínicas e profissionais" : "Assinatura premium para clínicas e profissionais"}
+              </p>
+              <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+                {isCourtesyMode ? "Descubra o MedFlux Pro em 21 dias gratuitos" : "Escolha a solução ideal para a sua operação"}
+              </h1>
             </div>
           </div>
 
         <p className="max-w-3xl text-sm text-muted-foreground">
-          Compare as opções do MedFlux Pro e escolha a alternativa mais adequada ao porte e ao momento da sua operação.
+          {isCourtesyMode
+            ? "Teste a plataforma com agenda inteligente, cadastro de pacientes e confirmação básica durante 21 dias gratuitos."
+            : "Compare as opções do MedFlux Pro e escolha a alternativa mais adequada ao porte e ao momento da sua operação."}
         </p>
       </div>
 
@@ -285,7 +298,9 @@ const SubscriptionPlans = () => {
                       handleChoosePlan(plan.key);
                     }}
                   >
-                    {plan.key === "pro"
+                    {plan.key === COURTESY_PLAN_KEY
+                      ? "Começar experiência gratuita"
+                      : plan.key === "pro"
                       ? "Assinar Pro agora"
                       : plan.key === "signature"
                         ? "Assinar Signature agora"
@@ -293,12 +308,14 @@ const SubscriptionPlans = () => {
                   </Button>
                   <Button asChild variant="ghost" className="w-full">
                     <Link to={`/register?plan=${encodeURIComponent(plan.key)}`}>
-                      {plan.key === "pro"
+                      {plan.key === COURTESY_PLAN_KEY
+                        ? "Criar conta na experiência gratuita"
+                        : plan.key === "pro"
                         ? "Criar conta no Pro"
                         : plan.key === "signature"
                           ? "Criar conta no Signature"
                           : "Criar conta no Start"}
-                    </Link>
+                  </Link>
                   </Button>
                   <Button
                     variant="outline"
