@@ -26,9 +26,9 @@ export const SUBSCRIPTION_SHARE_PATH = "/assinar";
 export const TRIAL_SHARE_PATH = "/degustacao";
 export const PLATFORM_DEMO_VIDEO_URL = "https://drive.google.com/drive/u/1/folders/1U3KwW_Glpyx377jQksu-a2knubH78Zik";
 export const COURTESY_PLAN_KEY = "courtesy";
-export const COURTESY_PLAN_NAME = "Degustação inicial";
+export const COURTESY_PLAN_NAME = "Pacote de Cortesia - 21 dias";
 export const COURTESY_PLAN_DESCRIPTION =
-  "Operação essencial para um profissional iniciar a agenda online com organização e confirmação básica.";
+  "Experiência gratuita por 21 dias para clínicas e profissionais da saúde estruturarem a agenda inteligente com 1 administrador e 1 profissional.";
 // Pro remains permanently mapped to the approved Kiwify checkout.
 export const PRO_CHECKOUT_URL = "https://pay.kiwify.com.br/T9SzApY";
 export const SIGNATURE_CHECKOUT_URL = "https://pay.kiwify.com.br/2GZhB9R";
@@ -104,17 +104,17 @@ export const getProfessionalLimitConfig = (planKey?: string | null): Professiona
 
 export const planMarketingContent: Record<string, PlanMarketingContent> = {
   start: {
-    summary: "Entrada premium para organizar a agenda, dar previsibilidade à operação e validar a experiência por 21 dias.",
-    audience: "Ideal para profissionais individuais e consultórios que querem começar com presença digital profissional.",
+    summary: "Experiência gratuita de 21 dias para iniciar com agenda inteligente, organização operacional e confirmação de consultas.",
+    audience: "Ideal para clínicas e profissionais da saúde que querem testar a plataforma com uma estrutura profissional desde o primeiro dia.",
     features: [
-      "Licença para 1 profissional",
-      "Contrato com vigência de 12 meses",
+      "Acesso para 1 profissional principal",
+      "1 administrador de conta",
       "Experiência gratuita de 21 dias",
       "Agenda diária com cadastro de pacientes",
-      "Confirmação simples e status da consulta",
+      "Confirmação básica e status da consulta",
       "Link de agendamento para divulgar em redes sociais",
     ],
-    highlight: "21 dias premium",
+    highlight: "21 dias gratuitos",
   },
   pro: {
     summary: "Estrutura ideal para equipes pequenas que precisam de rotina previsível, menos faltas e uma operação mais sofisticada.",
