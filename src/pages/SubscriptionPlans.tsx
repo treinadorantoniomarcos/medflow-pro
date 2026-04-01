@@ -106,7 +106,24 @@ const SubscriptionPlans = () => {
     }));
   }, [catalogPlans]);
 
+  const courtesyPlan = useMemo<PlanOption>(() => {
+    const existingPlan = availablePlans.find((plan) => plan.key === COURTESY_PLAN_KEY);
+    if (existingPlan) return existingPlan;
+
+    return {
+      key: COURTESY_PLAN_KEY,
+      name: COURTESY_PLAN_NAME,
+      monthlyPrice: 0,
+      description: COURTESY_PLAN_DESCRIPTION,
+      periodDays: START_TRIAL_DAYS,
+      trialDays: START_TRIAL_DAYS,
+      marketing: getPlanMarketingContent(COURTESY_PLAN_KEY),
+    };
+  }, [availablePlans]);
+
   const displayedPlans = useMemo(() => {
+    if (isCourtesyMode) return [courtesyPlan];
+
     const upgradePlans = isUpgradeMode
       ? availablePlans.filter((plan) => plan.key !== COURTESY_PLAN_KEY)
       : availablePlans;
@@ -114,7 +131,7 @@ const SubscriptionPlans = () => {
     if (!planOverride) return upgradePlans;
     const filtered = upgradePlans.filter((plan) => plan.key === planOverride);
     return filtered.length ? filtered : upgradePlans;
-  }, [availablePlans, planOverride, isUpgradeMode]);
+  }, [availablePlans, courtesyPlan, isUpgradeMode, isCourtesyMode, planOverride]);
 
   const planLinks = (platformSettings?.plan_links ?? {}) as Record<string, string>;
   const affiliateInviteUrl = platformSettings?.affiliate_url?.trim() ?? "";
