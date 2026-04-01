@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Check, CreditCard, Sparkles, User } from "lucide-react";
+import { Building2, Check, CreditCard, PlayCircle, Sparkles, User } from "lucide-react";
 import { toast } from "sonner";
 import medfluxLogo from "@/assets/medflux-logo.png";
 import { supabase } from "@/integrations/supabase/client";
@@ -317,9 +317,11 @@ const Onboarding = () => {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="border-emerald-300 bg-emerald-600 text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-emerald-500 hover:text-white hover:shadow-md dark:border-emerald-800"
                 onClick={() => window.open(demoVideoUrl, "_blank", "noopener,noreferrer")}
               >
-                Assistir
+                <PlayCircle className="mr-2 h-4 w-4" />
+                Assistir agora
               </Button>
             </div>
           </div>

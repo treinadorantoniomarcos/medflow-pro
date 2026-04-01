@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Send } from "lucide-react";
+import { Check, PlayCircle, Send } from "lucide-react";
 import medfluxLogo from "@/assets/medflux-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -336,10 +336,15 @@ const SubscriptionPlans = () => {
                   </Button>
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className={`w-full border-emerald-300 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-emerald-800 ${
+                      plan.key === COURTESY_PLAN_KEY
+                        ? "bg-emerald-600 text-white hover:bg-emerald-500 hover:text-white"
+                        : "bg-emerald-50 text-emerald-900 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-200 dark:hover:bg-emerald-950/35"
+                    }`}
                     onClick={() => window.open(demoVideoUrl || PLATFORM_DEMO_VIDEO_URL, "_blank")}
                   >
-                    Ver vídeo de demonstração
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                    {plan.key === COURTESY_PLAN_KEY ? "Assistir demonstração gratuita" : "Ver vídeo de demonstração"}
                   </Button>
                 </div>
               </CardContent>
