@@ -37,31 +37,24 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     queryKey: ["protected-route-subscription", profile?.tenant_id, userRole],
     enabled: !!profile?.tenant_id && !!userRole && userRole !== "super_admin" && userRole !== "patient",
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clinics")
-        .select("settings")
-        .eq("id", profile!.tenant_id)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("get_my_subscription_access_state");
 
       if (error) throw error;
 
-      const settings = (data?.settings ?? {}) as Record<string, any>;
-      const subscription = (settings.subscription ?? {}) as Record<string, any>;
-      const status = (["trialing", "active", "past_due", "paused", "canceled"].includes(subscription.status)
-        ? subscription.status
-        : "trialing") as SubscriptionStatus;
-      const graceUntil = subscription.grace_until ? new Date(subscription.grace_until) : null;
-      const currentPeriodEnd = subscription.current_period_end ? new Date(subscription.current_period_end) : null;
-      const now = new Date();
+      const subscriptionState = (data ?? {}) as {
+        status?: string | null;
+        expired_trial?: boolean | null;
+        blocked?: boolean | null;
+      };
 
-      const blockedByStatus = status === "paused" || status === "canceled";
-      const blockedByGrace = status === "past_due" && graceUntil ? graceUntil < now : false;
-      const expiredTrial = status === "trialing" && currentPeriodEnd ? currentPeriodEnd < now : false;
+      const status = (["trialing", "active", "past_due", "paused", "canceled"].includes(subscriptionState.status ?? "")
+        ? subscriptionState.status
+        : "trialing") as SubscriptionStatus;
 
       return {
         status,
-        expiredTrial,
-        blocked: blockedByStatus || blockedByGrace,
+        expiredTrial: Boolean(subscriptionState.expired_trial),
+        blocked: Boolean(subscriptionState.blocked),
       };
     },
   });
